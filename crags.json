@@ -1941,7 +1941,8 @@
     ],
     "level": "affected",
     "note": "Nesting birds noted in the SMC database; months not confirmed"
-   }
+   },
+   "seep_note": "Does not seep badly; dries out for long periods every year (developers' notes, 2020)"
   },
   {
    "name": "Crazy Band Walls and The Shag’s Hole",
@@ -1967,7 +1968,9 @@
     ],
     "level": "affected",
     "note": "Nesting birds noted in the SMC database; months not confirmed"
-   }
+   },
+   "seep_note": "Seeps badly, especially at the left end; does not usually dry out until May, and wet holds remain after that (developers' notes, 2020)",
+   "seep_until_month": 5
   },
   {
    "name": "Crazy Band Walls and The Shag’s Hole",
@@ -4630,8 +4633,9 @@
      7
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
-   }
+    "note": "A few kittiwake and cormorant nests on the lower left side (developers' notes, 2024); months not confirmed"
+   },
+   "seep_note": "One corner sometimes carries a wet streak (developers' notes, 2024)"
   },
   {
    "name": "Meackie Point (Point Wall)",
