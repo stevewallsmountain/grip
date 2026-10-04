@@ -52,7 +52,8 @@ FORM_CRAG = "entry.769015387"
 FORM_DATE = "entry.2085482145"
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
-MODEL_VERSION = "2.1"  # bump when the scoring changes; logged days are then re-scored
+MODEL_VERSION = "2.2"  # bump when the scoring changes; logged days are then re-scored
+CAL_CSV = os.path.join(HERE, "calibration.csv")
 FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
 FEEL_RANGE = {"Soaked": (0, 2), "Greasy": (2, 4), "Usable": (4, 6), "Crisp": (6, 8), "Prime": (8, 10.01)}  # lower edge included, upper excluded
 
@@ -370,6 +371,30 @@ def f_seep(r24, r72):
     return max(pts, -4)
 
 
+def baseline_points(rh, wd, ws, sunny, az, el, aspect, tmax, ymax, sea_pts):
+    """The simple additive table this project started from, kept for comparison only: humidity steps,
+    fixed compass wind rule, sun within 80 degrees, day-on-day temperature change, sea state."""
+    if rh is None:
+        return None
+    hum = -3 if rh >= 90 else -2 if rh >= 85 else 0 if rh >= 80 else 1 if rh >= 76 else 2 if rh >= 70 else 3 if rh >= 65 else 4 if rh >= 61 else 5
+    wdir = (-1 if 22.5 <= (wd % 360) < 202.5 else 1) if wd is not None else 0
+    wamt = (-1 if ws < 5 else 1 if ws <= 15 else 2) if ws is not None else 0
+    sun = 0
+    if sunny and el >= 3:
+        sun = 3 if (aspect is not None and el > 5 and ang_diff(az, aspect) < 80) else 1
+    temp = 0
+    if tmax is not None and ymax is not None:
+        temp = -3 if tmax - ymax > 5 else 1 if tmax - ymax < -5 else 0
+    return hum + wdir + wamt + sun + temp + (sea_pts or 0)
+
+
+def baseline_index(pts):
+    """Map the baseline's roughly -10 to 13 range onto 0 to 10."""
+    if pts is None:
+        return None
+    return max(0.0, min(10.0, 10.0 * (pts + 10) / 23.0))
+
+
 def series(h, var):
     return h.get(var) or [None] * len(h.get("time", []))
 
@@ -405,6 +430,11 @@ def score_crag(zones, crag, models, marine, now):
         T, RH, TD, VP = (series(h, v) for v in ("temperature_2m", "relative_humidity_2m", "dew_point_2m", "vapour_pressure_deficit"))
         PR, CC, FG, VIS = (series(h, v) for v in ("precipitation", "cloud_cover", "cloud_cover_2m", "visibility"))
         WS, WD, SS = (series(h, v) for v in ("wind_speed_10m", "wind_direction_10m", "sunshine_duration"))
+
+        dmax = {}
+        for t, v in zip(times, T):
+            if v is not None:
+                dmax[t[:10]] = max(dmax.get(t[:10], -99), v)
 
         # pass 1: sun, sea and the water film on the rock, for every hour including the past
         suns, seas, films = [], [], []
@@ -457,8 +487,11 @@ def score_crag(zones, crag, models, marine, now):
             f["seep"] = f_seep(r24, r72)
             pts = sum(v for v in f.values() if v is not None)
             wet = (PR[i] or 0) >= 0.2 or films[i] > 0.1 or f["fog"] <= -2
+            yd = (dt.date() - timedelta(days=1)).isoformat()
+            base = baseline_index(baseline_points(RH[i], WD[i], WS[i], sun_pts > 0, az, el, asp,
+                                                  dmax.get(dt.date().isoformat()), dmax.get(yd), seas[i][0]))
             rows[t] = {
-                "pts": pts, "index": to_index(pts), "f": f, "wet": wet, "margin": margin, "rock": rock,
+                "pts": pts, "index": to_index(pts), "base": base, "f": f, "wet": wet, "margin": margin, "rock": rock,
                 "rh": RH[i], "ws": WS[i], "wd": WD[i], "sun": sun_note, "ft": seas[i][1], "film": films[i],
                 "note": wnote, "fog": FG[i], "vis": VIS[i], "w": model_weight(mid, weight, dt, now),
             }
@@ -468,13 +501,15 @@ def score_crag(zones, crag, models, marine, now):
     all_times = sorted({t for rows in per_model.values() for t in rows})
     hours = []
     for t in all_times:
-        vals, wsum, weighted, nwet, detail = [], 0.0, 0.0, 0, None
+        vals, bases, wsum, weighted, bweighted, nwet, detail = [], [], 0.0, 0.0, 0.0, 0, None
         for mid, mlabel, _d, _w in MODELS:
             r = per_model.get(mid, {}).get(t)
             if r is None:
                 continue
             vals.append((mlabel, r["index"]))
+            bases.append((mlabel, r["base"]))
             weighted += r["index"] * r["w"]
+            bweighted += (r["base"] or 0) * r["w"]
             wsum += r["w"]
             nwet += 1 if r["wet"] else 0
             if detail is None:
@@ -482,7 +517,8 @@ def score_crag(zones, crag, models, marine, now):
         if not vals:
             continue
         hours.append({"t": t, "index": weighted / wsum, "spread": max(v for _l, v in vals) - min(v for _l, v in vals),
-                      "n": len(vals), "wet": nwet / len(vals), "models": vals, "d": detail})
+                      "n": len(vals), "wet": nwet / len(vals), "models": vals, "d": detail,
+                      "base": bweighted / wsum, "base_models": bases})
 
     return hours
 
@@ -622,12 +658,17 @@ def backscore(cfg, entry):
     win = [h for h in hours if entry["from"] <= int(h["t"][11:13]) < entry["to"]]
     if not win:
         return None
-    per = {}
+    per, bper = {}, {}
     for h in win:
         for lab, sc in h["models"]:
             per.setdefault(lab, []).append(sc)
+        for lab, sc in h["base_models"]:
+            if sc is not None:
+                bper.setdefault(lab, []).append(sc)
     return {"index": sum(h["index"] for h in win) / len(win), "wet": sum(h["wet"] for h in win) / len(win),
-            "models": {lab: sum(v) / len(v) for lab, v in per.items()}}
+            "models": {lab: sum(v) / len(v) for lab, v in per.items()},
+            "base": sum(h["base"] for h in win) / len(win),
+            "base_models": {lab: sum(v) / len(v) for lab, v in bper.items()}}
 
 
 def band_miss(x, feel):
@@ -638,6 +679,28 @@ def band_miss(x, feel):
     if x >= hi:
         return x - (hi - 1)
     return 0.0
+
+
+def write_calibration_csv(cache):
+    """Flat table of every scored day, for importing into a spreadsheet."""
+    import csv
+    labs = [lab for _m, lab, _d, _w in MODELS]
+    rows = sorted((v for v in cache.values() if v.get("grip") is not None), key=lambda v: (v["date"], v["crag"]))
+    with open(CAL_CSV, "w", newline="") as f:
+        wr = csv.writer(f)
+        wr.writerow(["date", "crag", "from", "to", "felt", "felt_low", "felt_high", "grip", "grip_miss"]
+                    + [f"grip_{lab.lower().replace(' ', '_')}" for lab in labs]
+                    + ["baseline", "baseline_miss"] + [f"baseline_{lab.lower().replace(' ', '_')}" for lab in labs]
+                    + ["wet_risk", "problems"])
+        for v in rows:
+            lo, hi = FEEL_RANGE[v["feel"]]
+            r2 = lambda x: "" if x is None else f"{x:.1f}"  # noqa: E731
+            wr.writerow([v["date"], v["crag"], f'{v["from"]:02d}:00', f'{v["to"]:02d}:00', v["feel"], lo, min(hi - 1, 10),
+                         r2(v["grip"]), r2(band_miss(v["grip"], v["feel"]))]
+                        + [r2(v.get("models", {}).get(lab)) for lab in labs]
+                        + [r2(v.get("base")), r2(band_miss(v["base"], v["feel"]) if v.get("base") is not None else None)]
+                        + [r2(v.get("base_models", {}).get(lab)) for lab in labs]
+                        + [r2(v.get("wet")), v.get("problems", "")])
 
 
 def calibrate(cfg, limit=5):
@@ -664,12 +727,14 @@ def calibrate(cfg, limit=5):
             log(f"Back-scoring failed for {key}: {ex}")
             res = None
         cache[key] = {**e, "grip": res["index"] if res else None, "wet": res["wet"] if res else None,
-                      "models": res["models"] if res else {}}
+                      "models": res["models"] if res else {}, "base": res["base"] if res else None,
+                      "base_models": res["base_models"] if res else {}}
     cache = {k: v for k, v in cache.items() if k.startswith(MODEL_VERSION + "|")}
     if done:
         with open(CAL_FILE, "w") as f:
             json.dump(cache, f, indent=1, sort_keys=True)
             f.write("\n")
+    write_calibration_csv(cache)
     scored = [v for v in cache.values() if v.get("grip") is not None]
     pending = [e for e in entries if f'{MODEL_VERSION}|{e["crag"]}|{e["date"]}|{e["from"]}|{e["to"]}|{e["feel"]}' not in cache]
     if not scored:
