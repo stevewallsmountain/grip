@@ -57,7 +57,7 @@
 "Logie Head (Tidal Zone)":{"birds":{"months":[4,5,6,7],"level":"affected","note":"Birds can be a problem in the nesting season at the seaward end of the ridge (UKC); months not confirmed"}},
 "Logie Head (South Buttress)":{"birds":{"months":[4,5,6,7],"level":"affected","note":"Birds can be a problem in the nesting season at the seaward end of the ridge (UKC); months not confirmed"}},
 "South Cove (Kettle Walls)":{"seeps":null,"birds":{"months":[4,5,6,7,8],"level":"restricted","note":"Birds nest on the cliff April to August (SMC)"}},
-"Crazy Band Walls and The Shag’s Hole (Water Worn Wall)":{"seeps":null},
+"Crazy Band Walls and The Shag’s Hole (Water Worn Wall)":{"seeps":null,"seep_note":"Does not seep badly; dries out for long periods every year (developers' notes, 2020)"},
 "Crazy Band Walls and The Shag’s Hole (North Wall)":{"seeps":null,"birds":{"months":[5,6,7,8],"level":"affected","note":"Ledges birdy during the nesting season, late April to August (SMC)"}},
 "The Red Cliff":{"birds":{"months":[4,5,6,7,8],"level":"affected","note":"Nesting gulls occupy most of the holds April to August; mess slow to clear, can prohibit climbing into winter (SMC)"}},
 "Bruin Cove":{"birds":{"months":[4,5,6,7,8],"level":"affected","note":"Heavily affected by nesting birds April to August (SMC)"}},
@@ -70,7 +70,9 @@
 "The Round Tower":{"birds":{"months":[5,6,7,8],"level":"affected","note":"Most climbs messed up with kittiwake nests in summer (SMC)"}},
 "Saviours Wall":{"birds":{"months":[4,5,6,7,8],"level":"affected","note":"Nesting kittiwakes April to August (SMC)"}},
 "Pow Kebbuck":{"birds":{"months":[6,7,8],"level":"affected","note":"Birds in summer (SMC)"}},
-"South Cove (Main Face)":{"birds":{"months":[4,5,6,7,8],"level":"affected","note":"Birds nest spring to summer between The Slide and Insect Groove; they leave in August, nests can linger into autumn (SMC)"}}
+"South Cove (Main Face)":{"birds":{"months":[4,5,6,7,8],"level":"affected","note":"Birds nest spring to summer between The Slide and Insect Groove; they leave in August, nests can linger into autumn (SMC)"}},
+"Crazy Band Walls and The Shag’s Hole (Crazy Band Cliff)":{"seeps":true,"seep_note":"Seeps badly, especially at the left end; does not usually dry out until May, and wet holds remain after that (developers' notes, 2020)","seep_until_month":5,"aspect":"E"},
+"Buchan Walls":{"birds":{"months":[4,5,6,7],"level":"affected","note":"A few kittiwake and cormorant nests on the lower left side (developers' notes, 2024); months not confirmed"},"seep_note":"One corner sometimes carries a wet streak (developers' notes, 2024)"}
 },
 "drop":[]
 }
