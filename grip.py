@@ -12,6 +12,7 @@ import json
 import math
 import os
 import random
+import re
 import sys
 import time
 import urllib.parse
@@ -55,9 +56,26 @@ NOTES_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9y
 NOTES_CRAG = "entry.1230562053"
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
-MODEL_VERSION = "3.1"  # bump when the scoring or crag details change; logged days are then re-scored
+MODEL_VERSION = "3.2"  # bump when the scoring or crag details change; logged days are then re-scored
 CAL_CSV = os.path.join(HERE, "calibration.csv")
 FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
+LABEL_ALIASES = {  # names used in logs before the crag list was rebuilt from the SMC database
+    "Souter Head (Grassy Pinnacle South Wall)": "Souter Head (Grassy Pinnacle – South Wall)",
+    "Souter Head (Grassy Pinnacle East Wall)": "Souter Head (Grassy Pinnacle – East Wall)",
+    "Souter Head (Jade Buttress)": "Souter Head (Jade Buttress Area – Overhanging Gully)",
+    "Newtonhill (Backdoor Wall)": "Newtonhill North (Back Door Wall)",
+    "Newtonhill (Harbour Wall)": "Newtonhill North (Harbour Wall)",
+    "Logie Head (Embankment)": "Logie Head (Embankment One)",
+    "Murray Heugh (Everready Slab)": "Murray Heugh (Eveready Slab)",
+    "Murray Heugh (Main walls)": "Murray Heugh (Main Face)",
+    "Murdoch Head (Round Tower)": "The Round Tower",
+    "Murdoch Head (East Wall)": "The Warlord Cliff",
+    "Murdoch Head (Revision Slab and Broke Back Wall)": "North Glash Quarry",
+    "Rosehearty": "Murcurry",
+    "Red Wall": "The Red Wall",
+    "Meackie Point": "Meackie Point (Point Wall)",
+    "Redhythe Point": "Redhythe Point Eastern Area",
+}
 FEEL_RANGE = {"Soaked": (0, 2), "Greasy": (2, 4), "Usable": (4, 6), "Crisp": (6, 8), "Prime": (8, 11)}  # lower edge included, upper excluded
 
 COMPASS = {"N": 0, "NNE": 22.5, "NE": 45, "ENE": 67.5, "E": 90, "ESE": 112.5,
@@ -340,12 +358,13 @@ def f_wind(kmh, is_onshore, sheltered):
     return pts
 
 
-def f_sea(h_m, wave_dir, period, aspect, inlet=False):
+def f_sea(h_m, wave_dir, period, aspect, inlet=False, sea_sheltered=False):
     """Sea state at the wall. Waves from behind or along the face are discounted, less so for long swell.
-    In a narrow inlet the swell funnels and reflects: the height counts 1.5 times and no direction discount applies."""
+    In a narrow inlet the swell funnels and reflects: the height counts 1.5 times and no direction discount applies.
+    A wall protected from the open sea by offshore rock counts the swell at half height."""
     if h_m is None:
         return None, None, None
-    eff = h_m * 1.5 if inlet else h_m
+    eff = h_m * 1.5 if inlet else h_m * 0.5 if sea_sheltered else h_m
     if not inlet and aspect is not None and wave_dir is not None and ang_diff(wave_dir, aspect) > 90:
         eff = h_m * (0.7 if (period or 0) >= 9 else 0.4)
     ft = eff * 3.281
@@ -469,7 +488,7 @@ def score_crag(zones, crag, models, marine, now):
             az, el = sun_position(dt.astimezone(timezone.utc), z["lat"], z["lon"])
             sun_pts, sun_note = f_sun(SS[i], CC[i], az, el, asp)
             suns.append((sun_pts, sun_note, az, el))
-            sea = f_sea(marine_at(t, "wave_height"), marine_at(t, "wave_direction"), marine_at(t, "wave_period"), asp, bool(crag.get("inlet")))
+            sea = f_sea(marine_at(t, "wave_height"), marine_at(t, "wave_direction"), marine_at(t, "wave_period"), asp, bool(crag.get("inlet")), bool(crag.get("sea_sheltered")))
             seas.append(sea)
             vpd = VP[i]
             if vpd is None and T[i] is not None and RH[i] is not None:
@@ -704,7 +723,7 @@ def backscore(cfg, entry):
     crags = {label(c): c for c in cfg["crags"]}
     for c in cfg["crags"]:  # a bare crag name in the log means its first listed wall
         crags.setdefault(c["name"], c)
-    crag = crags.get(entry["crag"])
+    crag = crags.get(LABEL_ALIASES.get(entry["crag"], entry["crag"]))
     if crag is None:
         return None
     d = date.fromisoformat(entry["date"])
@@ -980,6 +999,58 @@ def note_link(c):
     return f"{NOTES_URL}?usp=pp_url&{NOTES_CRAG}={urllib.parse.quote(label(c))}"
 
 
+def slug(name):
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+
+
+def render_detail(gname, walls, tides, now, today):
+    """Hour-by-hour page for one crag (all its walls, three days)."""
+    out = []
+    w = out.append
+    w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
+    w(f"<title>{escape(gname)}: Grip hour by hour</title>")
+    w('<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet">')
+    w(f"<style>{CSS}</style></head><body><main>")
+    r0, t0 = best_wall(walls, today.isoformat())
+    summ = f"today {fmt(t0['index'])}, best {t0['start']} to {t0['end']}" + (f" on {r0['crag'].get('wall') or 'the main face'}" if len(walls) > 1 else "") if t0 else "no hours left today"
+    w(f"<h1>{escape(gname)}</h1><p class=\"updated\">Hour by hour, next three days. {escape(summ[0].upper() + summ[1:])}. Scores are the blend of the models; the breakdown columns show the Met Office figures. Updated {now.strftime('%a %-d %b, %H:%M')}. <a href=\"../\">Back to the forecast</a></p>")
+    for r in walls:
+        c = r["crag"]
+        if len(walls) > 1:
+            w(f'<h3 style="font:600 1.05rem \'Barlow Condensed\',system-ui,sans-serif;margin:12px 0 4px">{escape(c.get("wall") or "Main face")} <small style="font-weight:400;color:var(--muted)">{escape(c.get("aspect") or "aspect unknown")}</small></h3>')
+        w('<div class="wrap"><table class="hours"><thead><tr><th>Time</th><th>Grip</th><th>Wet risk</th><th>Humidity</th>'
+          '<th>Rock vs dew point</th><th>Wind</th><th>Sun</th><th>Sea</th><th>Breakdown (points)</th><th>Models</th></tr></thead><tbody>')
+        last_day = None
+        for hr in r["hours"]:
+            d = hr["t"][:10]
+            if date.fromisoformat(d) > today + timedelta(days=2):
+                break
+            if d != last_day:
+                lt = tides.get(c["zone"], {}).get(d, [])
+                tide = f" (low water {', '.join(lt)})" if lt else ""
+                w(f'<tr class="dayrow"><td colspan="10">{date.fromisoformat(d).strftime("%A %-d %b")}{tide}</td></tr>')
+                last_day = d
+            x = hr["d"]
+            f = x["f"]
+            name, note, css = band(hr["index"])
+            wind = f'{compass(x["wd"])} {x["ws"]:.0f} km/h' if x["ws"] is not None else "?"
+            sea = f'{x["ft"]:.1f} ft' if x["ft"] is not None else "-"
+            rh = f'{x["rh"]:.0f}%' if x["rh"] is not None else "?"
+            margin = f'{x["margin"]:+.1f}°C' if x["margin"] is not None else "-"
+            brk = (f'air {fpt(f["air"])}, fog {fpt(f["fog"])}, dew {fpt(f["dew"])}, wind {fpt(f["wdir"])}/{fpt(f["wind"])}, '
+                   f'sun {fpt(f["sun"])}, sea {fpt(f["sea"])}, wet {fpt(f["wet"])}, seep {fpt(f["seep"])}')
+            if x["note"]:
+                brk += f' ({x["note"]})'
+            mods = ", ".join(f"{lab[:3]} {s:.0f}" for lab, s in hr["models"])
+            w(f'<tr><td>{hr["t"][11:16]}</td><td class="s"><span class="num {css}" style="font-size:.85rem;padding:2px 6px">{fmt(hr["index"])}</span></td>'
+              f'<td>{pct(hr["wet"])}</td><td>{rh}</td><td>{margin}</td><td>{wind}</td><td>{escape(x["sun"])}</td><td>{sea}</td>'
+              f'<td>{escape(brk)}</td><td>{escape(mods)}</td></tr>')
+        w("</tbody></table></div>")
+
+    w("</main></body></html>")
+    return "".join(out)
+
+
 def render(results, tides, now, cfg, models_ok, cal=None):
     zones = cfg["zones"]
     today = now.date()
@@ -1045,11 +1116,14 @@ def render(results, tides, now, cfg, models_ok, cal=None):
         dd = date.fromisoformat(d)
         w(f"<th>{dd.strftime('%a')}<br>{dd.day}</th>")
     w("</tr></thead><tbody>")
-    for zk, z in zones.items():
-        zgroups = [(n, walls) for n, walls in groups if walls[0]["crag"]["zone"] == zk]
-        if not zgroups:
-            continue
-        w(f'<tr class="zone"><th colspan="{len(all_days) + 1}">{escape(z["name"])}</th></tr>')
+    sections = []
+    for n, walls in groups:
+        sec = walls[0]["crag"].get("section") or zones[walls[0]["crag"]["zone"]]["name"]
+        if sec not in sections:
+            sections.append(sec)
+    for sec in sections:
+        zgroups = [(n, walls) for n, walls in groups if (walls[0]["crag"].get("section") or zones[walls[0]["crag"]["zone"]]["name"]) == sec]
+        w(f'<tr class="zone"><th colspan="{len(all_days) + 1}">{escape(sec)}</th></tr>')
         for gname, walls in zgroups:
             c0 = walls[0]["crag"]
             if len(walls) == 1:
@@ -1075,12 +1149,12 @@ def render(results, tides, now, cfg, models_ok, cal=None):
                     for wr in walls:
                         wd = wr["daily"].get(d)
                         if wd:
-                            parts.append(f'{wr["crag"].get("wall")}~{wd["index"]:.1f}~{wd["start"]} to {wd["end"]}~{wd["usable"]} of {wd["hours"]}~{pct(wd["wet"])}')
+                            parts.append(f'{wr["crag"].get("wall") or "Main face"}~{wd["index"]:.1f}~{wd["start"]} to {wd["end"]}~{wd["usable"]} of {wd["hours"]}~{pct(wd["wet"])}')
                     wl = "|".join(parts)
                 dd = date.fromisoformat(d).strftime("%a %-d %b")
                 w(f'<td><button type="button" class="cell {cls}" data-crag="{escape(gname)}" data-wall="{escape(c.get("wall") or "")}" data-day="{dd}" '
                   f'data-win="{v["start"]} to {v["end"]}" data-score="{v["index"]:.1f}" data-usable="{v["usable"]} of {v["hours"]}" data-drying="{escape(v["drying"])}" '
-                  f'data-wet="{pct(v["wet"])}" data-models="{escape(mods)}" data-walls="{escape(wl)}" data-log="{escape(log_link(c, d if date.fromisoformat(d) <= today else today.isoformat()))}" data-note="{escape(note_link(c))}" '
+                  f'data-wet="{pct(v["wet"])}" data-models="{escape(mods)}" data-walls="{escape(wl)}" data-log="{escape(log_link(c, d if date.fromisoformat(d) <= today else today.isoformat()))}" data-note="{escape(note_link(c))}" data-detail="detail/{slug(gname)}.html" '
                   f'data-birds="{escape(gb["note"]) if gb else ""}" '
                   f'aria-label="{escape(label(c))}, {dd}: {fmt(v["index"])}, {name}">{fmt(v["index"])}</button></td>')
             w("</tr>")
@@ -1093,44 +1167,8 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     w("</div>")
 
     w("<h2>Hour by hour</h2>")
-    w('<p class="hint">Scores are the blend of the models. The breakdown columns show the Met Office figures.</p>')
-    for gname, walls in groups:
-        r0, t0 = best_wall(walls, today.isoformat())
-        summ = f"today {fmt(t0['index'])}, best {t0['start']} to {t0['end']}" + (f" on {r0['crag']['wall']}" if len(walls) > 1 else "") if t0 else "no hours left today"
-        w(f"<details><summary>{escape(gname)} <small>{escape(summ)}</small></summary>")
-        for r in walls:
-            c = r["crag"]
-            if len(walls) > 1:
-                w(f'<h3 style="font:600 1.05rem \'Barlow Condensed\',system-ui,sans-serif;margin:12px 0 4px">{escape(c["wall"])} <small style="font-weight:400;color:var(--muted)">{escape(c.get("aspect") or "aspect unknown")}</small></h3>')
-            w('<div class="wrap"><table class="hours"><thead><tr><th>Time</th><th>Grip</th><th>Wet risk</th><th>Humidity</th>'
-              '<th>Rock vs dew point</th><th>Wind</th><th>Sun</th><th>Sea</th><th>Breakdown (points)</th><th>Models</th></tr></thead><tbody>')
-            last_day = None
-            for hr in r["hours"]:
-                d = hr["t"][:10]
-                if date.fromisoformat(d) > today + timedelta(days=2):
-                    break
-                if d != last_day:
-                    lt = tides.get(c["zone"], {}).get(d, [])
-                    tide = f" (low water {', '.join(lt)})" if lt else ""
-                    w(f'<tr class="dayrow"><td colspan="10">{date.fromisoformat(d).strftime("%A %-d %b")}{tide}</td></tr>')
-                    last_day = d
-                x = hr["d"]
-                f = x["f"]
-                name, note, css = band(hr["index"])
-                wind = f'{compass(x["wd"])} {x["ws"]:.0f} km/h' if x["ws"] is not None else "?"
-                sea = f'{x["ft"]:.1f} ft' if x["ft"] is not None else "-"
-                rh = f'{x["rh"]:.0f}%' if x["rh"] is not None else "?"
-                margin = f'{x["margin"]:+.1f}°C' if x["margin"] is not None else "-"
-                brk = (f'air {fpt(f["air"])}, fog {fpt(f["fog"])}, dew {fpt(f["dew"])}, wind {fpt(f["wdir"])}/{fpt(f["wind"])}, '
-                       f'sun {fpt(f["sun"])}, sea {fpt(f["sea"])}, wet {fpt(f["wet"])}, seep {fpt(f["seep"])}')
-                if x["note"]:
-                    brk += f' ({x["note"]})'
-                mods = ", ".join(f"{lab[:3]} {s:.0f}" for lab, s in hr["models"])
-                w(f'<tr><td>{hr["t"][11:16]}</td><td class="s"><span class="num {css}" style="font-size:.85rem;padding:2px 6px">{fmt(hr["index"])}</span></td>'
-                  f'<td>{pct(hr["wet"])}</td><td>{rh}</td><td>{margin}</td><td>{wind}</td><td>{escape(x["sun"])}</td><td>{sea}</td>'
-                  f'<td>{escape(brk)}</td><td>{escape(mods)}</td></tr>')
-            w("</tbody></table></div>")
-        w("</details>")
+    w('<p class="hint">Each crag has its own hour-by-hour page for the next three days, with every wall and the full factor breakdown. Tap a score above and follow the link, or pick a crag here.</p>')
+    w('<p class="hint">' + " &middot; ".join(f'<a href="detail/{slug(n)}.html">{escape(n)}</a>' for n, _ws in groups) + "</p>")
 
     w('<h2>Checking Grip against real days</h2><div class="method">')
     if cal is None:
@@ -1180,13 +1218,13 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "pulled 30% towards the sea temperature (60% at tidal walls, which stand in it), warmed by up to 3&deg;C when the sun is on the face, and cooled by 1.5&deg;C under a clear sky with little wind when the sun is below 15 degrees or gone. "
       "That covers warm damp air after a cold spell, cold-sea sweating in spring, dew at dawn and the damp that arrives as the sun leaves a face.</td></tr>"
       "<tr><td>Wind direction</td><td>-1 straight onshore, +1 straight offshore, 0 along the shore, with the effect shrinking to nothing in a calm (full from 15 km/h)</td>"
-      "<td>Onshore air is moist and salty. Aberdeen and Buchan count as facing east-south-east, Rosehearty and Cullen as facing north.</td></tr>"
+      "<td>Onshore air is moist and salty. The Aberdeenshire coast counts as facing east-south-east, the Banff and Moray coast as facing north.</td></tr>"
       "<tr><td>Wind strength</td><td>Under 5 km/h -1, 5-15 +1, 15-35 +2, over 35 +1, after halving the speed at sheltered crags. Onshore wind over 25 km/h -1, over 40 km/h -2. Positive points are halved while the rock is wet</td>"
       "<td>Wind clears damp air off the rock and speeds drying, but a gale onshore carries spray.</td></tr>"
       "<tr><td>Sun</td><td>Cloud 0, sun +1, sun on the face +3 (+2 when the sun is under 10 degrees up). Halved while the rock is wet</td>"
       "<td>Direct sun warms the rock above the dew point and dries it. On the face means within 60 degrees of the wall's aspect.</td></tr>"
       "<tr><td>Sea state</td><td>5 ft+ -2, 2.5-5 ft -1, 1-2.5 ft 0, under 1 ft +1</td>"
-      "<td>Spray wets the rock and lays down fresh salt. Waves from behind or along the face count at 40%, or 70% for long-period swell, which wraps round headlands. In narrow inlets the swell funnels and reflects, so the height counts 1.5 times from any direction.</td></tr>"
+      "<td>Spray wets the rock and lays down fresh salt. Waves from behind or along the face count at 40%, or 70% for long-period swell, which wraps round headlands. In narrow inlets the swell funnels and reflects, so the height counts 1.5 times from any direction; walls protected by offshore rock count it at half.</td></tr>"
       "<tr><td>Water on the rock</td><td>Raining -5. Otherwise, by the water left on the rock: over 0.5 mm -3, 0.1-0.5 mm -2, a trace -1</td>"
       "<td>The film is tracked hour by hour. Rain adds to it, up to 2 mm; a big sea (over 2.5 m, or 2 m at tidal walls) adds a little spray; and at 85%+ humidity the salt draws in a thin brine film of up to 0.15 mm. "
       "It dries at a rate set by the vapour pressure deficit (how much more moisture the air can take), the wind (halved at sheltered crags) and sun on the face. "
@@ -1197,10 +1235,11 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "Tides are shown for planning but not scored, and so are nesting birds: a crag in its bird season is marked, not marked down. Model disagreement is shown rather than hidden: striped cells and the wet-rock risk tell you when the forecasts differ. "
       "The weightings are a first estimate and are being checked against real days; expect them to change.</p>")
     w('<p>Forecast data: <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0), including UK Met Office data (CC BY-SA 4.0). '
-      "Crag details from UKC and the SMC North East Outcrops guide.</p></div>")
+      "Crag details, aspects and tidal status from the <a href=\"https://routes.smc.org.uk/\">SMC routes database</a>, with local corrections; nesting bird notes from the SMC database and UKC.</p></div>")
     w('<dialog id="detail"><form method="dialog"><h3 id="d-title"></h3><p id="d-sub"></p><table id="d-models"></table>'
       '<p>The blend weights the Met Office 2 (1 beyond two days), ECMWF 1.5 and ICON 1.</p>'
       '<p id="d-birds" style="display:none;color:var(--ink)"></p>'
+      '<p><a id="d-detail" href="#">Hour by hour for this crag</a></p>'
       '<p><a id="d-log" href="#" target="_blank" rel="noopener">Log how it actually was</a> &middot; <a id="d-note" href="#" target="_blank" rel="noopener">Send a crag note</a></p><button>Close</button></form></dialog>')
     w("""<script>
 (function(){
@@ -1223,6 +1262,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       document.getElementById('d-models').innerHTML=rows;
       document.getElementById('d-log').href=b.dataset.log;
       document.getElementById('d-note').href=b.dataset.note;
+      document.getElementById('d-detail').href=b.dataset.detail;
       var bp=document.getElementById('d-birds'); if(b.dataset.birds){bp.textContent='Birds: '+b.dataset.birds; bp.style.display='block';} else {bp.style.display='none';}
       if(dlg.showModal){dlg.showModal();}else{dlg.setAttribute('open','');}
     });
@@ -1299,6 +1339,10 @@ def main():
     html = render(results, tides, now, cfg, models_ok, cal)
     with open(os.path.join(SITE_DIR, "index.html"), "w") as f:
         f.write(html)
+    os.makedirs(os.path.join(SITE_DIR, "detail"), exist_ok=True)
+    for gname, walls in groups_of(results):
+        with open(os.path.join(SITE_DIR, "detail", slug(gname) + ".html"), "w") as f:
+            f.write(render_detail(gname, walls, tides, now, now.date()))
     with open(os.path.join(SITE_DIR, ".nojekyll"), "w") as f:
         f.write("")
     log(f"Wrote page ({len(html) // 1024} KB), models: {', '.join(models_ok)}")
