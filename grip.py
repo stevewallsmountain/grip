@@ -55,7 +55,7 @@ NOTES_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9y
 NOTES_CRAG = "entry.1230562053"
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
-MODEL_VERSION = "2.6"  # bump when the scoring or crag details change; logged days are then re-scored
+MODEL_VERSION = "2.7"  # bump when the scoring or crag details change; logged days are then re-scored
 CAL_CSV = os.path.join(HERE, "calibration.csv")
 FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
 FEEL_RANGE = {"Soaked": (0, 2), "Greasy": (2, 4), "Usable": (4, 6), "Crisp": (6, 8), "Prime": (8, 11)}  # lower edge included, upper excluded
@@ -328,14 +328,15 @@ def f_wind_dir(deg, kmh, coast_faces):
     return -math.cos(math.radians(ang_diff(deg, coast_faces))) * strength
 
 
-def f_wind(kmh, is_onshore, sheltered):
-    """Drying by wind. Strong onshore wind brings spray."""
+def f_wind(kmh, is_onshore, sheltered, in_lee=False):
+    """Drying by wind at the rock. The speed is halved at sheltered crags and when the wind comes from
+    behind the wall (more than 90 degrees off its aspect). Onshore wind from force 4 up carries salt and spray."""
     if kmh is None:
         return None
-    k = kmh * 0.5 if sheltered else kmh
+    k = kmh * 0.5 if (sheltered or in_lee) else kmh
     pts = -1 if k < 5 else 1 if k <= 15 else 2 if k <= 35 else 1
-    if is_onshore and kmh >= 35:
-        pts -= 1
+    if is_onshore:
+        pts -= 2 if kmh >= 40 else 1 if kmh >= 25 else 0
     return pts
 
 
@@ -496,11 +497,15 @@ def score_crag(zones, crag, models, marine, now):
                 "fog": f_fog(FG[i], VIS[i]),
                 "dew": f_condensation(margin),
                 "wdir": f_wind_dir(WD[i], WS[i], coast),
-                "wind": f_wind(WS[i], is_on, sheltered),
+                "wind": f_wind(WS[i], is_on, sheltered, asp is not None and WD[i] is not None and ang_diff(WD[i], asp) > 90),
                 "sun": sun_pts,
                 "sea": seas[i][0],
             }
             f["wet"], wnote = f_wet(PR[i], films[i])
+            if films[i] > 0.1:  # wind and sun are already working through the film; count them at half weight on wet rock
+                if f["wind"] is not None and f["wind"] > 0:
+                    f["wind"] = f["wind"] / 2
+                f["sun"] = f["sun"] / 2
             f["seep"] = f_seep(r24, r72)
             pts = sum(v for v in f.values() if v is not None)
             wet = (PR[i] or 0) >= 0.2 or films[i] > 0.1 or f["fog"] <= -2
@@ -1161,9 +1166,9 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "That covers warm damp air after a cold spell, cold-sea sweating in spring, dew at dawn and the damp that arrives as the sun leaves a face.</td></tr>"
       "<tr><td>Wind direction</td><td>-1 straight onshore, +1 straight offshore, 0 along the shore, with the effect shrinking to nothing in a calm (full from 15 km/h)</td>"
       "<td>Onshore air is moist and salty. Aberdeen and Buchan count as facing east-south-east, Rosehearty and Cullen as facing north.</td></tr>"
-      "<tr><td>Wind strength</td><td>Under 5 km/h -1, 5-15 +1, 15-35 +2, over 35 +1; a further -1 for onshore wind over 35 km/h. Halved at sheltered crags</td>"
+      "<tr><td>Wind strength</td><td>Under 5 km/h -1, 5-15 +1, 15-35 +2, over 35 +1, after halving the speed at sheltered crags and whenever the wind comes from behind the wall. Onshore wind over 25 km/h -1, over 40 km/h -2. Positive points are halved while the rock is wet</td>"
       "<td>Wind clears damp air off the rock and speeds drying, but a gale onshore carries spray.</td></tr>"
-      "<tr><td>Sun</td><td>Cloud 0, sun +1, sun on the face +3 (+2 when the sun is under 10 degrees up)</td>"
+      "<tr><td>Sun</td><td>Cloud 0, sun +1, sun on the face +3 (+2 when the sun is under 10 degrees up). Halved while the rock is wet</td>"
       "<td>Direct sun warms the rock above the dew point and dries it. On the face means within 60 degrees of the wall's aspect.</td></tr>"
       "<tr><td>Sea state</td><td>5 ft+ -2, 2.5-5 ft -1, 1-2.5 ft 0, under 1 ft +1</td>"
       "<td>Spray wets the rock and lays down fresh salt. Waves from behind or along the face count at 40%, or 70% for long-period swell, which wraps round headlands.</td></tr>"
