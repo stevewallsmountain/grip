@@ -58,7 +58,7 @@ CAL_FILE = os.path.join(HERE, "calibration.json")
 MODEL_VERSION = "2.4"  # bump when the scoring or crag details change; logged days are then re-scored
 CAL_CSV = os.path.join(HERE, "calibration.csv")
 FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
-FEEL_RANGE = {"Soaked": (0, 2), "Greasy": (2, 4), "Usable": (4, 6), "Crisp": (6, 8), "Prime": (8, 10.01)}  # lower edge included, upper excluded
+FEEL_RANGE = {"Soaked": (0, 2), "Greasy": (2, 4), "Usable": (4, 6), "Crisp": (6, 8), "Prime": (8, 11)}  # lower edge included, upper excluded
 
 COMPASS = {"N": 0, "NNE": 22.5, "NE": 45, "ENE": 67.5, "E": 90, "ESE": 112.5,
            "SE": 135, "SSE": 157.5, "S": 180, "SSW": 202.5, "SW": 225,
@@ -739,6 +739,33 @@ def write_calibration_csv(cache):
                         + [r2(v.get("era_base")), r2(v.get("wet")), v.get("problems", "")])
 
 
+def merge_days(rows):
+    """Several logs of the same crag on the same day become one data point: scores averaged, felt band by majority."""
+    groups = {}
+    for v in rows:
+        groups.setdefault((v["crag"], v["date"]), []).append(v)
+    out = []
+    for (crag, d), vs in groups.items():
+        if len(vs) == 1:
+            out.append({**vs[0], "n_logs": 1})
+            continue
+        feels = [v["feel"] for v in vs]
+        feel = max(sorted(set(feels), key=lambda f: FEEL[f]), key=feels.count)
+
+        def avg(get):
+            xs = [get(v) for v in vs if get(v) is not None]
+            return sum(xs) / len(xs) if xs else None
+
+        labs = {lab for v in vs for lab in v.get("models", {})}
+        out.append({**vs[0], "feel": feel, "n_logs": len(vs),
+                    "from": min(v["from"] for v in vs), "to": max(v["to"] for v in vs),
+                    "grip": avg(lambda v: v.get("grip")), "wet": avg(lambda v: v.get("wet")),
+                    "models": {lab: avg(lambda v, lab=lab: v.get("models", {}).get(lab)) for lab in labs},
+                    "base": avg(lambda v: v.get("base")), "era": avg(lambda v: v.get("era")), "era_base": avg(lambda v: v.get("era_base")),
+                    "base_models": {lab: avg(lambda v, lab=lab: v.get("base_models", {}).get(lab)) for lab in labs}})
+    return out
+
+
 def calibrate(cfg, limit=5):
     """Score every logged day once, cache the result, and summarise how Grip compares with how it felt."""
     if os.environ.get("GRIP_FAKE"):
@@ -775,7 +802,7 @@ def calibrate(cfg, limit=5):
             json.dump(cache, f, indent=1, sort_keys=True)
             f.write("\n")
     write_calibration_csv(cache)
-    scored = [v for v in cache.values() if v.get("grip") is not None]
+    scored = merge_days([v for v in cache.values() if v.get("grip") is not None])
     pending = [e for e in entries if f'{MODEL_VERSION}|{e["crag"]}|{e["date"]}|{e["from"]}|{e["to"]}|{e["feel"]}' not in cache]
     if not scored:
         return {"n": 0, "pending": len(pending), "rows": []}
@@ -892,6 +919,15 @@ def groups_of(results):
     return out
 
 
+def birds_in(walls, days):
+    """The bird note for a crag if any of the given dates falls in its nesting months, else None."""
+    for r in walls:
+        b = r["crag"].get("birds")
+        if b and any(date.fromisoformat(d).month in set(b.get("months", [])) for d in days):
+            return b
+    return None
+
+
 def best_wall(walls, day_iso):
     """(wall result, its daily entry) with the highest score that day, or (None, None)."""
     best = (None, None)
@@ -961,8 +997,10 @@ def render(results, tides, now, cfg, models_ok, cal=None):
             lt = tides.get(r["crag"]["zone"], {}).get(day.isoformat(), [])
             tide = f" Low water {', '.join(lt)}." if lt else ""
             risk = f" Wet-rock risk {pct(d['wet'])}." if d["wet"] >= 0.3 else ""
+            b = birds_in([r], [day.isoformat()])
+            birds = (" Restricted for nesting birds." if b["level"] == "restricted" else " Nesting birds at this time of year.") if b else ""
             w(f'<div class="bet"><div class="num {css}">{fmt(s)}</div><div><div class="who">{escape(label(r["crag"]))}</div>'
-              f'<div class="sub">{name}, best {d["start"]} to {d["end"]}; {d["usable"]} of {d["hours"]} daylight hours usable.{risk}{tide}</div></div></div>')
+              f'<div class="sub">{name}, best {d["start"]} to {d["end"]}; {d["usable"]} of {d["hours"]} daylight hours usable.{risk}{birds}{tide}</div></div></div>')
         w("</div>")
     w("</section>")
 
@@ -984,6 +1022,9 @@ def render(results, tides, now, cfg, models_ok, cal=None):
                 sub = ", ".join(x for x in (c0.get("aspect") or "aspect unknown", c0["type"]) if x)
             else:
                 sub = f"{len(walls)} walls, best shown"
+            gb = birds_in(walls, all_days)
+            if gb:
+                sub += ". Restricted: nesting birds" if gb["level"] == "restricted" else ". Nesting birds"
             w(f'<tr><th class="crag">{escape(gname)}<small>{escape(sub)}</small></th>')
             for d in all_days:
                 r, v = best_wall(walls, d)
@@ -1006,6 +1047,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
                 w(f'<td><button type="button" class="cell {cls}" data-crag="{escape(gname)}" data-wall="{escape(c.get("wall") or "")}" data-day="{dd}" '
                   f'data-win="{v["start"]} to {v["end"]}" data-score="{v["index"]:.1f}" data-usable="{v["usable"]} of {v["hours"]}" '
                   f'data-wet="{pct(v["wet"])}" data-models="{escape(mods)}" data-walls="{escape(wl)}" data-log="{escape(log_link(c, d if date.fromisoformat(d) <= today else today.isoformat()))}" data-note="{escape(note_link(c))}" '
+                  f'data-birds="{escape(gb["note"]) if gb else ""}" '
                   f'aria-label="{escape(label(c))}, {dd}: {fmt(v["index"])}, {name}">{fmt(v["index"])}</button></td>')
             w("</tr>")
     w("</tbody></table></div>")
@@ -1083,7 +1125,8 @@ def render(results, tides, now, cfg, models_ok, cal=None):
         for v in cal["rows"]:
             cells = "".join(f'<td>{chip(v.get("models", {}).get(lab))}</td>' for _m, lab, _d, _w in MODELS) + f'<td>{chip(v.get("era"))}</td>'
             lo, hi = FEEL_RANGE[v["feel"]]
-            w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(v["crag"])}</td><td>{escape(v["feel"])} ({lo:g} to {min(hi - 1, 10):g})</td>'
+            times = f' <small>({v["n_logs"]} logs)</small>' if v.get("n_logs", 1) > 1 else ""
+            w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(v["crag"])}{times}</td><td>{escape(v["feel"])} ({lo:g} to {min(hi - 1, 10):g})</td>'
               f'<td>{chip(v["grip"])} {band(v["grip"])[0]}</td>{cells}</tr>')
         w("</table>")
     w("</div>")
@@ -1117,12 +1160,13 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "<tr><td>Seepage</td><td>5 mm+ of rain in the last 24 hours -2, 10 mm+ -3, a further -1 for 25 mm+ in the last three days</td>"
       "<td>Drainage after heavy rain lasts much longer than surface water.</td></tr></table>")
     w("<p>The index is 3 plus half the points, held between 0 and 10. Hours with the sun less than 5 degrees above the horizon are not scored. "
-      "Tides are shown for planning but not scored. Model disagreement is shown rather than hidden: striped cells and the wet-rock risk tell you when the forecasts differ. "
+      "Tides are shown for planning but not scored, and so are nesting birds: a crag in its bird season is marked, not marked down. Model disagreement is shown rather than hidden: striped cells and the wet-rock risk tell you when the forecasts differ. "
       "The weightings are a first estimate and are being checked against real days; expect them to change.</p>")
     w('<p>Forecast data: <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0), including UK Met Office data (CC BY-SA 4.0). '
       "Crag details from UKC and the SMC North East Outcrops guide.</p></div>")
     w('<dialog id="detail"><form method="dialog"><h3 id="d-title"></h3><p id="d-sub"></p><table id="d-models"></table>'
       '<p>The blend weights the Met Office 2 (1 beyond two days), ECMWF 1.5 and ICON 1.</p>'
+      '<p id="d-birds" style="display:none;color:var(--ink)"></p>'
       '<p><a id="d-log" href="#" target="_blank" rel="noopener">Log how it actually was</a> &middot; <a id="d-note" href="#" target="_blank" rel="noopener">Send a crag note</a></p><button>Close</button></form></dialog>')
     w("""<script>
 (function(){
@@ -1145,6 +1189,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       document.getElementById('d-models').innerHTML=rows;
       document.getElementById('d-log').href=b.dataset.log;
       document.getElementById('d-note').href=b.dataset.note;
+      var bp=document.getElementById('d-birds'); if(b.dataset.birds){bp.textContent='Birds: '+b.dataset.birds; bp.style.display='block';} else {bp.style.display='none';}
       if(dlg.showModal){dlg.showModal();}else{dlg.setAttribute('open','');}
     });
   });
