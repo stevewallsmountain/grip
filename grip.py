@@ -751,8 +751,8 @@ def calibrate(cfg, limit=5):
     for e in entries:
         key = f'{MODEL_VERSION}|{e["crag"]}|{e["date"]}|{e["from"]}|{e["to"]}|{e["feel"]}'
         age = (datetime.now(TZ).date() - date.fromisoformat(e["date"])).days
-        if key in cache and (cache[key].get("era") is not None or age < 8 or cache[key].get("grip") is None):
-            continue  # scored; or scored but the reanalysis was not out yet and may be now
+        if key in cache and (cache[key].get("era") is not None or cache[key].get("grip") is None):
+            continue  # fully scored, or could not be scored; a day whose reanalysis was not out yet is tried again
         if done >= limit:
             continue
         if age < 1:
