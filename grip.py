@@ -55,7 +55,7 @@ NOTES_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9y
 NOTES_CRAG = "entry.1230562053"
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
-MODEL_VERSION = "3.0"  # bump when the scoring or crag details change; logged days are then re-scored
+MODEL_VERSION = "3.1"  # bump when the scoring or crag details change; logged days are then re-scored
 CAL_CSV = os.path.join(HERE, "calibration.csv")
 FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
 FEEL_RANGE = {"Soaked": (0, 2), "Greasy": (2, 4), "Usable": (4, 6), "Crisp": (6, 8), "Prime": (8, 11)}  # lower edge included, upper excluded
@@ -289,14 +289,15 @@ def f_sun(sunshine_s, cloud, az, el, aspect):
     return 1, "sun"
 
 
-def rock_temp(t_air, t_mean24, sst, sun_pts, cloud, wind, el):
-    """Rock surface temperature estimate: lags the air, pulled towards the sea, warmed by direct sun,
-    and radiating heat away under a clear sky when the sun is low or gone."""
+def rock_temp(t_air, t_mean24, sst, sun_pts, cloud, wind, el, tidal=False):
+    """Rock surface temperature estimate: lags the air, pulled towards the sea (hard, for walls that stand in it),
+    warmed by direct sun, and radiating heat away under a clear sky when the sun is low or gone."""
     if t_air is None or t_mean24 is None:
         return None
     base = 0.4 * t_air + 0.6 * t_mean24
     if sst is not None:
-        base = 0.7 * base + 0.3 * sst
+        pull = 0.6 if tidal else 0.3
+        base = (1 - pull) * base + pull * sst
     base += {3: 3.0, 2: 2.0, 1: 0.5}.get(sun_pts, 0.0)
     if el < 15 and (cloud is None or cloud < 50) and (wind or 0) < 15:
         base -= 1.5
@@ -339,12 +340,13 @@ def f_wind(kmh, is_onshore, sheltered):
     return pts
 
 
-def f_sea(h_m, wave_dir, period, aspect):
-    """Sea state at the wall. Waves from behind or along the face are discounted, less so for long swell."""
+def f_sea(h_m, wave_dir, period, aspect, inlet=False):
+    """Sea state at the wall. Waves from behind or along the face are discounted, less so for long swell.
+    In a narrow inlet the swell funnels and reflects: the height counts 1.5 times and no direction discount applies."""
     if h_m is None:
         return None, None, None
-    eff = h_m
-    if aspect is not None and wave_dir is not None and ang_diff(wave_dir, aspect) > 90:
+    eff = h_m * 1.5 if inlet else h_m
+    if not inlet and aspect is not None and wave_dir is not None and ang_diff(wave_dir, aspect) > 90:
         eff = h_m * (0.7 if (period or 0) >= 9 else 0.4)
     ft = eff * 3.281
     pts = -2 if ft >= 5 else -1 if ft >= 2.5 else 0 if ft >= 1 else 1
@@ -467,7 +469,7 @@ def score_crag(zones, crag, models, marine, now):
             az, el = sun_position(dt.astimezone(timezone.utc), z["lat"], z["lon"])
             sun_pts, sun_note = f_sun(SS[i], CC[i], az, el, asp)
             suns.append((sun_pts, sun_note, az, el))
-            sea = f_sea(marine_at(t, "wave_height"), marine_at(t, "wave_direction"), marine_at(t, "wave_period"), asp)
+            sea = f_sea(marine_at(t, "wave_height"), marine_at(t, "wave_direction"), marine_at(t, "wave_period"), asp, bool(crag.get("inlet")))
             seas.append(sea)
             vpd = VP[i]
             if vpd is None and T[i] is not None and RH[i] is not None:
@@ -497,7 +499,7 @@ def score_crag(zones, crag, models, marine, now):
                 continue
             past = [v for v in T[max(0, i - 24):i] if v is not None]
             tmean = sum(past) / len(past) if len(past) >= 12 else None
-            rock = rock_temp(T[i], tmean, marine_at(t, "sea_surface_temperature"), sun_pts, CC[i], WS[i], el)
+            rock = rock_temp(T[i], tmean, marine_at(t, "sea_surface_temperature"), sun_pts, CC[i], WS[i], el, bool(crag.get("tidal")))
             margin = (rock - TD[i]) if rock is not None and TD[i] is not None else None
             r24 = sum(v for v in PR[max(0, i - 24):i] if v is not None) if i >= 24 else None
             r72 = sum(v for v in PR[max(0, i - 72):i] if v is not None) if i >= 72 else None
@@ -1175,7 +1177,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "<td>Sea fog soaks the rock directly and stops any drying. It also adds to the water on the rock (0.1 mm an hour in thick haar, half that in patchy), so the rock stays damp after the haar lifts until the air and wind have dried it.</td></tr>"
       "<tr><td>Rock against dew point</td><td>Rock temperature minus dew point: 0 or less -4, up to 1&deg;C -3, up to 2&deg;C -2, up to 3&deg;C -1, over 5&deg;C +1</td>"
       "<td>Rock sweats when it is colder than the dew point. Rock temperature is estimated from the current air temperature (40%) and the last 24 hours' average (60%), "
-      "pulled 30% towards the sea temperature, warmed by up to 3&deg;C when the sun is on the face, and cooled by 1.5&deg;C under a clear sky with little wind when the sun is below 15 degrees or gone. "
+      "pulled 30% towards the sea temperature (60% at tidal walls, which stand in it), warmed by up to 3&deg;C when the sun is on the face, and cooled by 1.5&deg;C under a clear sky with little wind when the sun is below 15 degrees or gone. "
       "That covers warm damp air after a cold spell, cold-sea sweating in spring, dew at dawn and the damp that arrives as the sun leaves a face.</td></tr>"
       "<tr><td>Wind direction</td><td>-1 straight onshore, +1 straight offshore, 0 along the shore, with the effect shrinking to nothing in a calm (full from 15 km/h)</td>"
       "<td>Onshore air is moist and salty. Aberdeen and Buchan count as facing east-south-east, Rosehearty and Cullen as facing north.</td></tr>"
@@ -1184,7 +1186,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "<tr><td>Sun</td><td>Cloud 0, sun +1, sun on the face +3 (+2 when the sun is under 10 degrees up). Halved while the rock is wet</td>"
       "<td>Direct sun warms the rock above the dew point and dries it. On the face means within 60 degrees of the wall's aspect.</td></tr>"
       "<tr><td>Sea state</td><td>5 ft+ -2, 2.5-5 ft -1, 1-2.5 ft 0, under 1 ft +1</td>"
-      "<td>Spray wets the rock and lays down fresh salt. Waves from behind or along the face count at 40%, or 70% for long-period swell, which wraps round headlands.</td></tr>"
+      "<td>Spray wets the rock and lays down fresh salt. Waves from behind or along the face count at 40%, or 70% for long-period swell, which wraps round headlands. In narrow inlets the swell funnels and reflects, so the height counts 1.5 times from any direction.</td></tr>"
       "<tr><td>Water on the rock</td><td>Raining -5. Otherwise, by the water left on the rock: over 0.5 mm -3, 0.1-0.5 mm -2, a trace -1</td>"
       "<td>The film is tracked hour by hour. Rain adds to it, up to 2 mm; a big sea (over 2.5 m, or 2 m at tidal walls) adds a little spray; and at 85%+ humidity the salt draws in a thin brine film of up to 0.15 mm. "
       "It dries at a rate set by the vapour pressure deficit (how much more moisture the air can take), the wind (halved at sheltered crags) and sun on the face. "
