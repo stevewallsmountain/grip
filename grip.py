@@ -55,7 +55,7 @@ NOTES_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9y
 NOTES_CRAG = "entry.1230562053"
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
-MODEL_VERSION = "2.5"  # bump when the scoring or crag details change; logged days are then re-scored
+MODEL_VERSION = "2.6"  # bump when the scoring or crag details change; logged days are then re-scored
 CAL_CSV = os.path.join(HERE, "calibration.csv")
 FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
 FEEL_RANGE = {"Soaked": (0, 2), "Greasy": (2, 4), "Usable": (4, 6), "Crisp": (6, 8), "Prime": (8, 11)}  # lower edge included, upper excluded
@@ -319,6 +319,15 @@ def onshore(deg, coast_faces):
     return deg is not None and ang_diff(deg, coast_faces) <= 90
 
 
+def f_wind_dir(deg, kmh, coast_faces):
+    """Air-mass hint from wind direction: -1 straight onshore, +1 straight offshore, 0 along the shore,
+    scaled down to nothing in a calm (full effect from 15 km/h)."""
+    if deg is None:
+        return None
+    strength = min(1.0, (kmh or 0) / 15.0)
+    return -math.cos(math.radians(ang_diff(deg, coast_faces))) * strength
+
+
 def f_wind(kmh, is_onshore, sheltered):
     """Drying by wind. Strong onshore wind brings spray."""
     if kmh is None:
@@ -486,7 +495,7 @@ def score_crag(zones, crag, models, marine, now):
                 "air": f_air(RH[i]),
                 "fog": f_fog(FG[i], VIS[i]),
                 "dew": f_condensation(margin),
-                "wdir": (-1 if is_on else 1) if WD[i] is not None else None,
+                "wdir": f_wind_dir(WD[i], WS[i], coast),
                 "wind": f_wind(WS[i], is_on, sheltered),
                 "sun": sun_pts,
                 "sea": seas[i][0],
@@ -1150,7 +1159,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "<td>Rock sweats when it is colder than the dew point. Rock temperature is estimated from the current air temperature (40%) and the last 24 hours' average (60%), "
       "pulled 30% towards the sea temperature, warmed by up to 3&deg;C when the sun is on the face, and cooled by 1.5&deg;C under a clear sky with little wind when the sun is below 15 degrees or gone. "
       "That covers warm damp air after a cold spell, cold-sea sweating in spring, dew at dawn and the damp that arrives as the sun leaves a face.</td></tr>"
-      "<tr><td>Wind direction</td><td>Onshore -1, offshore +1, relative to the coastline</td>"
+      "<tr><td>Wind direction</td><td>-1 straight onshore, +1 straight offshore, 0 along the shore, with the effect shrinking to nothing in a calm (full from 15 km/h)</td>"
       "<td>Onshore air is moist and salty. Aberdeen and Buchan count as facing east-south-east, Rosehearty and Cullen as facing north.</td></tr>"
       "<tr><td>Wind strength</td><td>Under 5 km/h -1, 5-15 +1, 15-35 +2, over 35 +1; a further -1 for onshore wind over 35 km/h. Halved at sheltered crags</td>"
       "<td>Wind clears damp air off the rock and speeds drying, but a gale onshore carries spray.</td></tr>"
