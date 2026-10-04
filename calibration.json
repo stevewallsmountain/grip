@@ -1,4 +1,27 @@
 {
+ "2.8|Brown Crag|2026-09-13|10|15|Usable": {
+  "base": 6.454106280193237,
+  "base_models": {
+   "ECMWF": 6.956521739130435,
+   "ICON": 6.608695652173912,
+   "Met Office": 6.0
+  },
+  "crag": "Brown Crag",
+  "date": "2026-09-13",
+  "era": 5.664116896679327,
+  "era_base": 7.043478260869565,
+  "feel": "Usable",
+  "from": 10,
+  "grip": 4.676130871093557,
+  "models": {
+   "ECMWF": 5.745368327203806,
+   "ICON": 4.142213969725172,
+   "Met Office": 4.141161229695061
+  },
+  "problems": "Greasy or sweating",
+  "to": 15,
+  "wet": 0.0
+ },
  "2.8|Clashrodney|2026-10-03|11|15|Crisp": {
   "base": 7.765700483091788,
   "base_models": {
@@ -21,6 +44,29 @@
   "problems": "",
   "to": 15,
   "wet": 0.3333333333333333
+ },
+ "2.8|Craig Stirling|2026-09-26|11|18|Usable": {
+  "base": 7.895100069013112,
+  "base_models": {
+   "ECMWF": 7.950310559006211,
+   "ICON": 7.577639751552795,
+   "Met Office": 8.012422360248447
+  },
+  "crag": "Craig Stirling",
+  "date": "2026-09-26",
+  "era": 6.3052720553612565,
+  "era_base": 7.950310559006211,
+  "feel": "Usable",
+  "from": 11,
+  "grip": 6.195068748751656,
+  "models": {
+   "ECMWF": 6.162139781017479,
+   "ICON": 5.810794446251426,
+   "Met Office": 6.411902625802404
+  },
+  "problems": "Greasy or sweating",
+  "to": 18,
+  "wet": 0.0
  },
  "2.8|Craig Stirling|2026-10-01|17|19|Crisp": {
   "base": 7.729468599033816,
@@ -112,6 +158,52 @@
   },
   "problems": "",
   "to": 16,
+  "wet": 0.0
+ },
+ "2.8|Newtonhill (Backdoor Wall)|2026-09-27|9|12|Usable": {
+  "base": 4.99194847020934,
+  "base_models": {
+   "ECMWF": 5.507246376811594,
+   "ICON": 4.347826086956522,
+   "Met Office": 4.927536231884058
+  },
+  "crag": "Newtonhill (Backdoor Wall)",
+  "date": "2026-09-27",
+  "era": 2.43145929862794,
+  "era_base": 5.362318840579711,
+  "feel": "Usable",
+  "from": 9,
+  "grip": 1.5885731977289144,
+  "models": {
+   "ECMWF": 1.6951507090713889,
+   "ICON": 0.859094463062048,
+   "Met Office": 1.873379431555492
+  },
+  "problems": "Greasy or sweating, Spray from the sea",
+  "to": 12,
+  "wet": 0.1111111111111111
+ },
+ "2.8|Souter Head (Grassy Pinnacle South Wall)|2026-07-22|15|18|Greasy": {
+  "base": 7.858293075684379,
+  "base_models": {
+   "ECMWF": 8.115942028985508,
+   "ICON": 8.115942028985506,
+   "Met Office": 7.536231884057972
+  },
+  "crag": "Souter Head (Grassy Pinnacle South Wall)",
+  "date": "2026-07-22",
+  "era": 6.306061243790613,
+  "era_base": 7.826086956521739,
+  "feel": "Greasy",
+  "from": 15,
+  "grip": 6.025416899864584,
+  "models": {
+   "ECMWF": 6.015791032576279,
+   "ICON": 6.6864992815932744,
+   "Met Office": 5.702095109466465
+  },
+  "problems": "Greasy or sweating",
+  "to": 18,
   "wet": 0.0
  }
 }
