@@ -34,7 +34,8 @@
     {"name": "Murdoch Head", "wall": "East Wall", "zone": "buchan", "aspect": "E", "rock": "Granite", "type": "trad"},
     {"name": "Murdoch Head", "wall": "Revision Slab and Broke Back Wall", "zone": "buchan", "aspect": null, "rock": "Granite", "type": "sport"},
     {"name": "Rosehearty", "zone": "rosehearty", "aspect": "NW", "rock": "Greywacke", "type": "trad"},
-    {"name": "Logie Head", "zone": "cullen", "aspect": "E", "rock": "Greywacke", "type": "trad", "tidal": true},
+    {"name": "Logie Head", "wall": "Embankment", "zone": "cullen", "aspect": "SE", "rock": "Greywacke", "type": "trad"},
+    {"name": "Logie Head", "wall": "Star Zone", "zone": "cullen", "aspect": "SE", "rock": "Greywacke", "type": "trad", "tidal": true},
     {"name": "Redhythe Point", "zone": "cullen", "aspect": "N", "rock": "Unknown", "type": "trad"}
   ]
 }
