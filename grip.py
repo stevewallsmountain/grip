@@ -58,7 +58,7 @@ NOTES_CRAG = "entry.1230562053"
 NOTES_WALL = "entry.763167181"
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
-MODEL_VERSION = "3.3"  # bump when the scoring or crag details change; logged days are then re-scored
+MODEL_VERSION = "3.4"  # bump when the scoring or crag details change; logged days are then re-scored
 CAL_CSV = os.path.join(HERE, "calibration.csv")
 FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
 LABEL_ALIASES = {  # names used in logs before the crag list was rebuilt from the SMC database
@@ -349,11 +349,12 @@ def f_wind_dir(deg, kmh, coast_faces):
     return -math.cos(math.radians(ang_diff(deg, coast_faces))) * strength
 
 
-def in_shelter(sheltered, wind_dir, aspect):
-    """A sheltered wall (back of a bay or inlet) feels the wind only when it blows onto the face."""
+def in_shelter(sheltered, wind_dir, aspect, inlet=False):
+    """A sheltered wall at the back of a bay feels the wind only when it blows onto the face;
+    a wall in a narrow inlet is sheltered from every direction, its own walls break the wind up."""
     if not sheltered:
         return False
-    if wind_dir is None or aspect is None:
+    if inlet or wind_dir is None or aspect is None:
         return True
     return ang_diff(wind_dir, aspect) > 60
 
@@ -467,6 +468,7 @@ def score_crag(zones, crag, models, marine, now):
     asp = COMPASS.get(crag.get("aspect") or "", None)
     coast = z.get("coast_faces", 112.5)
     sheltered = bool(crag.get("sheltered"))
+    inlet = bool(crag.get("inlet"))
     zm = models.get(crag["zone"], {})
     mar = marine.get(crag["zone"], {})
     mar_idx = {t: i for i, t in enumerate(mar.get("time", []))}
@@ -515,7 +517,7 @@ def score_crag(zones, crag, models, marine, now):
             if sea[2] is not None and sea[2] >= (2.0 if crag.get("tidal") else 2.5):
                 film += 0.05  # spray: a big sea wets the rock a little, more readily at tidal walls
             film = min(2.0, film)
-            film = max(0.0, film - drying_rate(vpd, (WS[i] or 0) * (0.5 if in_shelter(sheltered, WD[i], asp) else 1.0), sun_pts))
+            film = max(0.0, film - drying_rate(vpd, (WS[i] or 0) * (0.5 if in_shelter(sheltered, WD[i], asp, inlet) else 1.0), sun_pts))
             films.append(film)
 
         # pass 2: score the daylight hours still to come
@@ -539,7 +541,7 @@ def score_crag(zones, crag, models, marine, now):
                 "fog": f_fog(FG[i], VIS[i]),
                 "dew": f_condensation(margin),
                 "wdir": f_wind_dir(WD[i], WS[i], coast),
-                "wind": f_wind(WS[i], is_on, in_shelter(sheltered, WD[i], asp)),
+                "wind": f_wind(WS[i], is_on, in_shelter(sheltered, WD[i], asp, inlet)),
                 "sun": sun_pts,
                 "sea": seas[i][0],
             }
@@ -1255,7 +1257,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "That covers warm damp air after a cold spell, cold-sea sweating in spring, dew at dawn and the damp that arrives as the sun leaves a face.</td></tr>"
       "<tr><td>Wind direction</td><td>-1 straight onshore, +1 straight offshore, 0 along the shore, with the effect shrinking to nothing in a calm (full from 15 km/h)</td>"
       "<td>Onshore air is moist and salty. The Aberdeenshire coast counts as facing east-south-east, the Banff and Moray coast as facing north.</td></tr>"
-      "<tr><td>Wind strength</td><td>Under 5 km/h -1, 5-15 +1, 15-35 +2, over 35 +1. At sheltered walls (the back of a bay or inlet) the speed is halved unless the wind blows onto the face. Onshore wind over 25 km/h -1, over 40 km/h -2. Positive points are halved while the rock is wet</td>"
+      "<tr><td>Wind strength</td><td>Under 5 km/h -1, 5-15 +1, 15-35 +2, over 35 +1. At sheltered walls at the back of a bay the speed is halved unless the wind blows onto the face; in a narrow inlet it is halved from every direction. Onshore wind over 25 km/h -1, over 40 km/h -2. Positive points are halved while the rock is wet</td>"
       "<td>Wind clears damp air off the rock and speeds drying, but a gale onshore carries spray.</td></tr>"
       "<tr><td>Sun</td><td>Cloud 0, sun +1, sun on the face +3 (+2 when the sun is under 10 degrees up). Halved while the rock is wet</td>"
       "<td>Direct sun warms the rock above the dew point and dries it. On the face means within 60 degrees of the wall's aspect.</td></tr>"
