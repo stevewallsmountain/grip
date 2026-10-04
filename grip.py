@@ -34,8 +34,8 @@ REANALYSIS_URL = "https://archive-api.open-meteo.com/v1/archive"  # ERA5 reanaly
 
 # id, label, forecast days requested, weight in the blend (Met Office drops to 1 beyond 48 h)
 MODELS = [
-    ("ukmo_seamless", "Met Office", 7, 2.0),
-    ("ecmwf_ifs025", "ECMWF", 8, 1.5),
+    ("ukmo_seamless", "Met Office", 7, 2.5),
+    ("ecmwf_ifs025", "ECMWF", 8, 1.0),
     ("icon_seamless", "ICON", 7, 1.0),
 ]
 HOURLY_FULL = [
@@ -1338,7 +1338,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     w('<p>Forecast data: <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0), including UK Met Office data (CC BY-SA 4.0). '
       "Crag details, aspects and tidal status from the <a href=\"https://routes.smc.org.uk/\">SMC routes database</a>, with local corrections; nesting bird notes from the SMC database and UKC.</p></div>")
     w('<dialog id="detail"><form method="dialog"><h3 id="d-title"></h3><p id="d-sub"></p><table id="d-models"></table>'
-      '<p>The blend weights the Met Office 2 (1 beyond two days), ECMWF 1.5 and ICON 1.</p>'
+      '<p>The blend weights the Met Office 2.5 (1 beyond two days), ECMWF 1 and ICON 1. The Met Office weight was raised after it landed in the felt band on 6 of the first 11 logged days against 3 for each of the others.</p>'
       '<p id="d-birds" style="display:none;color:var(--ink)"></p>'
       '<p><a id="d-detail" href="#">Hour by hour for this crag</a></p>'
       '<p><a id="d-log" href="#" target="_blank" rel="noopener">Log how it actually was</a> &middot; <a id="d-note" href="#" target="_blank" rel="noopener">Send a crag note</a></p><button>Close</button></form></dialog>')
