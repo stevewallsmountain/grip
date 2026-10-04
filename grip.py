@@ -53,7 +53,7 @@ FORM_CRAG = "entry.769015387"
 FORM_DATE = "entry.2085482145"
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
-MODEL_VERSION = "2.3"  # bump when the scoring or crag details change; logged days are then re-scored
+MODEL_VERSION = "2.4"  # bump when the scoring or crag details change; logged days are then re-scored
 CAL_CSV = os.path.join(HERE, "calibration.csv")
 FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
 FEEL_RANGE = {"Soaked": (0, 2), "Greasy": (2, 4), "Usable": (4, 6), "Crisp": (6, 8), "Prime": (8, 10.01)}  # lower edge included, upper excluded
@@ -254,7 +254,7 @@ def f_air(rh):
     """Air moisture. Linear, plus a step at 75% where sea salt on the rock goes wet."""
     if rh is None:
         return None
-    pts = max(-4.0, min(3.0, (76 - rh) / 5))
+    pts = min(4.0, (76 - rh) / 4) if rh <= 76 else max(-4.0, (76 - rh) / 5)
     if rh >= 75:
         pts -= 1
     return pts
@@ -1087,8 +1087,8 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "0 to 10 index. The three weather models are scored separately and blended, with the Met Office 2 km model weighted highest for the first two days. "
       "A day's score is its best three-hour window; the number of usable hours and the wet-rock risk are shown alongside.</p>")
     w("<table><tr><th>Factor</th><th>Points</th><th>Why</th></tr>"
-      "<tr><td>Air moisture</td><td>About +1 for every 5% below 76% humidity (up to +3) and -1 for every 5% above (down to -4), with an extra -1 once humidity passes 75%</td>"
-      "<td>Sea salt on the rock starts drawing water out of the air at about 75% humidity. The scale is continuous so a small forecast error does not flip the score.</td></tr>"
+      "<tr><td>Air moisture</td><td>+1 for every 4% below 76% humidity (up to +4 at 60%) and -1 for every 5% above (down to -4), with an extra -1 once humidity passes 75%</td>"
+      "<td>Sea salt on the rock starts drawing water out of the air at about 75% humidity. The scale is continuous so a small forecast error does not flip the score. Below 76% the reward was steepened after logged days showed the rock keeps improving as the air dries.</td></tr>"
       "<tr><td>Haar</td><td>Fog on the Met Office 2 km model or visibility under 1 km -4; patchy fog or visibility under 4 km -2</td>"
       "<td>Sea fog soaks the rock directly and stops any drying.</td></tr>"
       "<tr><td>Rock against dew point</td><td>Rock temperature minus dew point: 0 or less -4, up to 1&deg;C -3, up to 2&deg;C -2, up to 3&deg;C -1, over 5&deg;C +1</td>"
