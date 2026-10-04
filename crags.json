@@ -712,10 +712,11 @@
      4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Nesting gulls occupy most of the holds April to August; mess slow to clear, can prohibit climbing into winter (SMC)"
    }
   },
   {
@@ -801,16 +802,16 @@
    "lat": 57.0942,
    "lon": -2.07953,
    "inlet": true,
-   "seeps": true,
    "birds": {
     "months": [
      4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "restricted",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Birds nest on the cliff April to August (SMC)"
    }
   },
   {
@@ -909,10 +910,11 @@
      4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Birds nest spring to summer between The Slide and Insect Groove; they leave in August, nests can linger into autumn (SMC)"
    }
   },
   {
@@ -947,10 +949,11 @@
      4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Heavily affected by nesting birds April to August (SMC)"
    }
   },
   {
@@ -1010,13 +1013,12 @@
    "lon": -2.08743,
    "birds": {
     "months": [
-     4,
-     5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "The odd fulmar may be lurking in summer (SMC)"
    }
   },
   {
@@ -1482,7 +1484,16 @@
    "lat": 57.06562,
    "lon": -2.09909,
    "sheltered": true,
-   "seeps": true
+   "seeps": true,
+   "birds": {
+    "months": [
+     6,
+     7,
+     8
+    ],
+    "level": "affected",
+    "note": "Birds in summer (SMC)"
+   }
   },
   {
    "name": "Arnot Boo",
@@ -1844,7 +1855,6 @@
    "tidal_note": "Partially Tidal",
    "lat": 57.07003,
    "lon": -2.09349,
-   "seeps": true,
    "birds": {
     "months": [
      5,
@@ -1922,7 +1932,6 @@
    "lat": 57.06931,
    "lon": -2.09366,
    "inlet": true,
-   "seeps": true,
    "birds": {
     "months": [
      4,
@@ -1974,16 +1983,15 @@
    "lat": 57.06931,
    "lon": -2.09366,
    "inlet": true,
-   "seeps": true,
    "birds": {
     "months": [
-     4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Ledges birdy during the nesting season, late April to August (SMC)"
    }
   },
   {
@@ -2318,7 +2326,18 @@
    "tidal": true,
    "tidal_note": "Tidal",
    "lat": 57.04242,
-   "lon": -2.12523
+   "lon": -2.12523,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7,
+     8
+    ],
+    "level": "affected",
+    "note": "Very birdy; best visited in spring or late autumn (SMC)"
+   }
   },
   {
    "name": "Clashfarquhar Bay",
@@ -2655,8 +2674,7 @@
    "tidal_note": "Non-tidal",
    "lat": 57.05492,
    "lon": -2.11159,
-   "sheltered": true,
-   "seeps": true
+   "sheltered": true
   },
   {
    "name": "Dykes Cliff",
@@ -3020,13 +3038,13 @@
    "lon": -2.16773,
    "birds": {
     "months": [
-     4,
      5,
      6,
-     7
+     7,
+     8
     ],
-    "level": "restricted",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "level": "affected",
+    "note": "Nesting birds present throughout summer; Wild is the Wind unaffected (SMC)"
    }
   },
   {
@@ -3204,10 +3222,11 @@
      4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Can attract nesting birds onto some ledges some years (SMC)"
    }
   },
   {
@@ -3961,10 +3980,11 @@
      4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "restricted",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Auks and gulls occupy the cliff April to August, restricting access to most routes (SMC)"
    }
   },
   {
@@ -4066,13 +4086,13 @@
    "inlet": true,
    "birds": {
     "months": [
-     4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Kittiwakes rule the cliff in summer; the chimneys largely unaffected; nests wash off quickly afterwards (SMC)"
    }
   },
   {
@@ -4530,13 +4550,13 @@
    "sea_sheltered": true,
    "birds": {
     "months": [
-     4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Most climbs messed up with kittiwake nests in summer (SMC)"
    }
   },
   {
@@ -4663,10 +4683,11 @@
      4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Nesting kittiwakes April to August (SMC)"
    }
   },
   {
