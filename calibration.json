@@ -1,53 +1,5 @@
 {
- "3.6|Brown Band Crag|2026-09-13|9|11|Crisp": {
-  "base": 4.855072463768115,
-  "base_models": {
-   "ECMWF": 4.565217391304348,
-   "ICON": 5.434782608695652,
-   "Met Office": 4.782608695652174
-  },
-  "crag": "Brown Band Crag",
-  "date": "2026-09-13",
-  "era": 4.780653643381756,
-  "era_base": 4.782608695652174,
-  "feel": "Crisp",
-  "from": 9,
-  "grip": 4.232616771776261,
-  "models": {
-   "ECMWF": 4.735906741854185,
-   "ICON": 4.428662291304157,
-   "Met Office": 3.7571265344538687
-  },
-  "problems": "",
-  "to": 11,
-  "wall": "",
-  "wet": 0.0
- },
- "3.6|Brown Crag|2026-09-13|10|15|Usable": {
-  "base": 6.599033816425122,
-  "base_models": {
-   "ECMWF": 7.043478260869565,
-   "ICON": 6.782608695652174,
-   "Met Office": 6.173913043478261
-  },
-  "crag": "Brown Crag",
-  "date": "2026-09-13",
-  "era": 7.069820360697537,
-  "era_base": 6.956521739130435,
-  "feel": "Usable",
-  "from": 10,
-  "grip": 6.342056545993457,
-  "models": {
-   "ECMWF": 7.145368327203807,
-   "ICON": 6.377090761456186,
-   "Met Office": 5.722055602354333
-  },
-  "problems": "Greasy or sweating",
-  "to": 15,
-  "wall": "",
-  "wet": 0.0
- },
- "3.6|Clashrodney|2026-10-03|11|15|Crisp": {
+ "3.7|Clashrodney|2026-10-03|11|15|Crisp": {
   "base": 7.765700483091788,
   "base_models": {
    "ECMWF": 7.717391304347826,
@@ -60,42 +12,18 @@
   "era_base": 7.934782608695652,
   "feel": "Crisp",
   "from": 11,
-  "grip": 6.172129406181674,
+  "grip": 5.713796072848341,
   "models": {
    "ECMWF": 3.7761262435269773,
-   "ICON": 6.693380114961734,
-   "Met Office": 7.708506423782667
+   "ICON": 6.443380114961734,
+   "Met Office": 6.802256423782667
   },
   "problems": "",
   "to": 15,
   "wall": "",
   "wet": 0.3333333333333333
  },
- "3.6|Craig Stirling|2026-09-26|11|18|Usable": {
-  "base": 7.895100069013112,
-  "base_models": {
-   "ECMWF": 7.950310559006211,
-   "ICON": 7.577639751552795,
-   "Met Office": 8.012422360248447
-  },
-  "crag": "Craig Stirling",
-  "date": "2026-09-26",
-  "era": 7.3052720553612565,
-  "era_base": 7.950310559006211,
-  "feel": "Usable",
-  "from": 11,
-  "grip": 7.195068748751656,
-  "models": {
-   "ECMWF": 7.162139781017479,
-   "ICON": 6.810794446251426,
-   "Met Office": 7.411902625802404
-  },
-  "problems": "Greasy or sweating",
-  "to": 18,
-  "wall": "",
-  "wet": 0.0
- },
- "3.6|Craig Stirling|2026-10-01|17|19|Crisp": {
+ "3.7|Craig Stirling|2026-10-01|17|19|Crisp": {
   "base": 7.729468599033816,
   "base_models": {
    "ECMWF": 7.826086956521739,
@@ -104,94 +32,22 @@
   },
   "crag": "Craig Stirling",
   "date": "2026-10-01",
-  "era": 7.047922876260112,
+  "era": 6.047922876260111,
   "era_base": 7.826086956521739,
   "feel": "Crisp",
   "from": 17,
-  "grip": 7.080419327048492,
+  "grip": 6.122085993715158,
   "models": {
-   "ECMWF": 7.125190002027221,
-   "ICON": 6.775352899752137,
-   "Met Office": 7.199374534462623
+   "ECMWF": 6.125190002027221,
+   "ICON": 5.962852899752137,
+   "Met Office": 6.199374534462623
   },
   "problems": "",
   "to": 19,
   "wall": "",
   "wet": 0.0
  },
- "3.6|Drab Crag|2026-10-03|13|18|Crisp": {
-  "base": 8.560386473429952,
-  "base_models": {
-   "ECMWF": 8.869565217391303,
-   "ICON": 8.0,
-   "Met Office": 8.608695652173912
-  },
-  "crag": "Drab Crag",
-  "date": "2026-10-03",
-  "era": 5.539180350378336,
-  "era_base": 8.434782608695652,
-  "feel": "Crisp",
-  "from": 13,
-  "grip": 6.901411137173237,
-  "models": {
-   "ECMWF": 5.740814178705903,
-   "ICON": 7.599216387360305,
-   "Met Office": 7.422956230930202
-  },
-  "problems": "",
-  "to": 18,
-  "wall": "",
-  "wet": 0.3333333333333333
- },
- "3.6|Green Slough|2026-09-19|12|17|Crisp": {
-  "base": 7.565217391304347,
-  "base_models": {
-   "ECMWF": 7.565217391304347,
-   "ICON": 7.565217391304347,
-   "Met Office": 7.565217391304347
-  },
-  "crag": "Green Slough",
-  "date": "2026-09-19",
-  "era": 7.010990862704037,
-  "era_base": 7.478260869565217,
-  "feel": "Crisp",
-  "from": 12,
-  "grip": 7.164767384512433,
-  "models": {
-   "ECMWF": 7.040959914043155,
-   "ICON": 6.959868084071073,
-   "Met Office": 7.3600726375850725
-  },
-  "problems": "",
-  "to": 17,
-  "wall": "",
-  "wet": 0.0
- },
- "3.6|Green Slough|2026-10-03|11|12|Usable": {
-  "base": 6.666666666666667,
-  "base_models": {
-   "ECMWF": 6.956521739130435,
-   "ICON": 6.521739130434782,
-   "Met Office": 6.521739130434782
-  },
-  "crag": "Green Slough",
-  "date": "2026-10-03",
-  "era": 3.224405370646373,
-  "era_base": 6.956521739130435,
-  "feel": "Usable",
-  "from": 11,
-  "grip": 3.360953798274049,
-  "models": {
-   "ECMWF": 2.7678684814163,
-   "ICON": 6.2052509940305125,
-   "Met Office": 2.3836191880391286
-  },
-  "problems": "Still wet from the night before",
-  "to": 12,
-  "wall": "",
-  "wet": 0.6666666666666666
- },
- "3.6|Logie Head|2026-09-19|11|17|Crisp": {
+ "3.7|Logie Head|2026-09-19|11|17|Crisp": {
   "base": 8.752012882447666,
   "base_models": {
    "ECMWF": 8.91304347826087,
@@ -200,22 +56,22 @@
   },
   "crag": "Logie Head",
   "date": "2026-09-19",
-  "era": 8.639025637416808,
+  "era": 7.639025637416808,
   "era_base": 8.98550724637681,
   "feel": "Crisp",
   "from": 11,
-  "grip": 8.282773988339018,
+  "grip": 7.30360732167235,
   "models": {
-   "ECMWF": 8.494574074578718,
-   "ICON": 8.547004885578666,
-   "Met Office": 7.9918084750394165
+   "ECMWF": 7.536240741245385,
+   "ICON": 7.578254885578666,
+   "Met Office": 6.9918084750394165
   },
   "problems": "",
   "to": 17,
   "wall": "",
   "wet": 0.0
  },
- "3.6|Logie Head|2026-09-19|9|18|Crisp": {
+ "3.7|Logie Head|2026-09-19|9|18|Crisp": {
   "base": 8.588298443370908,
   "base_models": {
    "ECMWF": 8.59903381642512,
@@ -224,22 +80,22 @@
   },
   "crag": "Logie Head",
   "date": "2026-09-19",
-  "era": 8.459742548179856,
+  "era": 7.536131437068745,
   "era_base": 8.792270531400966,
   "feel": "Crisp",
   "from": 9,
-  "grip": 8.130218987040276,
+  "grip": 7.255218987040276,
   "models": {
-   "ECMWF": 8.23765369345477,
-   "ICON": 8.314037429053664,
-   "Met Office": 7.9577337362227105
+   "ECMWF": 7.404320360121438,
+   "ICON": 7.473759651275888,
+   "Met Office": 7.034122625111599
   },
   "problems": "",
   "to": 18,
   "wall": "",
   "wet": 0.0
  },
- "3.6|Logie Head|2026-09-26|11|16|Prime": {
+ "3.7|Logie Head|2026-09-26|11|16|Prime": {
   "base": 9.033816425120772,
   "base_models": {
    "ECMWF": 9.304347826086957,
@@ -248,59 +104,19 @@
   },
   "crag": "Logie Head",
   "date": "2026-09-26",
-  "era": 8.791721849411504,
+  "era": 7.854221849411504,
   "era_base": 9.391304347826088,
   "feel": "Prime",
   "from": 11,
-  "grip": 8.381801512900555,
+  "grip": 7.522079290678332,
   "models": {
-   "ECMWF": 8.717072855852365,
-   "ICON": 8.750816816915094,
-   "Met Office": 7.945840353679425
+   "ECMWF": 7.804572855852366,
+   "ICON": 7.825816816915095,
+   "Met Office": 7.158340353679425
   },
   "problems": "",
   "to": 16,
   "wall": "",
   "wet": 0.0
- },
- "3.6|Newtonhill (Backdoor Wall)|2026-09-27|9|12|Usable": {
-  "base": 4.99194847020934,
-  "base_models": {
-   "ECMWF": 5.507246376811594,
-   "ICON": 4.347826086956522,
-   "Met Office": 4.927536231884058
-  },
-  "crag": "Newtonhill (Backdoor Wall)",
-  "date": "2026-09-27",
-  "era": 4.309071798627939,
-  "era_base": 5.362318840579711,
-  "feel": "Usable",
-  "from": 9,
-  "grip": 2.897544956988174,
-  "models": {
-   "ECMWF": 2.9337757090713885,
-   "ICON": 1.353638213062048,
-   "Met Office": 3.642325264888825
-  },
-  "problems": "Greasy or sweating, Spray from the sea",
-  "to": 12,
-  "wall": "",
-  "wet": 0.1111111111111111
- },
- "3.6|Souter Head (Grassy Pinnacle South Wall)|2026-07-22|15|18|Greasy": {
-  "base": null,
-  "base_models": {},
-  "crag": "Souter Head (Grassy Pinnacle South Wall)",
-  "date": "2026-07-22",
-  "era": null,
-  "era_base": null,
-  "feel": "Greasy",
-  "from": 15,
-  "grip": null,
-  "models": {},
-  "problems": "Greasy or sweating",
-  "to": 18,
-  "wall": "",
-  "wet": null
  }
 }
