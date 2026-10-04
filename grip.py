@@ -29,6 +29,7 @@ PAGE_URL = os.environ.get("GRIP_PAGE_URL", "")
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
 ARCHIVE_URL = "https://historical-forecast-api.open-meteo.com/v1/forecast"  # archived model runs, for days more than ~80 days ago
+REANALYSIS_URL = "https://archive-api.open-meteo.com/v1/archive"  # ERA5 reanalysis: the best record of what the weather actually did
 
 # id, label, forecast days requested, weight in the blend (Met Office drops to 1 beyond 48 h)
 MODELS = [
@@ -640,6 +641,30 @@ def parse_time(x):
     return None
 
 
+def fetch_reanalysis(zone, start, end):
+    """ERA5 reanalysis for one zone and date window, shaped like a model's hourly data. None if unavailable."""
+    z = list(zone.values())[0]
+    hourly = [v for v in HOURLY_FULL if v not in ("cloud_cover_2m", "visibility")]
+    log(f"Fetching reanalysis ({start} to {end})")
+    try:
+        data = get_json(REANALYSIS_URL, {"latitude": z["lat"], "longitude": z["lon"], "hourly": ",".join(hourly),
+                                          "start_date": start, "end_date": end, "timezone": "Europe/London",
+                                          "wind_speed_unit": "kmh"})
+    except Exception as e:  # noqa: BLE001
+        log(f"  reanalysis failed: {e}")
+        return None
+    h = data.get("hourly", {})
+    rh = h.get("relative_humidity_2m") or []
+    if not any(v is not None for v in rh[-24:]):
+        return None  # the last day is not in the archive yet
+    return h
+
+
+def window_mean(hours, entry, key):
+    win = [h for h in hours if entry["from"] <= int(h["t"][11:13]) < entry["to"] and h.get(key) is not None]
+    return sum(h[key] for h in win) / len(win) if win else None
+
+
 def backscore(cfg, entry):
     """Grip for a logged window, scored from the archived forecasts for that date. None if it cannot be done."""
     crags = {label(c): c for c in cfg["crags"]}
@@ -665,10 +690,17 @@ def backscore(cfg, entry):
         for lab, sc in h["base_models"]:
             if sc is not None:
                 bper.setdefault(lab, []).append(sc)
-    return {"index": sum(h["index"] for h in win) / len(win), "wet": sum(h["wet"] for h in win) / len(win),
-            "models": {lab: sum(v) / len(v) for lab, v in per.items()},
-            "base": sum(h["base"] for h in win) / len(win),
-            "base_models": {lab: sum(v) / len(v) for lab, v in bper.items()}}
+    res = {"index": sum(h["index"] for h in win) / len(win), "wet": sum(h["wet"] for h in win) / len(win),
+           "models": {lab: sum(v) / len(v) for lab, v in per.items()},
+           "base": sum(h["base"] for h in win) / len(win),
+           "base_models": {lab: sum(v) / len(v) for lab, v in bper.items()},
+           "era": None, "era_base": None}
+    era = fetch_reanalysis(zone, start, d.isoformat())
+    if era:
+        eh = score_crag(cfg["zones"], crag, {crag["zone"]: {MODELS[0][0]: era}}, marine, day_start)
+        res["era"] = window_mean(eh, entry, "index")
+        res["era_base"] = window_mean(eh, entry, "base")
+    return res
 
 
 def band_miss(x, feel):
@@ -690,17 +722,19 @@ def write_calibration_csv(cache):
         wr = csv.writer(f)
         wr.writerow(["date", "crag", "from", "to", "felt", "felt_low", "felt_high", "grip", "grip_miss"]
                     + [f"grip_{lab.lower().replace(' ', '_')}" for lab in labs]
+                    + ["grip_actual_weather", "grip_actual_weather_miss"]
                     + ["baseline", "baseline_miss"] + [f"baseline_{lab.lower().replace(' ', '_')}" for lab in labs]
-                    + ["wet_risk", "problems"])
+                    + ["baseline_actual_weather", "wet_risk", "problems"])
         for v in rows:
             lo, hi = FEEL_RANGE[v["feel"]]
             r2 = lambda x: "" if x is None else f"{x:.1f}"  # noqa: E731
             wr.writerow([v["date"], v["crag"], f'{v["from"]:02d}:00', f'{v["to"]:02d}:00', v["feel"], lo, min(hi - 1, 10),
                          r2(v["grip"]), r2(band_miss(v["grip"], v["feel"]))]
                         + [r2(v.get("models", {}).get(lab)) for lab in labs]
+                        + [r2(v.get("era")), r2(band_miss(v["era"], v["feel"]) if v.get("era") is not None else None)]
                         + [r2(v.get("base")), r2(band_miss(v["base"], v["feel"]) if v.get("base") is not None else None)]
                         + [r2(v.get("base_models", {}).get(lab)) for lab in labs]
-                        + [r2(v.get("wet")), v.get("problems", "")])
+                        + [r2(v.get("era_base")), r2(v.get("wet")), v.get("problems", "")])
 
 
 def calibrate(cfg, limit=5):
@@ -716,9 +750,12 @@ def calibrate(cfg, limit=5):
     done = 0
     for e in entries:
         key = f'{MODEL_VERSION}|{e["crag"]}|{e["date"]}|{e["from"]}|{e["to"]}|{e["feel"]}'
-        if key in cache or done >= limit:
+        age = (datetime.now(TZ).date() - date.fromisoformat(e["date"])).days
+        if key in cache and (cache[key].get("era") is not None or age < 8 or cache[key].get("grip") is None):
+            continue  # scored; or scored but the reanalysis was not out yet and may be now
+        if done >= limit:
             continue
-        if date.fromisoformat(e["date"]) >= datetime.now(TZ).date():
+        if age < 1:
             continue  # score it once the day is over
         done += 1
         try:
@@ -728,7 +765,8 @@ def calibrate(cfg, limit=5):
             res = None
         cache[key] = {**e, "grip": res["index"] if res else None, "wet": res["wet"] if res else None,
                       "models": res["models"] if res else {}, "base": res["base"] if res else None,
-                      "base_models": res["base_models"] if res else {}}
+                      "base_models": res["base_models"] if res else {},
+                      "era": res["era"] if res else None, "era_base": res["era_base"] if res else None}
     cache = {k: v for k, v in cache.items() if k.startswith(MODEL_VERSION + "|")}
     if done:
         with open(CAL_FILE, "w") as f:
@@ -743,8 +781,8 @@ def calibrate(cfg, limit=5):
     bands_right = sum(1 for e in errs if e == 0)
     within = sum(1 for err in errs if abs(err) <= 1)
     by_model = {}
-    for _mid, lab, _d, _w in MODELS:
-        ms = [band_miss(v["models"][lab], v["feel"]) for v in scored if v.get("models", {}).get(lab) is not None]
+    for lab, getter in [(lab, (lambda v, lab=lab: v.get("models", {}).get(lab))) for _m, lab, _d, _w in MODELS] + [("Actual weather", lambda v: v.get("era"))]:
+        ms = [band_miss(getter(v), v["feel"]) for v in scored if getter(v) is not None]
         if ms:
             by_model[lab] = {"n": len(ms), "right": sum(1 for x in ms if x == 0), "bias": sum(ms) / len(ms), "mae": sum(abs(x) for x in ms) / len(ms)}
     rows = sorted(scored, key=lambda v: v["date"], reverse=True)[:40]
@@ -1025,7 +1063,8 @@ def render(results, tides, now, cfg, models_ok, cal=None):
         if cal.get("by_model"):
             parts = [f'{lab} in the band {m["right"]} of {m["n"]}, typical miss {m["mae"]:.1f}' + (f' ({"above" if m["bias"] > 0 else "below"} by {abs(m["bias"]):.1f})' if abs(m["bias"]) >= 0.05 else "")
                      for lab, m in cal["by_model"].items()]
-            w(f"<p>By model: {'; '.join(parts)}. The model that lands in the band most often over enough days is the one to trust most in the blend.</p>")
+            w(f"<p>By model: {'; '.join(parts)}. The model that lands in the band most often over enough days is the one to trust most in the blend. "
+              "The actual-weather column scores the day from the ERA5 reanalysis, the best record of what the weather really did, so it tests the scoring logic itself rather than the forecasts.</p>")
 
         def chip(x):
             if x is None:
@@ -1033,9 +1072,9 @@ def render(results, tides, now, cfg, models_ok, cal=None):
             name, note, css = band(x)
             return f'<span class="chip {css}" style="display:inline-block;min-width:2.2rem;text-align:center;padding:1px 6px;border-radius:3px;font-weight:600">{fmt(x)}</span>'
 
-        w('<table class="cal"><tr><th>Date</th><th>Crag</th><th>Felt</th><th>Grip</th>' + "".join(f"<th>{lab}</th>" for _m, lab, _d, _w in MODELS) + "</tr>")
+        w('<table class="cal"><tr><th>Date</th><th>Crag</th><th>Felt</th><th>Grip</th>' + "".join(f"<th>{lab}</th>" for _m, lab, _d, _w in MODELS) + "<th>Actual weather</th></tr>")
         for v in cal["rows"]:
-            cells = "".join(f'<td>{chip(v.get("models", {}).get(lab))}</td>' for _m, lab, _d, _w in MODELS)
+            cells = "".join(f'<td>{chip(v.get("models", {}).get(lab))}</td>' for _m, lab, _d, _w in MODELS) + f'<td>{chip(v.get("era"))}</td>'
             lo, hi = FEEL_RANGE[v["feel"]]
             w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(v["crag"])}</td><td>{escape(v["feel"])} ({lo:g} to {min(hi - 1, 10):g})</td>'
               f'<td>{chip(v["grip"])} {band(v["grip"])[0]}</td>{cells}</tr>')
