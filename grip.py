@@ -176,6 +176,14 @@ def sun_position(dt_utc, lat, lon):
 
 
 # ---------------------------------------------------------------- data fetch
+def has_values(data, var="relative_humidity_2m"):
+    """True if any location in an Open-Meteo reply has a value for var."""
+    for d in data if isinstance(data, list) else [data]:
+        if any(v is not None for v in d.get("hourly", {}).get(var, [])):
+            return True
+    return False
+
+
 def fetch_models(zones, start=None, end=None):
     """Hourly model data per zone. With start/end (ISO dates) it fetches that past window instead."""
     lats = ",".join(str(z["lat"]) for z in zones.values())
@@ -197,6 +205,9 @@ def fetch_models(zones, start=None, end=None):
                 else:
                     params.update({"past_days": PAST_DAYS, "forecast_days": days})
                 data = get_json(url, params)
+                if start and url == FORECAST_URL and not has_values(data):
+                    log(f"  {label}: no data on the forecast API from {start}, using the archive")
+                    data = get_json(ARCHIVE_URL, params)
                 break
             except Exception as e:  # noqa: BLE001
                 log(f"  {label}: {e}")
@@ -881,8 +892,9 @@ def calibrate(cfg, limit=5):
     for e in entries:
         key = f'{MODEL_VERSION}|{e["crag"]}|{e["date"]}|{e["from"]}|{e["to"]}|{e["feel"]}'
         age = (datetime.now(TZ).date() - date.fromisoformat(e["date"])).days
-        if key in cache and (cache[key].get("era") is not None or cache[key].get("grip") is None):
-            continue  # fully scored, or could not be scored; a day whose reanalysis was not out yet is tried again
+        c = cache.get(key)
+        if c and (c.get("era") is not None or (c.get("grip") is None and c.get("tries", 1) >= 3)):
+            continue  # fully scored, or three tries without success; a day whose reanalysis was not out yet is tried again
         if done >= limit:
             continue
         if age < 1:
@@ -896,7 +908,8 @@ def calibrate(cfg, limit=5):
         cache[key] = {**e, "grip": res["index"] if res else None, "wet": res["wet"] if res else None,
                       "models": res["models"] if res else {}, "base": res["base"] if res else None,
                       "base_models": res["base_models"] if res else {},
-                      "era": res["era"] if res else None, "era_base": res["era_base"] if res else None}
+                      "era": res["era"] if res else None, "era_base": res["era_base"] if res else None,
+                      "tries": 1 if res else (c.get("tries", 1) + 1 if c else 1)}
     cache = {k: v for k, v in cache.items() if k.startswith(MODEL_VERSION + "|")}
     if done:
         with open(CAL_FILE, "w") as f:
