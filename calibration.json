@@ -1,5 +1,11 @@
 {
- "2.1|Clashrodney|2026-10-03|11|15|Crisp": {
+ "2.2|Clashrodney|2026-10-03|11|15|Crisp": {
+  "base": 7.330917874396135,
+  "base_models": {
+   "ECMWF": 7.282608695652174,
+   "ICON": 6.8478260869565215,
+   "Met Office": 7.608695652173913
+  },
   "crag": "Clashrodney",
   "date": "2026-10-03",
   "feel": "Crisp",
