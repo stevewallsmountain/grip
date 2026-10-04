@@ -31,6 +31,8 @@ Each wall, each hour: points from the factors below are summed; index = 3 + poin
 
 Logged-day matching: a bare crag name maps to the crag's first listed wall, old names via `LABEL_ALIASES`, typed wall names by word overlap, and `LOG_PINS` fixes individual logs to a wall when the logger has confirmed it. Several logs of one crag on one day merge into one data point. Misses are measured from the band edge, not the centre.
 
+Past days come from the forecast API, falling back per model to the historical-forecast API when it has no data (it keeps about 60 days), and from the archive outright beyond 80 days; unscored logs are retried up to three times.
+
 ## Crag list
 
 165 crags, 289 walls, 16 SMC coastal sections, rebuilt on every run from `data/smc_coast.json` plus `data/overrides.json`. A crag is the first SMC node below a section with coordinates; its leaves are the walls. Fields per wall: name, wall, section, zone (one of nine weather points), aspect, rock, tidal, sheltered, inlet, sea_sheltered, seeps, birds {months, level, note, confirmed}, lat, lon, smc_id. Flags came from keyword matching on the SMC text, checked against UKC and the developers' own topos from the North East Outcrops Facebook group, and corrected in the overrides file; every override says where it came from. To change a crag fact, add or edit a line in `data/overrides.json` keyed by the wall label exactly as it appears on the page, and commit. Never hand edit `crags.json`.
