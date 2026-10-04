@@ -58,7 +58,7 @@ NOTES_CRAG = "entry.1230562053"
 NOTES_WALL = "entry.763167181"
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
-MODEL_VERSION = "3.6"  # bump when the scoring or crag details change; logged days are then re-scored
+MODEL_VERSION = "3.7"  # bump when the scoring or crag details change; logged days are then re-scored
 CAL_CSV = os.path.join(HERE, "calibration.csv")
 FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
 LABEL_ALIASES = {  # names used in logs before the crag list was rebuilt from the SMC database
@@ -551,7 +551,9 @@ def score_crag(zones, crag, models, marine, now):
                 "sea": seas[i][0],
             }
             f["wet"], wnote = f_wet(PR[i], films[i])
-            f["dry"] = 2.0 if (films[i] <= 0.02 and (PR[i] or 0) < 0.2 and f_fog(FG[i], VIS[i]) == 0 and margin is not None and margin >= 3) else 0.0
+            # dry-rock credit: full in humid air (76%+), fading to nothing at 60%, where the air reward already says the rock is dry
+            dry_ok = films[i] <= 0.02 and (PR[i] or 0) < 0.2 and f_fog(FG[i], VIS[i]) == 0 and margin is not None and margin >= 3
+            f["dry"] = 2.0 * min(1.0, max(0.0, ((RH[i] or 0) - 60) / 16)) if dry_ok else 0.0
             if films[i] > 0.1:  # wind and sun are already working through the film; count them at half weight on wet rock
                 if f["wind"] is not None and f["wind"] > 0:
                     f["wind"] = f["wind"] / 2
@@ -1328,7 +1330,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "Humid, still air barely dries it; warm, breezy, sunny air clears a light shower in two or three hours. This is what makes the morning after a humid night greasy until the air dries.</td></tr>"
       "<tr><td>Seepage</td><td>5 mm+ of rain in the last 24 hours -2, 10 mm+ -3, a further -1 for 25 mm+ in the last three days</td>"
       "<td>Drainage after heavy rain lasts much longer than surface water.</td></tr>"
-      "<tr><td>Dry rock</td><td>+2 when there is no water on the rock, no rain, no haar and the rock is 3&deg;C or more above the dew point</td>"
+      "<tr><td>Dry rock</td><td>Up to +2 when there is no water on the rock, no rain, no haar and the rock is 3&deg;C or more above the dew point: the full +2 at 76% humidity and above, fading to nothing at 60%, where the air reward already covers it</td>"
       "<td>Dry rock on a grey day is good rock. Without this, an overcast calm morning with nothing wrong scored Greasy; logged days said Crisp. The calm-air penalty is also waived when the rock is dry and the air is under 80%.</td></tr></table>")
     w("<p>The index is 3 plus half the points, held between 0 and 10. Hours with the sun less than 5 degrees above the horizon are not scored. "
       "Tides are shown for planning but not scored, and so are nesting birds: a crag in its bird season is marked, not marked down. Model disagreement is shown rather than hidden: striped cells and the wet-rock risk tell you when the forecasts differ. "
