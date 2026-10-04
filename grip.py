@@ -55,7 +55,7 @@ NOTES_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9y
 NOTES_CRAG = "entry.1230562053"
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
-MODEL_VERSION = "2.9"  # bump when the scoring or crag details change; logged days are then re-scored
+MODEL_VERSION = "3.0"  # bump when the scoring or crag details change; logged days are then re-scored
 CAL_CSV = os.path.join(HERE, "calibration.csv")
 FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
 FEEL_RANGE = {"Soaked": (0, 2), "Greasy": (2, 4), "Usable": (4, 6), "Crisp": (6, 8), "Prime": (8, 11)}  # lower edge included, upper excluded
@@ -483,7 +483,7 @@ def score_crag(zones, crag, models, marine, now):
             if sea[2] is not None and sea[2] >= (2.0 if crag.get("tidal") else 2.5):
                 film += 0.05  # spray: a big sea wets the rock a little, more readily at tidal walls
             film = min(2.0, film)
-            film = max(0.0, film - drying_rate(vpd, WS[i], sun_pts))
+            film = max(0.0, film - drying_rate(vpd, (WS[i] or 0) * (0.5 if sheltered else 1.0), sun_pts))
             films.append(film)
 
         # pass 2: score the daylight hours still to come
@@ -1187,7 +1187,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "<td>Spray wets the rock and lays down fresh salt. Waves from behind or along the face count at 40%, or 70% for long-period swell, which wraps round headlands.</td></tr>"
       "<tr><td>Water on the rock</td><td>Raining -5. Otherwise, by the water left on the rock: over 0.5 mm -3, 0.1-0.5 mm -2, a trace -1</td>"
       "<td>The film is tracked hour by hour. Rain adds to it, up to 2 mm; a big sea (over 2.5 m, or 2 m at tidal walls) adds a little spray; and at 85%+ humidity the salt draws in a thin brine film of up to 0.15 mm. "
-      "It dries at a rate set by the vapour pressure deficit (how much more moisture the air can take), the wind and sun on the face. "
+      "It dries at a rate set by the vapour pressure deficit (how much more moisture the air can take), the wind (halved at sheltered crags) and sun on the face. "
       "Humid, still air barely dries it; warm, breezy, sunny air clears a light shower in two or three hours. This is what makes the morning after a humid night greasy until the air dries.</td></tr>"
       "<tr><td>Seepage</td><td>5 mm+ of rain in the last 24 hours -2, 10 mm+ -3, a further -1 for 25 mm+ in the last three days</td>"
       "<td>Drainage after heavy rain lasts much longer than surface water.</td></tr></table>")
