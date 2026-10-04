@@ -9,9 +9,9 @@
   "crags": [
     {"name": "Deceptive Wall", "zone": "aberdeen_south", "aspect": "SE", "rock": "Schist", "type": "trad"},
     {"name": "The Long Slough", "zone": "aberdeen_south", "aspect": "E", "rock": "Granite", "type": "trad"},
-    {"name": "Souter Head", "wall": "Grassy Pinnacle South Wall", "zone": "aberdeen_south", "aspect": "S", "rock": "Granite", "type": "trad", "tidal": true},
-    {"name": "Souter Head", "wall": "Grassy Pinnacle East Wall", "zone": "aberdeen_south", "aspect": "E", "rock": "Granite", "type": "trad", "tidal": true},
-    {"name": "Souter Head", "wall": "Jade Buttress", "zone": "aberdeen_south", "aspect": "NE", "rock": "Granite", "type": "trad", "tidal": true},
+    {"name": "Souter Head", "wall": "Grassy Pinnacle South Wall", "zone": "aberdeen_south", "aspect": "S", "rock": "Granite", "type": "trad", "tidal": true, "sheltered": true},
+    {"name": "Souter Head", "wall": "Grassy Pinnacle East Wall", "zone": "aberdeen_south", "aspect": "E", "rock": "Granite", "type": "trad", "tidal": true, "sheltered": true},
+    {"name": "Souter Head", "wall": "Jade Buttress", "zone": "aberdeen_south", "aspect": "NE", "rock": "Granite", "type": "trad", "tidal": true, "sheltered": true},
     {"name": "South Cove", "wall": "Main Face", "zone": "aberdeen_south", "aspect": "SW", "rock": "Granite", "type": "trad", "tidal": true, "birds": {"months": [4, 5, 6, 7], "level": "possible", "note": "Beware of nesting birds. Months not confirmed."}},
     {"name": "Clashrodney", "zone": "aberdeen_south", "aspect": "SE", "rock": "Granite", "type": "trad"},
     {"name": "Earnsheugh", "zone": "aberdeen_south", "aspect": "NE", "rock": "Schist", "type": "trad"},
