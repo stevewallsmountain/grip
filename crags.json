@@ -62,7 +62,7 @@
    "section": "Nigg Bay to Cove Bay",
    "smc_id": 4120,
    "smc_crag_id": 4120,
-   "aspect": null,
+   "aspect": "NW",
    "rock": null,
    "type": "trad",
    "lat": 57.14039,
@@ -470,7 +470,7 @@
    "section": "Nigg Bay to Cove Bay",
    "smc_id": 4155,
    "smc_crag_id": 4155,
-   "aspect": null,
+   "aspect": "S",
    "rock": null,
    "type": "trad",
    "lat": 57.10984,
@@ -968,7 +968,7 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "note": "Bird free (UKC and SMC)"
    }
   },
   {
@@ -1676,7 +1676,7 @@
      7
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Gets birded in spring and summer (UKC)"
    }
   },
   {
@@ -1695,14 +1695,9 @@
    "sheltered": true,
    "inlet": true,
    "birds": {
-    "months": [
-     4,
-     5,
-     6,
-     7
-    ],
-    "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "months": [],
+    "level": "clear",
+    "note": "Generally bird free (UKC)"
    }
   },
   {
@@ -1826,13 +1821,13 @@
    "seeps": true,
    "birds": {
     "months": [
-     4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Not recommended in the nesting season, end of April to mid August (UKC)"
    }
   },
   {
@@ -1852,13 +1847,13 @@
    "seeps": true,
    "birds": {
     "months": [
-     4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Not recommended in the nesting season, end of April to mid August (UKC)"
    }
   },
   {
@@ -1878,13 +1873,13 @@
    "seeps": true,
    "birds": {
     "months": [
-     4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "Not recommended in the nesting season, end of April to mid August (UKC)"
    }
   },
   {
@@ -1904,13 +1899,13 @@
    "seeps": true,
    "birds": {
     "months": [
-     4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Nesting birds noted in the SMC database; months not confirmed"
+    "note": "A few kittiwakes nest in summer; some routes out of bounds for a few months (UKC)"
    }
   },
   {
@@ -3229,9 +3224,15 @@
    "lat": 57.34968,
    "lon": -1.92355,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7,
+     8
+    ],
+    "level": "affected",
+    "note": "Birds nesting April to August on some routes (UKC)"
    }
   },
   {
@@ -3312,7 +3313,7 @@
    "section": "Collieston to Whinnyfold",
    "smc_id": 8329,
    "smc_crag_id": 4342,
-   "aspect": null,
+   "aspect": "SE",
    "rock": null,
    "type": "trad",
    "wall": "Veshels",
@@ -3462,7 +3463,17 @@
    "aspect_note": "north and east",
    "tidal_note": "Non Tidal",
    "lat": 57.385,
-   "lon": -1.86902
+   "lon": -1.86902,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Birdy through the nesting season (UKC); months not confirmed"
+   }
   },
   {
    "name": "Poor Man of Harrol",
@@ -3604,7 +3615,17 @@
    "type": "trad",
    "tidal_note": "Non Tidal",
    "lat": 57.42234,
-   "lon": -1.82516
+   "lon": -1.82516,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Seabirds can be a problem in the nesting season (UKC); months not confirmed"
+   }
   },
   {
    "name": "Meikle Partans",
@@ -3618,7 +3639,17 @@
    "wall": "Crab’s Wall",
    "tidal_note": "Non Tidal",
    "lat": 57.42234,
-   "lon": -1.82516
+   "lon": -1.82516,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Seabirds can be a problem in the nesting season (UKC); months not confirmed"
+   }
   },
   {
    "name": "Flaky Buttress",
@@ -3684,7 +3715,12 @@
    "type": "trad",
    "tidal_note": "Non Tidal",
    "lat": 57.42593,
-   "lon": -1.82181
+   "lon": -1.82181,
+   "birds": {
+    "months": [],
+    "level": "clear",
+    "note": "Birds not a problem (UKC)"
+   }
   },
   {
    "name": "Dunbuy Rock",
@@ -3877,7 +3913,7 @@
    "section": "Cruden Bay to North Haven",
    "smc_id": 4379,
    "smc_crag_id": 4379,
-   "aspect": null,
+   "aspect": "N",
    "rock": "Granite",
    "type": "trad",
    "lat": 57.42772,
@@ -4129,7 +4165,17 @@
    "type": "trad",
    "lat": 57.43974,
    "lon": -1.80942,
-   "seeps": true
+   "seeps": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Nesting seabirds have moved into the quarry in recent years (UKC); months not confirmed"
+   }
   },
   {
    "name": "Red Wall Quarry",
@@ -4143,7 +4189,17 @@
    "wall": "Back Wall",
    "lat": 57.43974,
    "lon": -1.80942,
-   "seeps": true
+   "seeps": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Nesting seabirds have moved into the quarry in recent years (UKC); months not confirmed"
+   }
   },
   {
    "name": "Red Wall Quarry",
@@ -4157,7 +4213,17 @@
    "wall": "Bridal Slab",
    "lat": 57.43938,
    "lon": -1.80959,
-   "seeps": true
+   "seeps": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Nesting seabirds have moved into the quarry in recent years (UKC); months not confirmed"
+   }
   },
   {
    "name": "The Red Wall",
@@ -4374,9 +4440,19 @@
    "section": "North Haven to Long Haven Quarries",
    "smc_id": 4427,
    "smc_crag_id": 4427,
-   "aspect": null,
+   "aspect": "N",
    "rock": null,
-   "type": "trad"
+   "type": "trad",
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Large guano ledge in the centre (UKC); months not confirmed"
+   }
   },
   {
    "name": "Borehole Wall",
@@ -4713,7 +4789,7 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "note": "Not affected by nesting birds (UKC)"
    }
   },
   {
@@ -5042,9 +5118,14 @@
    "lat": 57.70023,
    "lon": -2.79256,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Birds can be a problem in the nesting season at the seaward end of the ridge (UKC); months not confirmed"
    }
   },
   {
@@ -5178,9 +5259,14 @@
    "lat": 57.69987,
    "lon": -2.79306,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Birds can be a problem in the nesting season at the seaward end of the ridge (UKC); months not confirmed"
    }
   },
   {
