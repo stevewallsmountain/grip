@@ -734,6 +734,7 @@ def window_mean(hours, entry, key):
 
 LOG_PINS = {  # logs made before the form had a wall box, pinned to the wall the logger later confirmed
     ("Craig Stirling", "2026-09-26"): "Craig Stirling (East Buttress)",
+    ("Craig Stirling", "2026-10-01"): "Craig Stirling (East Buttress)",
 }
 
 
