@@ -50,6 +50,18 @@ Scoring change:
 
 Committing from a chat: the Claude in Chrome extension edits files through GitHub's web editor (a script applies line edits to the CodeMirror document, checked by SHA-1 before and after) and runs the workflow from the Actions page. Google Forms and Sheets are edited through their normal pages. Facebook group files need a real click to download.
 
+## Calibration procedure
+
+1. Evidence. A log becomes a data point once it is pinned to the right wall and, where the logger scored the worst route rather than the day, the crag-overall reading is noted alongside it in Log notes. Both readings are kept; neither is deleted.
+2. Metrics, recorded in a review row in Log notes at every review: days in band, days within a point, mean error (the sign shows bias), mean absolute miss, correlation against the logged bands and against the crag-overall readings, per-model in-band counts, and the grid shape for the next three days (share of cells at 8 or above, any flat day).
+3. Diagnosis before change. For each miss, the actual-weather (ERA5) column separates the two causes: if ERA5 is also wrong it is the scoring; if only the forecasts are, it is the blend. Reproduce the day locally and name the factor responsible before touching anything.
+4. Trigger for a scoring change: at least two days, from different crags or dates, missing in the same direction for the same stated physical reason. One day gets a note and a question to the logger, nothing more. A change must have a mechanism, not just a weight that fits.
+5. The smallest change that explains the misses, tested on every day we hold data for before it is committed. Regression rule: no day currently in band may leave it; if one does, the change is wrong or incomplete.
+6. Overfitting guard. Under thirty logs: structural fixes with a physical story only, one scoring change per review, the grid check after every change. Over thirty: hold back every fourth log by date as a validation set and report fit and holdout separately.
+7. Blend weights are adjusted on per-model in-band counts only, with at least ten scored days.
+8. Cadence: review when three or more new logs are in, or fortnightly, whichever comes first. Seasonal checkpoints in November, February and May, when the dew-point and seepage mechanics get their real tests.
+9. Record. Every change: version bump, the "How Grip works" table on the page, a Log notes review row, this handbook. Every reviewed day: a Log notes row.
+
 ## Where calibration stands, 4 October 2026
 
 Twelve logged days from three people. In band 6 of 12, within a point 10 of 12. Correlation with the logged bands r = 0.58, with crag-overall readings 0.69; average error 0.1 below the felt band. Met Office in band 6 of 11 against 3 of 11 for ECMWF and ICON, hence its weight.
