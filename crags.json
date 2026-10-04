@@ -13,7 +13,7 @@
     {"name": "Souter Head", "wall": "Grassy Pinnacle East Wall", "zone": "aberdeen_south", "aspect": "E", "rock": "Granite", "type": "trad", "tidal": true},
     {"name": "Souter Head", "wall": "Jade Buttress", "zone": "aberdeen_south", "aspect": "NE", "rock": "Granite", "type": "trad", "tidal": true},
     {"name": "South Cove", "wall": "Main Face", "zone": "aberdeen_south", "aspect": "SW", "rock": "Granite", "type": "trad", "tidal": true},
-    {"name": "Clashrodney", "zone": "aberdeen_south", "aspect": "E", "rock": "Granite", "type": "trad"},
+    {"name": "Clashrodney", "zone": "aberdeen_south", "aspect": "SE", "rock": "Granite", "type": "trad"},
     {"name": "Earnsheugh", "zone": "aberdeen_south", "aspect": "NE", "rock": "Schist", "type": "trad"},
     {"name": "The Fin", "zone": "aberdeen_south", "aspect": "S", "rock": "Schist", "type": "sport"},
     {"name": "Berrymuir Head", "zone": "newtonhill", "aspect": "SE", "rock": "Mica schist", "type": "trad"},
