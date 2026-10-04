@@ -288,19 +288,28 @@
   "wet": 0.1111111111111111
  },
  "3.7|Souter Head (Grassy Pinnacle South Wall)|2026-07-22|15|18|Greasy": {
-  "base": null,
-  "base_models": {},
+  "base": 7.359098228663445,
+  "base_models": {
+   "ECMWF": 7.6811594202898545,
+   "ICON": 7.6811594202898545,
+   "Met Office": 7.101449275362319
+  },
   "crag": "Souter Head (Grassy Pinnacle South Wall)",
   "date": "2026-07-22",
-  "era": null,
-  "era_base": null,
+  "era": 6.181061243790613,
+  "era_base": 7.391304347826086,
   "feel": "Greasy",
   "from": 15,
-  "grip": null,
-  "models": {},
+  "grip": 5.680376612111641,
+  "models": {
+   "ECMWF": 5.494957699242946,
+   "ICON": 6.3323326149266075,
+   "Met Office": 5.493761776133131
+  },
   "problems": "Greasy or sweating",
   "to": 18,
+  "tries": 1,
   "wall": "",
-  "wet": null
+  "wet": 0.0
  }
 }
