@@ -1094,6 +1094,56 @@ def render_detail(gname, walls, tides, now, today):
     return "".join(out)
 
 
+MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+
+
+def render_birds(cfg, now):
+    """A register of nesting-bird status for every crag, with months, source and whether anyone has confirmed it."""
+    out = []
+    w = out.append
+    w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
+    w("<title>Grip: nesting birds by crag</title>")
+    w('<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet">')
+    w(f"<style>{CSS}</style></head><body><main>")
+    w("<h1>Nesting birds by crag</h1>")
+    w(f'<p class="updated">Status, months and source for every crag Grip covers. In season the forecast marks the crag but does not mark it down. '
+      f'Most entries come from keyword matching on the SMC routes database and UKC, with the months a placeholder until someone confirms them. '
+      f'If you know better, <a href="{NOTES_URL}" target="_blank" rel="noopener">send a crag note</a>. Updated {now.strftime("%a %-d %b, %H:%M")}. <a href="./">Back to the forecast</a></p>')
+    groups = []
+    for c in cfg["crags"]:
+        key = (c.get("section") or "", c["name"])
+        if not groups or groups[-1][0] != key:
+            groups.append((key, []))
+        groups[-1][1].append(c)
+    cur_sec = None
+    w('<div class="wrap"><table class="cal"><tr><th>Crag</th><th>Status</th><th>Months</th><th>Note</th><th>Confirmed</th></tr>')
+    for (sec, name), walls in groups:
+        if sec != cur_sec:
+            w(f'<tr class="zone"><th colspan="5">{escape(sec)}</th></tr>')
+            cur_sec = sec
+        seen = set()
+        rows = []
+        for c in walls:
+            b = c.get("birds")
+            key = json.dumps(b, sort_keys=True) if b else None
+            if key in seen:
+                continue
+            seen.add(key)
+            rows.append((c, b))
+        for c, b in rows:
+            wall = f' <small>{escape(c["wall"])}</small>' if c.get("wall") and len(rows) > 1 else ""
+            if not b:
+                w(f'<tr><td>{escape(c["name"])}{wall}</td><td>No information</td><td>-</td><td></td><td>-</td></tr>')
+                continue
+            months = b.get("months") or []
+            span = f"{MONTHS[min(months)][:3]} to {MONTHS[max(months)][:3]}" if months else "-"
+            level = {"restricted": "Restricted", "affected": "Nesting birds", "clear": "Bird free", "possible": "Possible"}.get(b.get("level"), b.get("level", ""))
+            conf = "Yes" if b.get("confirmed") else "No"
+            w(f'<tr><td>{escape(c["name"])}{wall}</td><td>{escape(level)}</td><td>{span}</td><td>{escape(b.get("note", ""))}</td><td>{conf}</td></tr>')
+    w("</table></div></main></body></html>")
+    return "".join(out)
+
+
 def render(results, tides, now, cfg, models_ok, cal=None):
     zones = cfg["zones"]
     today = now.date()
@@ -1129,7 +1179,8 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     w("</div>")
     w(f'<p class="log"><a class="btn" href="{FORM_URL}" target="_blank" rel="noopener">Log a day on the rock</a>'
       "Climbed on the coast? Say how the rock felt. It takes a minute, it is anonymous, and it is how Grip gets checked against reality. "
-      f'Know a crag better than the list does? <a href="{NOTES_URL}" target="_blank" rel="noopener">Send a crag note</a>: aspect, tides, seepage, shelter, birds.</p>')
+      f'Know a crag better than the list does? <a href="{NOTES_URL}" target="_blank" rel="noopener">Send a crag note</a>: aspect, tides, seepage, shelter, birds. '
+      f'See the <a href="birds.html">nesting bird register</a> for what Grip currently believes.</p>')
 
     pair = ((today, "Today"), (tomorrow, "Tomorrow"))
     if not best_list(today):
@@ -1379,6 +1430,8 @@ def main():
     html = render(results, tides, now, cfg, models_ok, cal)
     with open(os.path.join(SITE_DIR, "index.html"), "w") as f:
         f.write(html)
+    with open(os.path.join(SITE_DIR, "birds.html"), "w") as f:
+        f.write(render_birds(cfg, now))
     os.makedirs(os.path.join(SITE_DIR, "detail"), exist_ok=True)
     for gname, walls in groups_of(results):
         with open(os.path.join(SITE_DIR, "detail", slug(gname) + ".html"), "w") as f:
