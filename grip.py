@@ -949,7 +949,8 @@ table{border-collapse:collapse;width:100%}
 .grid td div,.grid td button{margin:2px;min-width:2.6rem;padding:6px 0;border-radius:3px;font-weight:600;position:relative}
 .grid td button{border:0;font:inherit;font-weight:600;cursor:pointer;width:calc(100% - 4px)}
 .grid td .unsure{background-image:repeating-linear-gradient(135deg,transparent 0 5px,rgba(255,255,255,.28) 5px 8px)}
-.grid td .risk::after{content:"";position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:#1d2b34;opacity:.7}
+.grid td .risk::after,.key i.risk::after{content:"";position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:#1d2b34;opacity:.7}
+.key i.risk::after{top:2px;right:2px;width:5px;height:5px}
 .grid td div.none{color:var(--muted);font-weight:400}
 .hint{color:var(--muted);font-size:.9rem;margin:-4px 0 10px}
 .log{margin:-10px 0 26px;color:var(--muted);font-size:.92rem}
