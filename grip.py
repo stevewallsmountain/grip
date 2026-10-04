@@ -419,6 +419,17 @@ def model_weight(mid, base, dt, now):
 
 
 # ---------------------------------------------------------------- build
+def drying_note(hs):
+    """When the Met Office figures expect wet rock to dry: '' if it starts the day dry."""
+    first = hs[0]["d"]
+    if first["film"] <= 0.1:
+        return ""
+    for h in hs:
+        if h["d"]["film"] <= 0.1 and h["d"]["f"]["wet"] > -5:
+            return f"Starts the day wet ({first['film']:.1f} mm on the rock); expected to be dry by about {h['t'][11:16]}"
+    return f"Wet all day ({first['film']:.1f} mm on the rock at the start, {hs[-1]['d']['film']:.1f} mm at the end)"
+
+
 def score_crag(zones, crag, models, marine, now):
     """Hourly Grip for one wall: each model scored separately, then blended. Hours before now are skipped."""
     z = zones[crag["zone"]]
@@ -594,6 +605,7 @@ def build(cfg, models, marine):
                     "spread": max(x["spread"] for x in win), "n": min(x["n"] for x in win),
                     "wet": sum(x["wet"] for x in win) / len(win),
                     "usable": sum(1 for x in hs if x["index"] >= USABLE), "hours": len(hs),
+                    "drying": drying_note(hs),
                     "models": [(lab, sum(v) / len(v)) for lab, v in pm.items()],
                 }
         results.append({"crag": crag, "hours": hours, "daily": daily})
@@ -1064,7 +1076,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
                     wl = "|".join(parts)
                 dd = date.fromisoformat(d).strftime("%a %-d %b")
                 w(f'<td><button type="button" class="cell {cls}" data-crag="{escape(gname)}" data-wall="{escape(c.get("wall") or "")}" data-day="{dd}" '
-                  f'data-win="{v["start"]} to {v["end"]}" data-score="{v["index"]:.1f}" data-usable="{v["usable"]} of {v["hours"]}" '
+                  f'data-win="{v["start"]} to {v["end"]}" data-score="{v["index"]:.1f}" data-usable="{v["usable"]} of {v["hours"]}" data-drying="{escape(v["drying"])}" '
                   f'data-wet="{pct(v["wet"])}" data-models="{escape(mods)}" data-walls="{escape(wl)}" data-log="{escape(log_link(c, d if date.fromisoformat(d) <= today else today.isoformat()))}" data-note="{escape(note_link(c))}" '
                   f'data-birds="{escape(gb["note"]) if gb else ""}" '
                   f'aria-label="{escape(label(c))}, {dd}: {fmt(v["index"])}, {name}">{fmt(v["index"])}</button></td>')
@@ -1196,7 +1208,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     b.addEventListener('click',function(){
       document.getElementById('d-title').textContent=b.dataset.crag;
       var who=b.dataset.wall?(' on '+b.dataset.wall):'';
-      document.getElementById('d-sub').textContent=b.dataset.day+', best window '+b.dataset.win+who+'. Usable hours: '+b.dataset.usable+'. Wet-rock risk: '+b.dataset.wet+'.';
+      document.getElementById('d-sub').textContent=b.dataset.day+', best window '+b.dataset.win+who+'. Usable hours: '+b.dataset.usable+'. Wet-rock risk: '+b.dataset.wet+'.'+(b.dataset.drying?(' '+b.dataset.drying+'.'):'');
       var rows='';
       if(b.dataset.walls){
         rows+='<tr><td colspan="2" style="text-align:left"><strong>Walls</strong></td></tr>';
