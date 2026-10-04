@@ -1,5 +1,5 @@
 {
- "2.3|Clashrodney|2026-10-03|11|15|Crisp": {
+ "2.4|Clashrodney|2026-10-03|11|15|Crisp": {
   "base": 7.765700483091788,
   "base_models": {
    "ECMWF": 7.717391304347826,
@@ -8,18 +8,64 @@
   },
   "crag": "Clashrodney",
   "date": "2026-10-03",
-  "era": 5.2,
+  "era": 5.5625,
   "era_base": 7.934782608695652,
   "feel": "Crisp",
   "from": 11,
-  "grip": 5.7972222222222225,
+  "grip": 6.097222222222222,
   "models": {
-   "ECMWF": 4.625,
-   "ICON": 5.9,
-   "Met Office": 6.625
+   "ECMWF": 4.875,
+   "ICON": 6.0,
+   "Met Office": 7.0625
   },
   "problems": "",
   "to": 15,
   "wet": 0.3333333333333333
+ },
+ "2.4|Craig Stirling|2026-10-01|17|19|Crisp": {
+  "base": 7.729468599033816,
+  "base_models": {
+   "ECMWF": 7.826086956521739,
+   "ICON": 7.391304347826087,
+   "Met Office": 7.826086956521739
+  },
+  "crag": "Craig Stirling",
+  "date": "2026-10-01",
+  "era": 7.0,
+  "era_base": 7.826086956521739,
+  "feel": "Crisp",
+  "from": 17,
+  "grip": 6.916666666666667,
+  "models": {
+   "ECMWF": 7.0,
+   "ICON": 6.625,
+   "Met Office": 7.0
+  },
+  "problems": "",
+  "to": 19,
+  "wet": 0.0
+ },
+ "2.4|Logie Head|2026-09-19|9|18|Crisp": {
+  "base": 8.341384863123993,
+  "base_models": {
+   "ECMWF": 8.309178743961352,
+   "ICON": 8.454106280193237,
+   "Met Office": 8.309178743961352
+  },
+  "crag": "Logie Head",
+  "date": "2026-09-19",
+  "era": 7.513888888888889,
+  "era_base": 8.502415458937199,
+  "feel": "Crisp",
+  "from": 9,
+  "grip": 7.447530864197532,
+  "models": {
+   "ECMWF": 7.5,
+   "ICON": 7.125,
+   "Met Office": 7.569444444444445
+  },
+  "problems": "",
+  "to": 18,
+  "wet": 0.0
  }
 }
