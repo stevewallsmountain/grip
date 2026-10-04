@@ -58,7 +58,7 @@ NOTES_CRAG = "entry.1230562053"
 NOTES_WALL = "entry.763167181"
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
-MODEL_VERSION = "3.5"  # bump when the scoring or crag details change; logged days are then re-scored
+MODEL_VERSION = "3.6"  # bump when the scoring or crag details change; logged days are then re-scored
 CAL_CSV = os.path.join(HERE, "calibration.csv")
 FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
 LABEL_ALIASES = {  # names used in logs before the crag list was rebuilt from the SMC database
@@ -272,14 +272,19 @@ def fake_data(zones):
 
 
 # ---------------------------------------------------------------- the model
-def f_air(rh):
-    """Air moisture. Linear, plus a step at 75% where sea salt on the rock goes wet."""
+def f_air(rh, margin=None):
+    """Air moisture. Reward for dry air as before. The penalty for humid air bites in full when the rock is
+    within 2 degrees of the dew point and eases to half when it is 4 or more degrees clear, because damp air
+    greases rock through condensation; the salt step at 75% follows the same scaling."""
     if rh is None:
         return None
-    pts = min(4.0, (76 - rh) / 4) if rh <= 76 else max(-4.0, (76 - rh) / 5)
-    if rh >= 75:
-        pts -= 1
-    return pts
+    if rh <= 76:
+        return min(4.0, (76 - rh) / 4)
+    pts = max(-4.0, (76 - rh) / 5) - 1
+    if margin is None:
+        return pts
+    scale = 1.0 if margin <= 2 else 0.5 if margin >= 4 else 1.0 - 0.25 * (margin - 2)
+    return pts * scale
 
 
 def f_fog(fog_frac, vis_m):
@@ -359,12 +364,12 @@ def in_shelter(sheltered, wind_dir, aspect, inlet=False):
     return ang_diff(wind_dir, aspect) > 60
 
 
-def f_wind(kmh, is_onshore, sheltered):
+def f_wind(kmh, is_onshore, sheltered, calm_matters=True):
     """Drying by wind at the rock. The speed is halved at sheltered crags. Onshore wind from force 4 up carries salt and spray."""
     if kmh is None:
         return None
     k = kmh * 0.5 if sheltered else kmh
-    pts = -1 if k < 5 else 1 if k <= 15 else 2 if k <= 35 else 1
+    pts = (-1 if calm_matters else 0) if k < 5 else 1 if k <= 15 else 2 if k <= 35 else 1
     if is_onshore:
         pts -= 2 if kmh >= 40 else 1 if kmh >= 25 else 0
     return pts
@@ -537,15 +542,16 @@ def score_crag(zones, crag, models, marine, now):
             r72 = sum(v for v in PR[max(0, i - 72):i] if v is not None) if i >= 72 else None
             is_on = onshore(WD[i], coast)
             f = {
-                "air": f_air(RH[i]),
+                "air": f_air(RH[i], margin),
                 "fog": f_fog(FG[i], VIS[i]),
                 "dew": f_condensation(margin),
                 "wdir": f_wind_dir(WD[i], WS[i], coast),
-                "wind": f_wind(WS[i], is_on, in_shelter(sheltered, WD[i], asp, inlet)),
+                "wind": f_wind(WS[i], is_on, in_shelter(sheltered, WD[i], asp, inlet), calm_matters=(RH[i] is None or RH[i] >= 80 or (margin is not None and margin < 3))),
                 "sun": sun_pts,
                 "sea": seas[i][0],
             }
             f["wet"], wnote = f_wet(PR[i], films[i])
+            f["dry"] = 2.0 if (films[i] <= 0.02 and (PR[i] or 0) < 0.2 and f_fog(FG[i], VIS[i]) == 0 and margin is not None and margin >= 3) else 0.0
             if films[i] > 0.1:  # wind and sun are already working through the film; count them at half weight on wet rock
                 if f["wind"] is not None and f["wind"] > 0:
                     f["wind"] = f["wind"] / 2
@@ -1300,8 +1306,8 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "0 to 10 index. The three weather models are scored separately and blended, with the Met Office 2 km model weighted highest for the first two days. "
       "A day's score is its best three-hour window; the number of usable hours and the wet-rock risk are shown alongside.</p>")
     w("<table><tr><th>Factor</th><th>Points</th><th>Why</th></tr>"
-      "<tr><td>Air moisture</td><td>+1 for every 4% below 76% humidity (up to +4 at 60%) and -1 for every 5% above (down to -4), with an extra -1 once humidity passes 75%</td>"
-      "<td>Sea salt on the rock starts drawing water out of the air at about 75% humidity. The scale is continuous so a small forecast error does not flip the score. Below 76% the reward was steepened after logged days showed the rock keeps improving as the air dries.</td></tr>"
+      "<tr><td>Air moisture</td><td>+1 for every 4% below 76% humidity (up to +4 at 60%) and -1 for every 5% above (down to -4), with an extra -1 once humidity passes 75%. The penalties count in full when the rock is within 2&deg;C of the dew point and at half when it is 4&deg;C or more clear</td>"
+      "<td>Sea salt on the rock starts drawing water out of the air at about 75% humidity. Humid air greases rock through condensation, so the penalty is tied to how close the rock is to the dew point: logged days showed dry rock in 80% air climbing well. Below 76% the reward was steepened after logged days showed the rock keeps improving as the air dries.</td></tr>"
       "<tr><td>Haar</td><td>Fog on the Met Office 2 km model or visibility under 1 km -4; patchy fog or visibility under 4 km -2</td>"
       "<td>Sea fog soaks the rock directly and stops any drying. It also adds to the water on the rock (0.1 mm an hour in thick haar, half that in patchy), so the rock stays damp after the haar lifts until the air and wind have dried it.</td></tr>"
       "<tr><td>Rock against dew point</td><td>Rock temperature minus dew point: 0 or less -4, up to 1&deg;C -3, up to 2&deg;C -2, up to 3&deg;C -1, over 5&deg;C +1</td>"
@@ -1321,7 +1327,9 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "It dries at a rate set by the vapour pressure deficit (how much more moisture the air can take), the wind and sun on the face. Shelter is not applied here: logged days show sheltered rock still dries at the full rate in dry air. "
       "Humid, still air barely dries it; warm, breezy, sunny air clears a light shower in two or three hours. This is what makes the morning after a humid night greasy until the air dries.</td></tr>"
       "<tr><td>Seepage</td><td>5 mm+ of rain in the last 24 hours -2, 10 mm+ -3, a further -1 for 25 mm+ in the last three days</td>"
-      "<td>Drainage after heavy rain lasts much longer than surface water.</td></tr></table>")
+      "<td>Drainage after heavy rain lasts much longer than surface water.</td></tr>"
+      "<tr><td>Dry rock</td><td>+2 when there is no water on the rock, no rain, no haar and the rock is 3&deg;C or more above the dew point</td>"
+      "<td>Dry rock on a grey day is good rock. Without this, an overcast calm morning with nothing wrong scored Greasy; logged days said Crisp. The calm-air penalty is also waived when the rock is dry and the air is under 80%.</td></tr></table>")
     w("<p>The index is 3 plus half the points, held between 0 and 10. Hours with the sun less than 5 degrees above the horizon are not scored. "
       "Tides are shown for planning but not scored, and so are nesting birds: a crag in its bird season is marked, not marked down. Model disagreement is shown rather than hidden: striped cells and the wet-rock risk tell you when the forecasts differ. "
       "The weightings are a first estimate and are being checked against real days; expect them to change.</p>")
