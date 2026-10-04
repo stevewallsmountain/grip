@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: nerd
+  group: grip
   cancel-in-progress: false
 
 jobs:
@@ -28,6 +28,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Build the crag list from the SMC data and local corrections
+        run: python tools/build_crags.py data/smc_coast.json data/overrides.json crags.json
+
       - name: Build forecast page
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
@@ -37,10 +40,10 @@ jobs:
 
       - name: Save state and calibration cache (also keeps the schedule alive)
         run: |
-          if [ -n "$(git status --porcelain state.json calibration.json calibration.csv)" ]; then
-            git config user.name "nerd-bot"
-            git config user.email "nerd-bot@users.noreply.github.com"
-            git add state.json calibration.json calibration.csv
+          if [ -n "$(git status --porcelain state.json calibration.json calibration.csv crags.json)" ]; then
+            git config user.name "grip-bot"
+            git config user.email "grip-bot@users.noreply.github.com"
+            git add state.json calibration.json calibration.csv crags.json
             git commit -m "Update state"
             git push
           fi
