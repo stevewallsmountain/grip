@@ -1,4 +1,27 @@
 {
+ "2.4|Brown Crag|2026-09-13|10|15|Usable": {
+  "base": 6.454106280193237,
+  "base_models": {
+   "ECMWF": 6.956521739130435,
+   "ICON": 6.608695652173912,
+   "Met Office": 6.0
+  },
+  "crag": "Brown Crag",
+  "date": "2026-09-13",
+  "era": 5.675,
+  "era_base": 7.043478260869565,
+  "feel": "Usable",
+  "from": 10,
+  "grip": 4.451666666666666,
+  "models": {
+   "ECMWF": 5.475,
+   "ICON": 4.0600000000000005,
+   "Met Office": 3.88
+  },
+  "problems": "Greasy or sweating",
+  "to": 15,
+  "wet": 0.0
+ },
  "2.4|Clashrodney|2026-10-03|11|15|Crisp": {
   "base": 7.765700483091788,
   "base_models": {
@@ -21,6 +44,29 @@
   "problems": "",
   "to": 15,
   "wet": 0.3333333333333333
+ },
+ "2.4|Craig Stirling|2026-09-26|11|18|Usable": {
+  "base": 7.895100069013112,
+  "base_models": {
+   "ECMWF": 7.950310559006211,
+   "ICON": 7.577639751552795,
+   "Met Office": 8.012422360248447
+  },
+  "crag": "Craig Stirling",
+  "date": "2026-09-26",
+  "era": 7.214285714285714,
+  "era_base": 7.950310559006211,
+  "feel": "Usable",
+  "from": 11,
+  "grip": 7.029761904761905,
+  "models": {
+   "ECMWF": 7.017857142857143,
+   "ICON": 6.642857142857143,
+   "Met Office": 7.232142857142857
+  },
+  "problems": "Greasy or sweating",
+  "to": 18,
+  "wet": 0.0
  },
  "2.4|Craig Stirling|2026-10-01|17|19|Crisp": {
   "base": 7.729468599033816,
@@ -113,5 +159,28 @@
   "problems": "",
   "to": 16,
   "wet": 0.0
+ },
+ "2.4|Newtonhill (Backdoor Wall)|2026-09-27|9|12|Usable": {
+  "base": 4.99194847020934,
+  "base_models": {
+   "ECMWF": 5.507246376811594,
+   "ICON": 4.347826086956522,
+   "Met Office": 4.927536231884058
+  },
+  "crag": "Newtonhill (Backdoor Wall)",
+  "date": "2026-09-27",
+  "era": 3.033333333333333,
+  "era_base": 5.362318840579711,
+  "feel": "Usable",
+  "from": 9,
+  "grip": 1.8703703703703702,
+  "models": {
+   "ECMWF": 1.9666666666666668,
+   "ICON": 0.9333333333333332,
+   "Met Office": 2.2666666666666666
+  },
+  "problems": "Greasy or sweating, Spray from the sea",
+  "to": 12,
+  "wet": 0.1111111111111111
  }
 }
