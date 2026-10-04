@@ -51,6 +51,8 @@ PAST_DAYS = 3
 FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSems6Y-X4CypSu96Vt8DuGh4yH1bWv05wjYPxsN8fnhKPMWBA/viewform"
 FORM_CRAG = "entry.769015387"
 FORM_DATE = "entry.2085482145"
+NOTES_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9yiBWbQ27h_CLWvUP52EbOWPg/viewform"
+NOTES_CRAG = "entry.1230562053"
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
 MODEL_VERSION = "2.4"  # bump when the scoring or crag details change; logged days are then re-scored
@@ -904,6 +906,10 @@ def log_link(c, day_iso):
     return f"{FORM_URL}?usp=pp_url&{FORM_CRAG}={urllib.parse.quote(label(c))}&{FORM_DATE}={day_iso}"
 
 
+def note_link(c):
+    return f"{NOTES_URL}?usp=pp_url&{NOTES_CRAG}={urllib.parse.quote(label(c))}"
+
+
 def render(results, tides, now, cfg, models_ok, cal=None):
     zones = cfg["zones"]
     today = now.date()
@@ -938,7 +944,8 @@ def render(results, tides, now, cfg, models_ok, cal=None):
         w(f'<div class="{css}"><b>{rng}</b><span>{name}: {note}</span></div>')
     w("</div>")
     w(f'<p class="log"><a class="btn" href="{FORM_URL}" target="_blank" rel="noopener">Log a day on the rock</a>'
-      "Climbed on the coast? Say how the rock felt. It takes a minute, it is anonymous, and it is how Grip gets checked against reality.</p>")
+      "Climbed on the coast? Say how the rock felt. It takes a minute, it is anonymous, and it is how Grip gets checked against reality. "
+      f'Know a crag better than the list does? <a href="{NOTES_URL}" target="_blank" rel="noopener">Send a crag note</a>: aspect, tides, seepage, shelter, birds.</p>')
 
     pair = ((today, "Today"), (tomorrow, "Tomorrow"))
     if not best_list(today):
@@ -998,7 +1005,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
                 dd = date.fromisoformat(d).strftime("%a %-d %b")
                 w(f'<td><button type="button" class="cell {cls}" data-crag="{escape(gname)}" data-wall="{escape(c.get("wall") or "")}" data-day="{dd}" '
                   f'data-win="{v["start"]} to {v["end"]}" data-score="{v["index"]:.1f}" data-usable="{v["usable"]} of {v["hours"]}" '
-                  f'data-wet="{pct(v["wet"])}" data-models="{escape(mods)}" data-walls="{escape(wl)}" data-log="{escape(log_link(c, d if date.fromisoformat(d) <= today else today.isoformat()))}" '
+                  f'data-wet="{pct(v["wet"])}" data-models="{escape(mods)}" data-walls="{escape(wl)}" data-log="{escape(log_link(c, d if date.fromisoformat(d) <= today else today.isoformat()))}" data-note="{escape(note_link(c))}" '
                   f'aria-label="{escape(label(c))}, {dd}: {fmt(v["index"])}, {name}">{fmt(v["index"])}</button></td>')
             w("</tr>")
     w("</tbody></table></div>")
@@ -1116,7 +1123,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "Crag details from UKC and the SMC North East Outcrops guide.</p></div>")
     w('<dialog id="detail"><form method="dialog"><h3 id="d-title"></h3><p id="d-sub"></p><table id="d-models"></table>'
       '<p>The blend weights the Met Office 2 (1 beyond two days), ECMWF 1.5 and ICON 1.</p>'
-      '<p><a id="d-log" href="#" target="_blank" rel="noopener">Log how it actually was</a></p><button>Close</button></form></dialog>')
+      '<p><a id="d-log" href="#" target="_blank" rel="noopener">Log how it actually was</a> &middot; <a id="d-note" href="#" target="_blank" rel="noopener">Send a crag note</a></p><button>Close</button></form></dialog>')
     w("""<script>
 (function(){
   var dlg=document.getElementById('detail');
@@ -1137,6 +1144,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       b.dataset.models.split('|').forEach(function(m){var p=m.split('~');rows+='<tr><td>'+p[0]+'</td><td>'+chip(parseFloat(p[1]))+'</td></tr>';});
       document.getElementById('d-models').innerHTML=rows;
       document.getElementById('d-log').href=b.dataset.log;
+      document.getElementById('d-note').href=b.dataset.note;
       if(dlg.showModal){dlg.showModal();}else{dlg.setAttribute('open','');}
     });
   });
