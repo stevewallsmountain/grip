@@ -1,0 +1,40 @@
+{
+  "zones": {
+    "aberdeen_south": {"name": "Aberdeen south", "lat": 57.095, "lon": -2.075, "coast_faces": 112.5},
+    "newtonhill":     {"name": "Portlethen to Newtonhill", "lat": 57.045, "lon": -2.125, "coast_faces": 112.5},
+    "buchan":         {"name": "Buchan", "lat": 57.44, "lon": -1.81, "coast_faces": 112.5},
+    "rosehearty":     {"name": "Rosehearty", "lat": 57.68, "lon": -2.17, "coast_faces": 0},
+    "cullen":         {"name": "Cullen and Portsoy", "lat": 57.685, "lon": -2.78, "coast_faces": 0}
+  },
+  "crags": [
+    {"name": "Deceptive Wall", "zone": "aberdeen_south", "aspect": "SE", "rock": "Schist", "type": "trad"},
+    {"name": "The Long Slough", "zone": "aberdeen_south", "aspect": "E", "rock": "Granite", "type": "trad"},
+    {"name": "Souter Head", "wall": "Grassy Pinnacle South Wall", "zone": "aberdeen_south", "aspect": "S", "rock": "Granite", "type": "trad", "tidal": true},
+    {"name": "Souter Head", "wall": "Grassy Pinnacle East Wall", "zone": "aberdeen_south", "aspect": "E", "rock": "Granite", "type": "trad", "tidal": true},
+    {"name": "Souter Head", "wall": "Jade Buttress", "zone": "aberdeen_south", "aspect": "NE", "rock": "Granite", "type": "trad", "tidal": true},
+    {"name": "South Cove", "wall": "Main Face", "zone": "aberdeen_south", "aspect": "SW", "rock": "Granite", "type": "trad", "tidal": true},
+    {"name": "Clashrodney", "zone": "aberdeen_south", "aspect": "E", "rock": "Granite", "type": "trad"},
+    {"name": "Earnsheugh", "zone": "aberdeen_south", "aspect": "NE", "rock": "Schist", "type": "trad"},
+    {"name": "The Fin", "zone": "aberdeen_south", "aspect": "S", "rock": "Schist", "type": "sport"},
+    {"name": "Berrymuir Head", "zone": "newtonhill", "aspect": "SE", "rock": "Mica schist", "type": "trad"},
+    {"name": "Floors Craig", "zone": "newtonhill", "aspect": "SE", "rock": "Schist", "type": "trad"},
+    {"name": "Craig Stirling", "zone": "newtonhill", "aspect": "NE", "rock": "Schist", "type": "trad", "tidal": true},
+    {"name": "Newtonhill", "wall": "Backdoor Wall", "zone": "newtonhill", "aspect": "NE", "rock": "Mica schist", "type": "trad", "tidal": true},
+    {"name": "Newtonhill", "wall": "Harbour Wall", "zone": "newtonhill", "aspect": "S", "rock": "Mica schist", "type": "trad", "tidal": true},
+    {"name": "Brown Crag", "zone": "newtonhill", "aspect": "SE", "rock": "Schist", "type": "trad"},
+    {"name": "Boltsheugh", "zone": "newtonhill", "aspect": "E", "rock": "Schist", "type": "sport"},
+    {"name": "Murray Heugh", "wall": "Everready Slab", "zone": "newtonhill", "aspect": "N", "rock": "Schist", "type": "sport", "sheltered": true},
+    {"name": "Murray Heugh", "wall": "Main walls", "zone": "newtonhill", "aspect": "E", "rock": "Schist", "type": "sport", "sheltered": true},
+    {"name": "Yellow Crag", "zone": "newtonhill", "aspect": "S", "rock": "Schist", "type": "sport"},
+    {"name": "Meikle Partans", "zone": "buchan", "aspect": "SE", "rock": "Granite", "type": "trad"},
+    {"name": "Fulmar Wall", "zone": "buchan", "aspect": "SE", "rock": "Granite", "type": "trad", "tidal": true},
+    {"name": "Meackie Point", "zone": "buchan", "aspect": "SE", "rock": "Granite", "type": "trad", "tidal": true},
+    {"name": "Red Wall", "zone": "buchan", "aspect": "SE", "rock": "Granite", "type": "trad"},
+    {"name": "Murdoch Head", "wall": "Round Tower", "zone": "buchan", "aspect": "NE", "rock": "Granite", "type": "trad"},
+    {"name": "Murdoch Head", "wall": "East Wall", "zone": "buchan", "aspect": "E", "rock": "Granite", "type": "trad"},
+    {"name": "Murdoch Head", "wall": "Revision Slab and Broke Back Wall", "zone": "buchan", "aspect": null, "rock": "Granite", "type": "sport"},
+    {"name": "Rosehearty", "zone": "rosehearty", "aspect": "NW", "rock": "Greywacke", "type": "trad"},
+    {"name": "Logie Head", "zone": "cullen", "aspect": "E", "rock": "Greywacke", "type": "trad", "tidal": true},
+    {"name": "Redhythe Point", "zone": "cullen", "aspect": "N", "rock": "Unknown", "type": "trad"}
+  ]
+}
