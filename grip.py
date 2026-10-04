@@ -55,7 +55,7 @@ NOTES_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9y
 NOTES_CRAG = "entry.1230562053"
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
-MODEL_VERSION = "2.4"  # bump when the scoring or crag details change; logged days are then re-scored
+MODEL_VERSION = "2.5"  # bump when the scoring or crag details change; logged days are then re-scored
 CAL_CSV = os.path.join(HERE, "calibration.csv")
 FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
 FEEL_RANGE = {"Soaked": (0, 2), "Greasy": (2, 4), "Usable": (4, 6), "Crisp": (6, 8), "Prime": (8, 11)}  # lower edge included, upper excluded
@@ -453,6 +453,11 @@ def score_crag(zones, crag, models, marine, now):
             if vpd is None and T[i] is not None and RH[i] is not None:
                 vpd = vpd_kpa(T[i], RH[i])
             film += PR[i] or 0
+            fog_pts = f_fog(FG[i], VIS[i])
+            if fog_pts <= -4:
+                film += 0.1  # thick haar wets the rock much as drizzle does
+            elif fog_pts <= -2:
+                film += 0.05
             if RH[i] is not None and RH[i] >= 85 and film < 0.15:
                 film += 0.02  # salt on the rock drawing in water: a thin brine film, never more than damp
             if sea[2] is not None and sea[2] >= (2.0 if crag.get("tidal") else 2.5):
@@ -1140,7 +1145,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "<tr><td>Air moisture</td><td>+1 for every 4% below 76% humidity (up to +4 at 60%) and -1 for every 5% above (down to -4), with an extra -1 once humidity passes 75%</td>"
       "<td>Sea salt on the rock starts drawing water out of the air at about 75% humidity. The scale is continuous so a small forecast error does not flip the score. Below 76% the reward was steepened after logged days showed the rock keeps improving as the air dries.</td></tr>"
       "<tr><td>Haar</td><td>Fog on the Met Office 2 km model or visibility under 1 km -4; patchy fog or visibility under 4 km -2</td>"
-      "<td>Sea fog soaks the rock directly and stops any drying.</td></tr>"
+      "<td>Sea fog soaks the rock directly and stops any drying. It also adds to the water on the rock (0.1 mm an hour in thick haar, half that in patchy), so the rock stays damp after the haar lifts until the air and wind have dried it.</td></tr>"
       "<tr><td>Rock against dew point</td><td>Rock temperature minus dew point: 0 or less -4, up to 1&deg;C -3, up to 2&deg;C -2, up to 3&deg;C -1, over 5&deg;C +1</td>"
       "<td>Rock sweats when it is colder than the dew point. Rock temperature is estimated from the current air temperature (40%) and the last 24 hours' average (60%), "
       "pulled 30% towards the sea temperature, warmed by up to 3&deg;C when the sun is on the face, and cooled by 1.5&deg;C under a clear sky with little wind when the sun is below 15 degrees or gone. "
