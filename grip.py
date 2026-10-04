@@ -53,7 +53,8 @@ FORM_DATE = "entry.2085482145"
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
 MODEL_VERSION = "2.1"  # bump when the scoring changes; logged days are then re-scored
-FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}
+FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
+FEEL_RANGE = {"Soaked": (0, 2), "Greasy": (2, 4), "Usable": (4, 6), "Crisp": (6, 8), "Prime": (8, 10.01)}  # lower edge included, upper excluded
 
 COMPASS = {"N": 0, "NNE": 22.5, "NE": 45, "ENE": 67.5, "E": 90, "ESE": 112.5,
            "SE": 135, "SSE": 157.5, "S": 180, "SSW": 202.5, "SW": 225,
@@ -629,6 +630,16 @@ def backscore(cfg, entry):
             "models": {lab: sum(v) / len(v) for lab, v in per.items()}}
 
 
+def band_miss(x, feel):
+    """How far a Grip index falls outside the felt band: 0 inside, negative below, positive above."""
+    lo, hi = FEEL_RANGE[feel]
+    if x < lo:
+        return x - lo
+    if x >= hi:
+        return x - (hi - 1)
+    return 0.0
+
+
 def calibrate(cfg, limit=5):
     """Score every logged day once, cache the result, and summarise how Grip compares with how it felt."""
     if os.environ.get("GRIP_FAKE"):
@@ -663,14 +674,14 @@ def calibrate(cfg, limit=5):
     pending = [e for e in entries if f'{MODEL_VERSION}|{e["crag"]}|{e["date"]}|{e["from"]}|{e["to"]}|{e["feel"]}' not in cache]
     if not scored:
         return {"n": 0, "pending": len(pending), "rows": []}
-    errs = [v["grip"] - FEEL[v["feel"]] for v in scored]
-    bands_right = sum(1 for v in scored if band(v["grip"])[0] == v["feel"])
-    within = sum(1 for err in errs if abs(err) <= 1.5)
+    errs = [band_miss(v["grip"], v["feel"]) for v in scored]
+    bands_right = sum(1 for e in errs if e == 0)
+    within = sum(1 for err in errs if abs(err) <= 1)
     by_model = {}
     for _mid, lab, _d, _w in MODELS:
-        ms = [v["models"][lab] - FEEL[v["feel"]] for v in scored if v.get("models", {}).get(lab) is not None]
+        ms = [band_miss(v["models"][lab], v["feel"]) for v in scored if v.get("models", {}).get(lab) is not None]
         if ms:
-            by_model[lab] = {"n": len(ms), "bias": sum(ms) / len(ms), "mae": sum(abs(x) for x in ms) / len(ms)}
+            by_model[lab] = {"n": len(ms), "right": sum(1 for x in ms if x == 0), "bias": sum(ms) / len(ms), "mae": sum(abs(x) for x in ms) / len(ms)}
     rows = sorted(scored, key=lambda v: v["date"], reverse=True)[:40]
     return {"n": len(scored), "pending": len(pending), "bias": sum(errs) / len(errs),
             "mae": sum(abs(e) for e in errs) / len(errs), "bands_right": bands_right, "within": within,
@@ -943,11 +954,13 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     else:
         w(f"<p>{cal['n']} logged day{'s' if cal['n'] != 1 else ''} scored so far"
           f"{', ' + str(cal['pending']) + ' waiting' if cal['pending'] else ''}. "
-          f"Grip was in the right band {cal['bands_right']} time{'s' if cal['bands_right'] != 1 else ''} and within 1.5 of the felt score {cal['within']} time{'s' if cal['within'] != 1 else ''}. "
-          f"On average it ran {abs(cal['bias']):.1f} {'high' if cal['bias'] > 0 else 'low'}, with a typical miss of {cal['mae']:.1f}.</p>")
+          f"Grip landed in the felt band {cal['bands_right']} time{'s' if cal['bands_right'] != 1 else ''}, and within a point of it {cal['within']} time{'s' if cal['within'] != 1 else ''}. "
+          f"Misses are measured from the edge of the band, since the form records a band rather than a number: "
+          f"typical miss {cal['mae']:.1f}" + (f", on average {abs(cal['bias']):.1f} {'above' if cal['bias'] > 0 else 'below'} the felt band" if abs(cal['bias']) >= 0.05 else "") + ".</p>")
         if cal.get("by_model"):
-            parts = [f'{lab} {m["mae"]:.1f} ({"high" if m["bias"] > 0 else "low"} by {abs(m["bias"]):.1f})' for lab, m in cal["by_model"].items()]
-            w(f"<p>Typical miss by model, against the felt score: {'; '.join(parts)}. The model with the smallest miss over enough days is the one to trust most in the blend.</p>")
+            parts = [f'{lab} in the band {m["right"]} of {m["n"]}, typical miss {m["mae"]:.1f}' + (f' ({"above" if m["bias"] > 0 else "below"} by {abs(m["bias"]):.1f})' if abs(m["bias"]) >= 0.05 else "")
+                     for lab, m in cal["by_model"].items()]
+            w(f"<p>By model: {'; '.join(parts)}. The model that lands in the band most often over enough days is the one to trust most in the blend.</p>")
 
         def chip(x):
             if x is None:
@@ -958,7 +971,8 @@ def render(results, tides, now, cfg, models_ok, cal=None):
         w('<table class="cal"><tr><th>Date</th><th>Crag</th><th>Felt</th><th>Grip</th>' + "".join(f"<th>{lab}</th>" for _m, lab, _d, _w in MODELS) + "</tr>")
         for v in cal["rows"]:
             cells = "".join(f'<td>{chip(v.get("models", {}).get(lab))}</td>' for _m, lab, _d, _w in MODELS)
-            w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(v["crag"])}</td><td>{escape(v["feel"])} ({FEEL[v["feel"]]:g})</td>'
+            lo, hi = FEEL_RANGE[v["feel"]]
+            w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(v["crag"])}</td><td>{escape(v["feel"])} ({lo:g} to {min(hi - 1, 10):g})</td>'
               f'<td>{chip(v["grip"])} {band(v["grip"])[0]}</td>{cells}</tr>')
         w("</table>")
     w("</div>")
