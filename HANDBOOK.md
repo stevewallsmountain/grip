@@ -68,7 +68,7 @@ Committing from a chat: the Claude in Chrome extension edits files through GitHu
 
 Twelve logged days from three people. In band 6 of 12, within a point 10 of 12. Correlation with the logged bands r = 0.58, with crag-overall readings 0.69; average error 0.1 below the felt band. Met Office in band 6 of 11 against 3 of 11 for ECMWF and ICON, hence its weight.
 
-Known misses with no mechanism yet: Brown Band Crag on a calm, grey, humid morning (felt Crisp, model Usable); Souter Head south wall in July, warm air over a cold sea in an inlet (felt Greasy, model Usable).
+Known misses with no mechanism yet: Brown Band Crag on a calm, grey, humid morning (felt Crisp, model Usable); Souter Head south wall in July, warm air over a cold sea in an inlet (felt Greasy, model Crisp, ERA5 also Crisp).
 
 Open questions, in the order evidence is likely to arrive: how long inlets hold water; whether the Embankment at Logie Head should keep its sheltered flag; the per-crag seepage rule (Brown Crag, Crazy Band Cliff until May, The Fin, Little O Wall are the candidates); the rock-temperature factor in spring; bird months for the many crags still on the April to July placeholder.
 
