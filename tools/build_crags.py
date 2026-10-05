@@ -180,7 +180,7 @@ for sec_label, crag in walk_sections():
             e["seeps"] = True
         if f.get("birds") in ("affected", "restricted", "mixed"):
             e["birds"] = {"months": [4, 5, 6, 7], "level": "restricted" if f["birds"] == "restricted" else "affected",
-                          "note": "Nesting birds noted in the SMC database; months not confirmed"}
+                          "note": "Birds reported nesting; months not confirmed"}
         elif f.get("birds") == "clear":
             e["birds"] = {"months": [], "level": "clear", "note": "Free of nesting birds (SMC database)"}
         label = e["name"] + (f" ({e['wall']})" if wall else "")

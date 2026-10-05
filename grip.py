@@ -563,18 +563,20 @@ def plain_line(hs, now_hour=None, tomorrow=False):
     """The plain-words line beside a wall's strip on its crag page, for one wall's daylight hours of the day shown (earlier hours included),
     one short sentence per point: "Grippy now. Best 16:00 to 18:00."
     Today: the band this hour, when it becomes climbable and the best window still to come. A later day (tomorrow=True): the whole day;
-    the heading above the strip names the day."""
+    the heading above the strip names the day. When every daylight hour of the day is climbable or better (and none has passed yet),
+    "Climbable all day" takes the place of "Climbable from 08:00"."""
     rest = hs if tomorrow else [x for x in hs if hour_of(x) >= now_hour]
     if not rest:
         return "No daylight hours left today." if not tomorrow else "No hours scored."
     start = usable_from(rest)
+    whole = len(rest) == len(hs) and all(rnd(x["index"]) >= USABLE for x in hs)  # no hour of the day has passed, and every one is climbable
     if tomorrow:
-        parts = [f"climbable from {start['t'][11:16]}" if start else "not climbable"]
+        parts = ["climbable all day" if whole else f"climbable from {start['t'][11:16]}" if start else "not climbable"]
     else:
         cur = rest[0] if hour_of(rest[0]) == now_hour else None
         parts = [f"{band(cur['index'])[0]} now"] if cur else []
         if not (cur and rnd(cur["index"]) >= USABLE):
-            parts.append(f"climbable from {start['t'][11:16]}" if start else "not climbable today")
+            parts.append("climbable all day" if whole else f"climbable from {start['t'][11:16]}" if start else "not climbable today")
     bw = best_window(rest)
     if bw:
         parts.append(f"best {bw[1][0]['t'][11:16]} to {end_of(bw[1][-1])}")
@@ -1851,7 +1853,8 @@ def rain_totals(h, now):
 
 
 def zone_now(cfg, models, marine, now):
-    """Per weather point, the rain behind the current hour (first model with data) and the sea now and today."""
+    """Per weather point, the rain behind the current hour (first model with data) and the sea now, with its highest wave
+    today ("max") and on each day of the forecast ("maxes", by date)."""
     out = {}
     key = now.strftime("%Y-%m-%dT%H:00")
     for zk in cfg["zones"]:
@@ -1868,9 +1871,12 @@ def zone_now(cfg, models, marine, now):
         if key in times:
             i = times.index(key)
             hs = series(m, "wave_height")
-            today = [v for t, v in zip(times, hs) if t[:10] == key[:10] and v is not None]
+            maxes = {}
+            for t, v in zip(times, hs):
+                if v is not None:
+                    maxes[t[:10]] = max(v, maxes.get(t[:10], v))
             z["sea"] = {"h": hs[i], "dir": series(m, "wave_direction")[i], "period": series(m, "wave_period")[i],
-                        "max": max(today) if today else None}
+                        "max": maxes.get(key[:10]), "maxes": maxes}
         out[zk] = z
     return out
 
@@ -1893,7 +1899,7 @@ TIDAL_MEANS = "Grip pulls the rock temperature harder towards the sea's, and cou
 # Source tags in the data's notes, such as "(SMC)", "(UKC)", "(SMC database)", "(UKC and SMC)" or "(developers' notes, 2020)".
 # The crag pages leave them out (one sources line at the foot says where the facts come from); the data files keep them.
 SOURCE_TAG = re.compile(r"\s*\((?:SMC|UKC|UKClimbing|developers['’]? notes)\b[^()]*\)")
-STOCK_BIRD_NOTES = ("Nesting birds noted in the SMC database", "Free of nesting birds")  # say no more than the status itself
+STOCK_BIRD_NOTES = ("Birds reported nesting", "Free of nesting birds")  # say no more than the status itself
 
 
 def strip_sources(text):
@@ -2037,7 +2043,11 @@ def across_facts(walls, zone, zn, tides, days, labels):
         sea_s = f"{sea['h']:.1f} m" + (f" from the {compass(sea['dir'])}" if sea.get("dir") is not None else "")
         if sea.get("period") is not None:
             sea_s += f", {sea['period']:.0f} s {'swell' if sea['period'] >= 9 else 'wind sea'}"
-        sea_s += "." + (f" Up to {sea['max']:.1f} m today." if sea.get("max") is not None else "")
+        if labels[0] == "Today":  # after dark the page leads with tomorrow, so the high point is that day's, named
+            top, when = sea.get("max"), "today"
+        else:
+            top, when = (sea.get("maxes") or {}).get(days[0].isoformat()), "on " + days[0].strftime("%A")
+        sea_s += "." + (f" Up to {top:.1f} m {when}." if top is not None else "")
     else:
         sea_s = "No sea forecast available."
     faces = zone.get("coast_faces", 112.5)
@@ -2164,6 +2174,20 @@ def sure_items(walls, days, today):
     return out
 
 
+def sure_groups(sure, days):
+    """How sure on a multi-wall crag, by day: each models sentence said once, with the walls it is true of.
+    Returns [(day, [([wall names], sentence)])] in day order, the sentences in the order of the first wall they belong to."""
+    out = []
+    for d in days:
+        groups = {}
+        for r, dd, said in sure:
+            if dd == d:
+                groups.setdefault(said, []).append(wall_name(r["crag"]))
+        if groups:
+            out.append((d, [(names, said) for said, names in groups.items()]))
+    return out
+
+
 FACTOR_LABEL = [("air", "air"), ("fog", "haar"), ("dew", "dew"), ("wdir", "wind dir"), ("wind", "wind"), ("sun", "sun"),
                 ("sea", "sea"), ("wet", "wet"), ("dry", "dry rock"), ("seep", "seep")]  # the points column, in this order
 
@@ -2254,7 +2278,7 @@ main.crag h1{margin:0}
 .sure{border:2px solid var(--ink)}
 .sure p{margin:0 0 var(--s-8);font-size:15px}
 .sure p:last-child{margin-bottom:0}
-.sure h3{margin:var(--s-12) 0 var(--s-2);font:600 15px/1.2 var(--font-body)}
+.sure h3{margin:var(--s-12) 0 var(--s-4);font:600 var(--t-small)/1.2 var(--font-display);letter-spacing:var(--overline-tracking);text-transform:uppercase;color:var(--muted)}
 .across dl,.wall dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s-6) 14px;margin:0;font-size:var(--t-meta)}
 .wall dl{gap:var(--s-4) 14px}
 .across dt,.wall dt{font-weight:600}
@@ -2418,13 +2442,14 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
     w('<section class="box sure" aria-labelledby="sure-h"><h2 id="sure-h">How sure</h2>')
     if not sure:
         w(f'<p>{labels[0]} and {labels[1].lower()} the three models agree{" on every wall" if multi else ""}, within 2 points.</p>')
-    else:
-        last = None
-        for r, d, said in sure:
-            if multi and r is not last:
-                w(f'<h3>{escape(wall_name(r["crag"]))}</h3>')
-                last = r
+    elif not multi:
+        for _r, d, said in sure:
             w(f'<p><b>{labels[days.index(d)]}:</b> {escape(said)}</p>')
+    else:
+        for d, groups in sure_groups(sure, days):
+            w(f"<h3>{labels[days.index(d)]}</h3>")
+            for names, said in groups:
+                w(f"<p><b>{escape(walls_named(names))}:</b> {escape(said)}</p>")
     w("</section>")
 
     across, per_wall = across_facts(walls, zone, zn, tides, days, labels)
@@ -2518,23 +2543,53 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
 
 
 BIRDS_CSS = """
-.updated{color:var(--ink);font-size:var(--t-body);max-width:64ch}
-.legend{display:flex;flex-wrap:wrap;gap:var(--s-6) 18px;margin:0 0 var(--s-16);font-size:var(--t-small);color:var(--muted);max-width:60rem}
+.intro{margin:0;max-width:64ch}
+.caution{display:flex;gap:var(--s-12);align-items:flex-start;max-width:680px;margin:14px 0 0;padding:var(--s-12) 14px;border:2px solid var(--ink);border-radius:var(--r-l);background:var(--card)}
+.caution i{flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--paper);font:700 15px/1 var(--font-body);font-style:normal}
+.caution p{margin:0;font:600 var(--t-body)/1.35 var(--font-body)}
+.season{margin:10px 0 0;font-size:var(--t-meta);color:var(--muted)}
+.bctl{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--s-12) var(--s-20);margin:18px 0 0}
+.bctl[hidden]{display:none}
+.bctl .find{flex:1 1 260px;max-width:380px;margin:0}
+.bctl .find label{margin:0;display:flex;flex-direction:column;gap:var(--s-4)}
+.bctl .find input{font-weight:400}
+.chips{display:flex;flex-wrap:wrap;gap:var(--s-6)}
+.chips button{min-height:var(--tap);padding:0 var(--s-12);border:1px solid var(--rule);border-radius:var(--r-pill);background:var(--card);color:var(--ink);font:500 15px/1 var(--font-body);white-space:nowrap;cursor:pointer}
+.chips button[aria-pressed=true]{background:var(--inv-bg);border-color:var(--inv-bg);color:var(--inv-fg);font-weight:600}
+.chips button span{font-variant-numeric:tabular-nums}
+@media (hover:hover){.chips button[aria-pressed=false]:hover{background:var(--sunk)}}
+#bcount{margin:var(--s-8) 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:var(--s-6) 18px;margin:14px 0 0;font-size:var(--t-small);color:var(--muted);max-width:60rem}
 .legend>span{display:inline-flex;align-items:center;gap:var(--s-6)}
-.birds{font-size:var(--t-meta)}
-.birds td,.birds th{padding:var(--s-8) var(--s-12);border-bottom:1px solid var(--rule);text-align:left;vertical-align:middle}
-.birds tr:first-child th{font:500 var(--t-small)/1.2 var(--font-display);text-transform:uppercase;letter-spacing:var(--overline-tracking);color:var(--muted)}
-.birds tr.zone th{padding:var(--s-20) var(--s-12) var(--s-6);font:600 15px/1.2 var(--font-display);text-transform:uppercase;letter-spacing:var(--overline-tracking);color:var(--muted)}
-.birds td:first-child{font-size:var(--t-body);font-weight:600;line-height:1.2;min-width:10rem}
-.birds td:first-child small{display:block;font-weight:400;color:var(--muted);font-size:var(--t-small)}
-.birds td.note{min-width:16rem;max-width:28rem}
-.birds tr.unk td{background:var(--sunk)}
+.bsec{margin:22px 0 0}
+.bsec[hidden]{display:none}
+.bsec h2{margin:0 0 var(--s-8);font:600 15px/1.2 var(--font-display);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.bcard{background:var(--card);border:1px solid var(--rule);border-radius:var(--r-l);overflow:hidden}
+.bcard ul{margin:0;padding:0;list-style:none}
+.brow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-6) var(--s-12);padding:10px var(--s-12);border-bottom:1px solid var(--rule)}
+.brow[hidden],.fold[hidden],.bcard ul[hidden]{display:none}
+.bcard>:last-child,.bcard>ul:last-child>.brow:last-child{border-bottom:0}
+.brow .bn{flex:1 1 150px;min-width:0;font-weight:600;line-height:1.2;text-decoration:none}
+@media (hover:hover){.brow a.bn:hover{text-decoration:underline}}
+.brow a.bn:focus-visible{text-decoration:underline}
+.brow .bn small{display:block;font-weight:400;font-size:var(--t-small);color:var(--muted)}
+.brow .bt{flex:none}
+.brow .bm{flex:0 0 100%}
+.brow .bnote{flex:1 1 220px;min-width:0;font-size:var(--t-meta)}
+.brow .bc{flex:0 0 132px;display:flex;flex-direction:column;gap:var(--s-2)}
+.brow .bc .ovl{font:600 11px/1 var(--font-display);letter-spacing:var(--overline-tracking);text-transform:uppercase;color:var(--muted)}
+.brow.unk,.fold{background:var(--sunk)}
+@media (min-width:600px){.brow{gap:var(--s-6) var(--s-16);padding:10px 14px}.brow .bn{flex:1 1 200px;max-width:280px}.brow .bt{flex:0 0 118px}.brow .bm{flex:0 0 auto}}
+.fold{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-6) var(--s-12);padding:var(--s-6) 14px;border-bottom:1px solid var(--rule)}
+.fold .ft{flex:1 1 240px;min-width:0;font-size:var(--t-meta)}
+.fold button{display:inline-flex;align-items:center;min-height:var(--tap);padding:0;border:0;background:none;color:var(--ink);font:500 var(--t-meta)/1.2 var(--font-body);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+@media (hover:hover){.fold button:hover{text-decoration-thickness:2px}}
 .tag{display:inline-flex;align-items:center;gap:var(--s-4);min-height:26px;padding:var(--s-2) 9px;border-radius:5px;font-size:var(--t-small);font-weight:600;line-height:1.2;white-space:nowrap;color:var(--ink)}
 .tag i{font-style:normal}
 .t-res{background:var(--inv-bg);color:var(--inv-fg)}
 .t-nest{box-shadow:inset 0 0 0 1.5px var(--ink)}
 .t-pos{border:1.5px dotted var(--ink)}
-.t-free{background:var(--sunk);box-shadow:inset 0 0 0 1px var(--rule);font-weight:500}
+.t-free{background:var(--sunk);box-shadow:inset 0 0 0 1px var(--rule)}
 .t-unk{border:1px dashed var(--muted);background:var(--card)}
 .mcell{display:inline-block;vertical-align:middle}
 .mbar,.mini{display:grid;grid-template-columns:repeat(12,14px);gap:2px}
@@ -2545,90 +2600,259 @@ BIRDS_CSS = """
 .mbar i.p.now{box-shadow:inset 0 -3px 0 var(--ink),inset 0 0 0 1.5px var(--ink)}
 .mbar i.n.now{box-shadow:inset 0 -3px 0 var(--paper)}
 .mini{margin:var(--s-2) 0 0;font:500 10px/1 var(--font-display);color:var(--muted);text-align:center}
-.mt{display:block;margin:var(--s-4) 0 0;font-size:var(--t-small);color:var(--muted)}
 .legend .mbar{display:inline-grid;grid-template-columns:14px}
 .conf{display:inline-flex;align-items:center;gap:var(--s-6);font-size:15px;font-weight:600}
 .conf i{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font:700 11px/1 var(--font-body);font-style:normal}
 .conf i.yes{background:var(--ink)}
 .conf i.yes::before{content:"";width:4px;height:9px;margin-top:-2px;border:solid var(--paper);border-width:0 2px 2px 0;transform:rotate(45deg)}
 .conf i.no{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.none-box{margin:22px 0 0;padding:var(--s-16);background:var(--card);border:1px solid var(--rule);border-radius:var(--r-l)}
+.none-box[hidden]{display:none}
+.none-box p{margin:0 0 var(--s-4)}
+.none-box button{min-height:var(--tap);padding:0;border:0;background:none;color:var(--ink);font:600 var(--t-body)/1.2 var(--font-body);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.foot{color:var(--muted);font-size:var(--t-small);margin-top:28px;padding-top:var(--s-12);border-top:1px solid var(--rule);max-width:72ch}
+"""
+
+BIRDS_JS = r"""
+(function(){  // the bird register: Find a crag and the status chips; No information rows stay folded per stretch until asked for
+  var box=document.getElementById('bfind'), count=document.getElementById('bcount'), all=count.textContent,
+      chips=[].slice.call(document.querySelectorAll('.chips button')), empty=document.getElementById('bempty'),
+      secs=[].slice.call(document.querySelectorAll('.bsec')), kind='all';
+  var data=secs.map(function(s){
+    var rows=[].slice.call(s.querySelectorAll('.brow'));
+    return {s:s, fold:s.querySelector('.fold'), btn:s.querySelector('.fold button'), unks:s.querySelector('ul.unks'), open:false,
+            rows:rows.map(function(r){return {r:r, k:r.dataset.k, key:GripMatch.key(r.dataset.find), crag:r.dataset.crag};})};
+  });
+  function draw(){
+    var q=GripMatch.norm(box.value), test=GripMatch.matcher(box.value), said=box.value.trim(), seen={}, n=0;
+    data.forEach(function(d){
+      var shown=0, folded=!q&&kind==='all'&&!!d.fold;
+      d.rows.forEach(function(x){
+        var on=(kind==='all'||x.k===kind||(kind==='nesting'&&x.k==='possible'))&&(!q||test(x.key));
+        if(x.k==='unknown'&&folded&&!d.open){on=false;}
+        x.r.hidden=!on;
+        if(on){shown++;}
+        if(on||(x.k==='unknown'&&folded)){if(!seen[x.crag]){seen[x.crag]=1;n++;}}
+      });
+      if(d.fold){d.fold.hidden=!folded;d.btn.setAttribute('aria-expanded',d.open?'true':'false');d.btn.textContent=d.open?'Hide them':'Show them';}
+      if(d.unks){d.unks.hidden=!d.unks.querySelector('.brow:not([hidden])');}
+      d.s.hidden=!shown&&!folded;
+    });
+    var nothing=!n;
+    count.textContent=!q&&kind==='all'?all:nothing?'No crags match. Clear the search or pick All.':
+      n+(n===1?' crag':' crags')+(q?(n===1?' matches “':' match “')+said+'”':' shown');
+    count.classList.toggle('vh',nothing);
+    empty.hidden=!nothing;
+  }
+  chips.forEach(function(b){b.addEventListener('click',function(){
+    kind=b.dataset.k;chips.forEach(function(c){c.setAttribute('aria-pressed',c===b?'true':'false');});draw();});});
+  data.forEach(function(d){if(d.btn){d.btn.addEventListener('click',function(){d.open=!d.open;draw();});}});
+  document.getElementById('bclear').addEventListener('click',function(){
+    box.value='';kind='all';chips.forEach(function(c){c.setAttribute('aria-pressed',c.dataset.k==='all'?'true':'false');});draw();box.focus();});
+  box.addEventListener('input',draw);
+  document.getElementById('bctl').hidden=false;
+  draw();
+})();
 """
 
 
 MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
 
-BIRD_TAG = {"restricted": "t-res", "affected": "t-nest", "clear": "t-free", "possible": "t-pos"}  # status tags, ink only, each a different shape
+BIRD_TAG = {"restricted": ("t-res", "Restricted"), "affected": ("t-nest", "Nesting birds"), "clear": ("t-free", "Bird free"),
+            "possible": ("t-pos", "Possibly nesting")}  # status tags, ink only, each a different shape
+BIRD_FILTERS = [("all", "All"), ("restricted", "Restricted"), ("nesting", "Nesting birds"), ("clear", "Bird free"),
+                ("unknown", "No information")]  # the bird register's chips; Nesting birds also takes the possible entries
+BIRD_SOURCES = "Sources: the SMC routes database, UKClimbing and climbers’ reports, reworded by Grip."
 
 
-def month_bar(months, confirmed, this_month):
-    """Twelve squares, January to December: nesting months solid ink once confirmed, hatched while they are a placeholder,
-    the rest outlined; this month underlined. Then the initials and the months as text."""
-    kind = "n" if confirmed else "p"
-
-    def cell(m):
-        cls = " ".join(x for x in (kind if m in months else "", "now" if m == this_month else "") if x)
-        return f'<i class="{cls}"></i>' if cls else "<i></i>"
-    cells = "".join(cell(m) for m in range(1, 13))
-    said = f"Nesting {MONTHS[min(months)]} to {MONTHS[max(months)]}" + ("" if confirmed else ", months not confirmed")
-    return (f'<span class="mcell"><span class="mbar" role="img" aria-label="{said}">{cells}</span>'
-            '<span class="mini" aria-hidden="true">' + "".join(f"<span>{MONTHS[m][0]}</span>" for m in range(1, 13)) + "</span>"
-            f'<span class="mt">{MONTHS[min(months)][:3]} to {MONTHS[max(months)][:3]}</span></span>')
+def bird_kind(b):
+    """The bird register's filter for one entry: restricted, nesting, possible, clear or unknown."""
+    st = bird_status(b)
+    if st != "nesting":
+        return st
+    return "restricted" if b.get("level") == "restricted" else "possible" if b.get("level") == "possible" else "nesting"
 
 
-def render_birds(cfg, now):
-    """A register of nesting-bird status for every crag, with months, source and whether anyone has confirmed it."""
-    out = []
-    w = out.append
-    w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
-    w("<title>Grip: nesting birds by crag</title>")
-    w(fonts())
-    w(icon_links())
-    w(f"<style>{CSS}{BIRDS_CSS}</style></head><body>{header_bar(current='birds')}<main>")
-    w("<h1>Nesting birds by crag</h1>")
-    w(f'<p class="updated">Status, months and source for every crag Grip covers. In season the forecast marks the crag but does not mark it down. '
-      f'Most entries come from keyword matching on the SMC routes database and UKC, with the months a placeholder until someone confirms them. '
-      f'If you know better, <a href="note.html">send a crag note</a>. Updated {now.strftime("%a %-d %b, %H:%M")}.</p>')
+def name_some(names, n=3, joiner="and"):
+    """Up to n names in full ("A, B or C"); beyond that the first n and how many others ("A, B, C and 13 others")."""
+    if len(names) <= n + 1:
+        return names[0] if len(names) == 1 else ", ".join(names[:-1]) + f" {joiner} " + names[-1]
+    return ", ".join(names[:n]) + f" and {len(names) - n} others"
+
+
+def walls_named(names):
+    """Walls sharing one statement: all of them up to three ("A, B and C"), else two and a count ("A, B and 7 more")."""
+    return and_list(names) if len(names) <= 3 else f"{names[0]}, {names[1]} and {len(names) - 2} more"
+
+
+def bird_sections(cfg):
+    """The register's rows by stretch: [(section, [row])]. A row is one crag, or the walls of a crag that share one bird entry
+    (identical entries are listed once): {"name", "walls": [crag dicts], "b", "kind", "sub"}; sub names the walls when the crag
+    has more than one row."""
     groups = []
     for c in cfg["crags"]:
         key = (c.get("section") or "", c["name"])
         if not groups or groups[-1][0] != key:
             groups.append((key, []))
         groups[-1][1].append(c)
-    cur_sec = None
-    unknown = '<span class="tag t-unk"><i aria-hidden="true">?</i>No information</span>'
-    w('<div class="legend" role="note" aria-label="Key"><span><span class="mbar" aria-hidden="true"><i class="n"></i></span>Nesting month, confirmed</span>'
-      '<span><span class="mbar" aria-hidden="true"><i class="p"></i></span>Nesting month, a placeholder until someone confirms it</span>'
-      '<span><span class="mbar" aria-hidden="true"><i></i></span>Other months</span>'
-      '<span><span class="mbar" aria-hidden="true"><i class="now"></i></span>This month</span>'
-      f'<span>{unknown} Unknown. Not the same as bird free.</span></div>')
-    w('<div class="wrap"><table class="birds"><tr><th>Crag</th><th>Status</th><th>Months</th><th>Note</th><th>Confirmed</th></tr>')
+    out = []
     for (sec, name), walls in groups:
-        if sec != cur_sec:
-            w(f'<tr class="zone"><th colspan="5">{escape(sec)}</th></tr>')
-            cur_sec = sec
-        seen = set()
-        rows = []
+        if not out or out[-1][0] != sec:
+            out.append((sec, []))
+        by = {}
         for c in walls:
             b = c.get("birds")
-            key = json.dumps(b, sort_keys=True) if b else None
-            if key in seen:
-                continue
-            seen.add(key)
-            rows.append((c, b))
-        for c, b in rows:
-            wall = f' <small>{escape(c["wall"])}</small>' if c.get("wall") and len(rows) > 1 else ""
-            if not b:
-                w(f'<tr class="unk"><td>{escape(c["name"])}{wall}</td><td>{unknown}</td><td>-</td><td class="note"></td><td>-</td></tr>')
-                continue
-            months = b.get("months") or []
-            span = month_bar(set(months), b.get("confirmed"), now.month) if months else "-"
-            level = {"restricted": "Restricted", "affected": "Nesting birds", "clear": "Bird free", "possible": "Possible"}.get(b.get("level"), b.get("level", ""))
-            tag = f'<span class="tag {BIRD_TAG.get(b.get("level"), "t-nest")}">{escape(level)}</span>'
-            conf = ('<span class="conf"><i class="yes" aria-hidden="true"></i>Yes</span>' if b.get("confirmed")
-                    else '<span class="conf"><i class="no" aria-hidden="true">?</i>No</span>')
-            w(f'<tr><td>{escape(c["name"])}{wall}</td><td>{tag}</td><td>{span}</td><td class="note">{escape(b.get("note", ""))}</td><td>{conf}</td></tr>')
-    w(f"</table></div></main>{site_foot()}</body></html>")
+            by.setdefault(json.dumps(b, sort_keys=True) if b else None, []).append(c)
+        for ws in by.values():
+            b = ws[0].get("birds")
+            sub = walls_named([wall_name(c) for c in ws]) if len(by) > 1 else ""
+            out[-1][1].append({"name": name, "walls": ws, "b": b, "kind": bird_kind(b), "sub": sub})
+    return out
+
+
+def season_line(cfg, month):
+    """The register's In season now line. In season: the crags whose confirmed months include this month, named (at most five,
+    then "and N more"), and how many more have birds reported with the months not confirmed. Outside every entry's months:
+    "none", and roughly when the season runs."""
+    nesting = [c for c in cfg["crags"] if bird_status(c.get("birds")) == "nesting"]
+    every = sorted({m for c in nesting for m in c["birds"].get("months") or []})
+    if month not in every:
+        span = f" The season here runs roughly {MONTHS[every[0]]} to {MONTHS[every[-1]]}." if every else ""
+        return "In season now: none." + span
+    named, more = [], []
+    for c in nesting:
+        b = c["birds"]
+        if b.get("confirmed") and month in (b.get("months") or []) and c["name"] not in named:
+            named.append(c["name"])
+    for c in nesting:
+        if not c["birds"].get("confirmed") and c["name"] not in named and c["name"] not in more:
+            more.append(c["name"])
+    k, m = len(named), len(more)
+    if k:
+        shown = and_list(named) if k <= 5 else ", ".join(named[:5]) + f" and {k - 5} more"  # at most five named
+        line = f"In season now: {k} crag{'s' if k > 1 else ''} with confirmed months ({shown})"
+        if m:
+            line += f"; {m} more {'has' if m == 1 else 'have'} birds reported but months not confirmed"
+    else:
+        line = (f"In season now: no crag with confirmed months; {m} crag{'s' if m > 1 else ''} "
+                f"{'has' if m == 1 else 'have'} birds reported but months not confirmed")
+    return line + "."
+
+
+def month_bar(months, confirmed, this_month):
+    """Twelve squares, January to December: nesting months solid ink once confirmed, hatched while they are a placeholder,
+    the rest outlined; this month underlined. Then the initials."""
+    kind = "n" if confirmed else "p"
+
+    def cell(m):
+        cls = " ".join(x for x in (kind if m in months else "", "now" if m == this_month else "") if x)
+        return f'<i class="{cls}"></i>' if cls else "<i></i>"
+    cells = "".join(cell(m) for m in range(1, 13))
+    if months:
+        said = f"Nesting {MONTHS[min(months)]} to {MONTHS[max(months)]}" + ("" if confirmed else ", months not confirmed")
+    else:
+        said = "No nesting months"
+    return (f'<span class="mcell"><span class="mbar" role="img" aria-label="{said}">{cells}</span>'
+            '<span class="mini" aria-hidden="true">' + "".join(f"<span>{MONTHS[m][0]}</span>" for m in range(1, 13)) + "</span></span>")
+
+
+def bird_note(b):
+    """An entry's note as the register shows it: without its source tags, as a sentence."""
+    note = strip_sources(b.get("note"))
+    return note + ("" if not note or note[-1] in ".!?" else ".")
+
+
+def unknown_text(names):
+    """The folded No information row of a stretch: "16 crags. Grip does not know whether birds nest at A, B, C and 13 others." """
+    lead = f"{len(names)} crags. " if len(names) > 1 else ""
+    return lead + f"Grip does not know whether birds nest at {name_some(names, 3, 'or')}."
+
+
+def bird_row(row, now):
+    """One row of the register: crag (and walls), status tag, month bar, note and Confirmed; unknown rows say only that."""
+    c0, b = row["walls"][0], row["b"]
+    crag_walls = row["all_walls"]
+    href = f"detail/{slug(row['name'])}.html"
+    if len(crag_walls) > 1:
+        href += "#" + wall_ids([{"crag": c} for c in crag_walls])[crag_walls.index(c0)]
+    find = " ".join([row["name"]] + [c["wall"] for c in row["walls"] if c.get("wall")])
+    sub = f"<small>{escape(row['sub'])}</small>" if row["sub"] else ""
+    head = (f'<li class="brow{" unk" if row["kind"] == "unknown" else ""}" data-k="{row["kind"]}" data-crag="{escape(row["name"])}" '
+            f'data-find="{escape(find)}"><a class="bn" href="{href}">{escape(row["name"])}{sub}</a>')
+    if row["kind"] == "unknown":
+        who = row["name"] + (f" ({row['sub']})" if row["sub"] else "")
+        return (head + '<span class="bt"><span class="tag t-unk"><i aria-hidden="true">?</i>No information</span></span>'
+                f'<span class="bnote">Grip does not know whether birds nest at {escape(who)}.</span></li>')
+    cls, said = BIRD_TAG.get(b.get("level"), BIRD_TAG["affected"])
+    months = set(b.get("months") or [])
+    conf = ('<span class="conf"><i class="yes" aria-hidden="true"></i>Yes</span>' if b.get("confirmed")
+            else '<span class="conf"><i class="no" aria-hidden="true">?</i>No</span>')
+    return (head + f'<span class="bt"><span class="tag {cls}">{said}</span></span>'
+            f'<span class="bm">{month_bar(months, bool(b.get("confirmed") and months), now.month)}</span>'
+            f'<span class="bnote">{escape(bird_note(b))}</span>'
+            f'<span class="bc"><span class="ovl">Confirmed</span>{conf}</span></li>')
+
+
+def render_birds(cfg, now):
+    """The bird register: nesting status and months for every crag, by stretch, with a caution notice, the In season now line,
+    Find a crag and status chips; each stretch's No information crags folded into one row until asked for."""
+    sections = bird_sections(cfg)
+    by_name = {}
+    for c in cfg["crags"]:
+        by_name.setdefault(c["name"], []).append(c)
+    rows = [r for _s, rs in sections for r in rs]
+    counts = {k: sum(1 for r in rows if k == "all" or r["kind"] == k or (k == "nesting" and r["kind"] == "possible"))
+              for k, _t in BIRD_FILTERS}
+    out = []
+    w = out.append
+    w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
+    w("<title>Grip: nesting birds</title>")
+    w(fonts())
+    w(icon_links())
+    w(f"<style>{CSS}{COAST_CSS}{BIRDS_CSS}</style></head><body>{header_bar(current='birds')}<main>")
+    w("<h1>Nesting birds</h1>")
+    w('<p class="intro">Nesting status and months for every crag Grip covers. Entries come from published crag information and '
+      "climbers’ reports, and most months are placeholders until someone confirms them. If you know better, "
+      '<a href="note.html">send a crag note</a>.</p>')
+    w('<div class="caution" role="note"><i aria-hidden="true">!</i><p>Not a definitive record. Check local guidance and look before '
+      "you climb in the nesting season.</p></div>")
+    w(f'<p class="season">Updated {now.strftime("%a %-d %b, %H:%M")} &middot; {escape(season_line(cfg, now.month))}</p>')
+    w('<div class="bctl" id="bctl" hidden><div class="find" role="search"><label for="bfind">Find a crag'
+      '<input id="bfind" type="search" placeholder="Start typing a name" autocomplete="off" autocapitalize="off" autocorrect="off" '
+      'spellcheck="false" aria-describedby="bcount"></label></div><div class="chips" role="group" aria-label="Show">'
+      + "".join(f'<button type="button" data-k="{k}" aria-pressed="{"true" if k == "all" else "false"}">{t} <span>{counts[k]}</span></button>'
+                for k, t in BIRD_FILTERS)
+      + "</div></div>")
+    w(f'<p class="sub" id="bcount" role="status">{len(by_name)} crags in {len(sections)} stretches</p>')
+    unknown = '<span class="tag t-unk"><i aria-hidden="true">?</i>No information</span>'
+    w('<div class="legend" role="note" aria-label="Key"><span><span class="mbar" aria-hidden="true"><i class="n"></i></span>Nesting month, confirmed</span>'
+      '<span><span class="mbar" aria-hidden="true"><i class="p"></i></span>Nesting month, not confirmed</span>'
+      '<span><span class="mbar" aria-hidden="true"><i></i></span>Clear</span>'
+      '<span><span class="mbar" aria-hidden="true"><i class="now"></i></span>This month</span>'
+      f'<span>{unknown} Unknown. Not the same as bird free.</span></div>')
+    for i, (sec, rs) in enumerate(sections):
+        for r in rs:
+            r["all_walls"] = by_name[r["name"]]
+        known = [r for r in rs if r["kind"] != "unknown"]
+        unk = [r for r in rs if r["kind"] == "unknown"]
+        w(f'<section class="bsec" aria-labelledby="bs-{i}"><h2 id="bs-{i}">{escape(sec)}</h2><div class="bcard">')
+        if known:
+            w("<ul>" + "".join(bird_row(r, now) for r in known) + "</ul>")
+        if unk:
+            names = []
+            for r in unk:
+                n = r["name"] + (f" ({r['sub']})" if r["sub"] else "")
+                if n not in names:
+                    names.append(n)
+            w(f'<div class="fold" hidden>{unknown}<span class="ft">{escape(unknown_text(names))}</span>'
+              f'<button type="button" aria-expanded="false" aria-controls="bu-{i}">Show them</button></div>')
+            w(f'<ul class="unks" id="bu-{i}">' + "".join(bird_row(r, now) for r in unk) + "</ul>")
+        w("</div></section>")
+    w('<div class="none-box" id="bempty" hidden><p>No crags match. Clear the search or pick All.</p>'
+      '<button type="button" id="bclear">Clear</button></div>')
+    w(f'<p class="foot">{BIRD_SOURCES}</p>')
+    w(f"<script>{MATCH_JS}{BIRDS_JS}</script></main>{site_foot()}</body></html>")
     return "".join(out)
 
 

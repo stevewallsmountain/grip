@@ -80,6 +80,27 @@ class Across(unittest.TestCase):
         self.assertEqual(a["Weather"], "Cullen and Portsoy point, shared along this stretch. Coast counted as facing N.")
         self.assertEqual(per_wall, [[], [], []])  # nothing differs, so no wall card repeats it
 
+    def test_sea_after_dark_names_the_day(self):
+        """After dark the page leads with tomorrow, so the sea's high point is tomorrow's, named by its day, never "today"."""
+        walls = [wall("W0")]
+        walls[0]["film_now"] = ("Met Office", 0)
+        zn = {**ZN, "sea": {**ZN["sea"], "maxes": {TODAY: 1.2, TOMORROW: 1.0}}}
+        across, _pw = grip.across_facts(walls, ZONE, zn, TIDES, DAYS[1:] + [date(2026, 10, 7)], ["Tomorrow", "Day after"])
+        self.assertEqual(dict(across)["Sea"], "1.1 m from the SE, 9 s swell. Up to 1.0 m on Tuesday.")
+        across, _pw = grip.across_facts(walls, ZONE, zn, TIDES, DAYS, ["Today", "Tomorrow"])
+        self.assertEqual(dict(across)["Sea"], "1.1 m from the SE, 9 s swell. Up to 1.2 m today.")
+        across, _pw = grip.across_facts(walls, ZONE, ZN, TIDES, DAYS[1:] + [date(2026, 10, 7)], ["Tomorrow", "Day after"])
+        self.assertEqual(dict(across)["Sea"], "1.1 m from the SE, 9 s swell.")  # no forecast for that day: no high point
+
+    def test_sea_highs_by_day(self):
+        times = [f"{TODAY}T{h:02d}:00" for h in range(24)] + [f"{TOMORROW}T{h:02d}:00" for h in range(24)]
+        heights = [0.5] * 20 + [1.4, None, 0.6, 0.6] + [0.8] * 12 + [1.04] + [0.2] * 11
+        marine = {"z": {"time": times, "wave_height": heights, "wave_direction": [90] * 48, "wave_period": [7] * 48}}
+        now = datetime(2026, 10, 5, 20, 10, tzinfo=grip.TZ)
+        sea = grip.zone_now({"zones": {"z": {}}}, {}, marine, now)["z"]["sea"]
+        self.assertEqual((sea["h"], sea["max"]), (1.4, 1.4))
+        self.assertEqual(sea["maxes"], {TODAY: 1.4, TOMORROW: 1.04})
+
     def test_a_differing_wall_carries_its_own_rock(self):
         across, per_wall = self.facts([0, 0.3, 0])
         self.assertTrue(dict(across)["Rock now"].startswith("Dry on 2 of 3 walls."))
@@ -176,6 +197,22 @@ class Sources(unittest.TestCase):
             self.assertEqual(grip.strip_sources(text), text)
 
 
+class HowSure(unittest.TestCase):
+    def test_walls_named(self):
+        self.assertEqual(grip.walls_named(["Embankment One"]), "Embankment One")
+        self.assertEqual(grip.walls_named(["A", "B", "C"]), "A, B and C")
+        names = ["Embankment One", "Embankment Two"] + [f"W{i}" for i in range(7)]
+        self.assertEqual(grip.walls_named(names), "Embankment One, Embankment Two and 7 more")
+
+    def test_shared_sentences_grouped_by_day(self):
+        a, b, c = wall("A"), wall("B"), wall("C")
+        s1, s2 = "ECMWF is up to 4 points lower than the other two from 09:00 to 12:00. This touches the best window.", "Other."
+        sure = [(a, DAYS[0], s1), (a, DAYS[1], s2), (b, DAYS[0], s1), (c, DAYS[0], s2), (c, DAYS[1], s2)]
+        self.assertEqual(grip.sure_groups(sure, DAYS), [(DAYS[0], [(["A", "B"], s1), (["C"], s2)]), (DAYS[1], [(["A", "C"], s2)])])
+        self.assertEqual(grip.sure_groups([], DAYS), [])
+        self.assertEqual(grip.sure_groups([(b, DAYS[1], s2)], DAYS), [(DAYS[1], [(["B"], s2)])])  # a day with nothing is left out
+
+
 class Birds(unittest.TestCase):
     def test_no_information(self):
         self.assertEqual(grip.bird_status(None), "unknown")
@@ -190,7 +227,7 @@ class Birds(unittest.TestCase):
         self.assertNotIn("No information", grip.birds_line({"months": [], "level": "clear", "note": ""}))
 
     def test_nesting_placeholder(self):
-        b = {"months": [4, 5, 6, 7], "level": "affected", "note": "Nesting birds noted in the SMC database; months not confirmed"}
+        b = {"months": [4, 5, 6, 7], "level": "affected", "note": "Birds reported nesting; months not confirmed"}
         self.assertEqual(grip.birds_line(b), "Reported nesting, April to July, months not confirmed.")
         b = {"months": [4, 5, 6, 7], "level": "affected", "note": "Nesting birds can trouble the routes at the ridge's seaward tip (UKC); months not confirmed"}
         self.assertEqual(grip.birds_line(b), "Reported nesting, April to July, months not confirmed. "
@@ -367,6 +404,28 @@ class Page(unittest.TestCase):
             self.assertNotIn("the three models agree", html)
             for r, _d, said in sure:
                 self.assertIn(grip.escape(said), html)
+
+    def test_how_sure_says_each_sentence_once(self):
+        html, walls, view = self.pages[("11", "Logie Head")]
+        days = [view[0], view[0] + grip.timedelta(days=1)]
+        sure = grip.sure_items(walls, days, view[0])
+        for _d, groups in grip.sure_groups(sure, days):
+            for names, said in groups:
+                self.assertEqual(html.count(f"<b>{grip.escape(grip.walls_named(names))}:</b> {grip.escape(said)}</p>"), 1)
+        for t in ("11", "20"):
+            html, _w, _v = self.pages[(t, "Logie Head")]
+            box = html[html.index('id="sure-h"'):html.index('id="across-h"')]
+            for part in box.split("<h3>")[1:]:
+                lines = re.findall(r"</b> ([^<]+)</p>", part)
+                self.assertEqual(len(lines), len(set(lines)), part)  # within a day, no sentence twice
+
+    def test_sea_line_after_dark(self):
+        html, _w, _v = self.pages[("20", "Logie Head")]
+        sea = re.search(r"<dt>Sea</dt><dd>([^<]+)</dd>", html).group(1)
+        self.assertNotIn("today", sea)
+        self.assertRegex(sea, r"Up to \d\.\d m on Tuesday\.$")
+        html, _w, _v = self.pages[("11", "Logie Head")]
+        self.assertRegex(re.search(r"<dt>Sea</dt><dd>([^<]+)</dd>", html).group(1), r"Up to \d\.\d m today\.$")
 
     def test_single_wall_has_no_walls_list(self):
         html, walls, _v = self.pages[("11", "Buchan Walls")]
