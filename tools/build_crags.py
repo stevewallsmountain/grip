@@ -149,7 +149,7 @@ for sec_label, crag in walk_sections():
     if kids[crag["id"]] and crag.get("aspect"):
         own = parse_aspect(crag["aspect"])[0]
         if own and own not in {parse_aspect(l.get("aspect"))[0] for l, _ in items}:
-            items = [(crag, [])] + items  # the main face has its own aspect that no sub-sector shares
+            items = [(crag, [])] + items  # none of the sub-sectors share the crag's own aspect, so the crag itself counts as a wall
     for r, path in items:
         wall = " – ".join(path) if path else None
         if wall and BOULDER.search(wall):
