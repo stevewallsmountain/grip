@@ -21,31 +21,31 @@ def series(start, vals, day=TODAY):
 # (case, scores from 08:00 to 17:00, current hour or None for a whole later day, expected line)
 LINES = [
     ("low all day", [1, 1.5, 2, 2.4, 3, 3.4, 3.2, 2.5, 2, 1], 11,
-     "Greasy now, not climbable today, best 12:00 to 15:00."),
+     "Greasy now. Not climbable today. Best 12:00 to 15:00."),
     ("low morning then rising", [1, 2, 2.5, 3, 3.6, 4.6, 5.8, 6.2, 5.5, 4.4], 9,
-     "Greasy now, climbable from 12:00, best 14:00 to 17:00."),
+     "Greasy now. Climbable from 12:00. Best 14:00 to 17:00."),
     ("climbable now for one hour, then a dip", [2, 4, 3, 3, 4, 5, 6, 6, 5, 3], 9,
-     "Climbable now, best 13:00 to 16:00."),
+     "Climbable now. Best 13:00 to 16:00."),
     ("climbable from the first hour, before daylight", [4.5, 5, 6, 6.5, 7, 7, 6, 5, 4, 4], 7,
-     "Climbable from 08:00, best 11:00 to 14:00."),
+     "Climbable from 08:00. Best 11:00 to 14:00."),
     ("climbable from the first hour, mid-morning", [4.5, 5, 6, 6.5, 7, 7, 6, 5, 4, 4], 10,
-     "Grippy now, best 11:00 to 14:00."),
+     "Grippy now. Best 11:00 to 14:00."),
     ("climbable then falling away, still climbable", [5, 6, 5.5, 4.6, 3.4, 2, 1, 1, 1, 0], 10,
-     "Grippy now, best 10:00 to 13:00."),
+     "Grippy now. Best 10:00 to 13:00."),
     ("climbable then falling away, now past it", [5, 6, 5.5, 4.6, 3.4, 2, 1, 1, 1, 0], 13,
-     "Greasy now, not climbable today, best 13:00 to 16:00."),
+     "Greasy now. Not climbable today. Best 13:00 to 16:00."),
     ("a single climbable hour at the end does not count", [1, 1, 2, 2, 2, 2, 2, 3, 3, 4], 15,
-     "Greasy now, not climbable today, best 16:00 to 18:00."),
+     "Greasy now. Not climbable today. Best 16:00 to 18:00."),
     ("3.5 shows as 4 and counts as climbable", [2, 3.5, 3.5, 2, 2, 2, 2, 2, 2, 2], 8,
-     "Greasy now, climbable from 09:00, best 08:00 to 11:00."),
+     "Greasy now. Climbable from 09:00. Best 08:00 to 11:00."),
     ("last daylight hour", [5, 5, 5, 5, 5, 5, 5, 5, 5, 3], 17,
-     "Greasy now, not climbable today."),
+     "Greasy now. Not climbable today."),
     ("whole day: rising", [2, 2.5, 3, 4, 5, 6.4, 6.6, 6, 5, 4], None,
-     "Climbable from 11:00, best 13:00 to 16:00."),
+     "Climbable from 11:00. Best 13:00 to 16:00."),
     ("whole day: low all day", [1, 1, 2, 2, 3, 3, 2, 2, 1, 1], None,
-     "Not climbable, best 11:00 to 14:00."),
+     "Not climbable. Best 11:00 to 14:00."),
     ("whole day: climbable from the start", [4, 5, 6, 8, 8.4, 8, 6, 5, 4, 4], None,
-     "Climbable from 08:00, best 11:00 to 14:00."),
+     "Climbable from 08:00. Best 11:00 to 14:00."),
 ]
 
 
@@ -66,7 +66,7 @@ class PlainLine(unittest.TestCase):
                 rest = hs if tomorrow else [h for h in hs if grip.hour_of(h) >= now_hour]
                 bw = grip.best_window(rest)
                 if bw:
-                    self.assertIn(f"best {bw[1][0]['t'][11:16]} to {grip.end_of(bw[1][-1])}",
+                    self.assertIn(f"Best {bw[1][0]['t'][11:16]} to {grip.end_of(bw[1][-1])}.",
                                   grip.plain_line(hs, now_hour, tomorrow))
 
     def test_no_hours(self):
