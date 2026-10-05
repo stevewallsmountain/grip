@@ -110,7 +110,7 @@ Items marked **(B)** depend on a proposal in group B of the change list. Build t
 
 ## 11. Strips (crag page)
 
-- Per day: overline label "Today, Mon 5" and the plain line (17px 600) "Grippy now. Best 16:00 to 18:00." on one wrapping row.
+- Per day: overline label "Today, Mon 5" and the plain line (17px 600) "Grippy now. Best 16:00 to 18:00." on one wrapping row. When every daylight hour of the day is Climbable or better (and none has passed), the line reads "Climbable all day." in place of "Climbable from 09:00.", then the best window as usual.
 - Blocks: flex 1, 36px tall, radius 5, number 19px; hour label under each, 12px display muted.
 - States as the coast panel: past, current ring, stripes, dot, not scored. **After dark:** the Today strip is all past and its line reads "Over for today. Best was 16:00 to 18:00."
 
@@ -120,8 +120,8 @@ Layout ≥ 900px: left column (basis 320px) = Walls, How sure, Across the crag; 
 
 - **Title block:** breadcrumb "Forecast / {stretch}" (14px), `h1` 36 to 40px display, meta line "9 walls · Weather from the Cullen and Portsoy point · Updated …", actions: "Log a day here" (primary), "Send a crag note" (secondary).
 - **Walls (B8):** card with a 3-column grid (name+sub, Today, Tmrw). Rows are links to the wall card, 44px min. Current wall: `aria-current`, `--sunk` bg, 3px inset ink left rule. Single-wall crags omit this card.
-- **How sure (B10):** 2px ink border, radius 10. Heading 20px. One to three sentences naming which model differs, when, and whether it touches the best window. Empty state: "Today and tomorrow the three models agree on every wall, within 2 points."
-- **Across the crag (B9):** `dl` of Rock now, Low water, Sea, Weather. Footnote naming the source model and time.
+- **How sure (B10):** 2px ink border, radius 10. Heading 20px. One to three sentences naming which model differs, when, and whether it touches the best window. On multi-wall crags the sentences go under a day overline ("Today", "Tomorrow"), and a sentence shared by several walls is said once, led by the walls it is true of: "Embankment One, Embankment Two and 7 more: …" (up to three walls named in full, beyond that two and a count). Empty state: "Today and tomorrow the three models agree on every wall, within 2 points."
+- **Across the crag (B9):** `dl` of Rock now, Low water, Sea, Weather. Footnote naming the source model and time. The Sea line ends with the day's highest sea: "Up to 1.2 m today."; after dark, when the page leads with tomorrow, it is tomorrow's, with the day named: "Up to 1.0 m on Tuesday."
 - **Wall card:** `article`, card bg, radius 10, padding 14/16. `h2` 28px display + "Log a day on this wall" link; tags (pills, 13px, rule border) for aspect, shelter, tide, birds-in-season. Then strips (Today, Tomorrow), Why (`h3` overline + one or two sentences), What shapes this wall (`dl`, only facts that differ from "Across the crag"), Next 7 days (7-column grid: day, 38px block, window "11–14", hours "9 h").
 - **Collapsed walls (B11):** `<details>` per wall; `<summary>` 48px min with name, aspect, today and tomorrow blocks, "+" marker that turns to "−" when open. First wall (or the one in the URL hash) opens by default.
 - **Logged days here:** table: Date, Wall, Felt, Grip said, Actual weather. Empty: "No days logged here yet. Climbed here? Log a day." with the link.
@@ -176,18 +176,19 @@ All three are on-site pages (`log.html`, `note.html`, `feedback.html`) built fro
 
 ## 17. Birds page
 
-- `h1` "Nesting birds". Intro: "Nesting status and months for every crag Grip covers. Entries come from published crag information and climbers' reports, and most months are placeholders until someone confirms them. If you know better, send a crag note." Meta line with "In season now: …".
+- `h1` "Nesting birds". Intro: "Nesting status and months for every crag Grip covers. Entries come from published crag information and climbers' reports, and most months are placeholders until someone confirms them. If you know better, send a crag note."
 - **Caution notice** directly under the intro, never collapsed: `role="note"`, card bg, 2px ink border, radius 10, padding 12/14, 24px ink "!" disc, 16px 600: "Not a definitive record. Check local guidance and look before you climb in the nesting season."
-- Controls: search (as §8) and status filter chips (`aria-pressed`) with counts: All, Restricted, Nesting birds, Bird free, No information.
-- Legend: nest month, clear month, this month, and the No information tag with "Unknown. Not the same as bird free."
-- Sections by stretch, each a card. Row (flex-wrap): crag + wall, status tag, 12-month bar, note, Confirmed.
+- Meta line, 14px muted: "Updated Mon 5 Oct, 16:51 · In season now: …". In season (the current month is in some entry's months): the crags whose confirmed months include the current month, counted and named (at most five, then "and N more"), and how many more crags have birds reported with the months not confirmed: "In season now: 4 crags with confirmed months (A, B, C and D); 23 more have birds reported but months not confirmed." With none confirmed: "In season now: no crag with confirmed months; 58 crags have birds reported but months not confirmed." Outside every entry's months: "In season now: none. The season here runs roughly March to August." (the span of all the entries' months).
+- Controls (shown by script; hidden without it): search (as §8, the shared matching code) and status filter chips (`aria-pressed`, 44px, pill, rule border; pressed `--inv-bg`) with counts of rows: All, Restricted, Nesting birds, Bird free, No information. Live line under them, `role="status"`: "165 crags in 16 stretches"; "3 crags match “logie”"; "10 crags shown" for a chip alone.
+- Legend: nesting month confirmed (solid), nesting month not confirmed (hatched), clear, this month, and the No information tag with "Unknown. Not the same as bird free."
+- Sections by stretch, each one card (`h2` 15px display caps muted). Row (flex-wrap, so nothing goes off-screen): crag + walls (the walls named when the crag has more than one row; links to the crag page and wall), status tag, 12-month bar, note, Confirmed. Phones: name and tag on the first line, then the bar on its own line, the note, and Confirmed with its label. From 600px: name up to 280px, tag 118px, bar, note, Confirmed 132px.
 - **Status tags**, ink only, different in shape as well as fill: Restricted = `--inv-bg` fill; Nesting birds = 1.5px ink outline; Bird free = `--sunk` fill, 1px rule outline; No information = 1px dashed outline with a "?" prefix on a `--sunk` row, text always "Grip does not know whether birds nest at …". No information is never lighter than, or styled like, Bird free.
 - **Confirmed** is its own 132px column: overline "Confirmed", value "Yes" (filled ink tick disc) or "No" (outlined "?" disc), 15px 600. On phones it wraps under the note with its label.
 - Notes carry no source tags. The repeated stock note reads "Birds reported nesting; months not confirmed."
-- Month bar: 12 squares 14px, gap 2, radius 2; nesting months ink; others 1px rule outline; current month 3px inset ink underline; initials row 10px display muted; `aria-label` "Nesting April to July".
-- **(B)** No-information crags summarised in one row per section with "Show them"; the No information chip expands them as rows.
+- Month bar: 12 squares 14px, gap 2, radius 2; confirmed nesting months solid ink, placeholder months hatched; others 1px rule outline; current month 3px inset ink underline; initials row 10px display muted; `aria-label` "Nesting April to July, months not confirmed".
+- **No information folded:** each stretch's No information crags sit after its other rows, summarised in one `--sunk` row: the tag, "16 crags. Grip does not know whether birds nest at A, B, C and 13 others." (all named when there are four or fewer, joined with "or"), and a 44px "Show them" text button (`aria-expanded`) that lists them as rows and turns to "Hide them". The No information chip, and any search, list them as rows. Without script every row is listed and the summary row is not shown.
+- Empty filter: "No crags match. Clear the search or pick All." with a Clear button that empties the search and picks All.
 - Foot: "Sources: the SMC routes database, UKClimbing and climbers' reports, reworded by Grip." 13px muted.
-- Empty filter: "No crags match. Clear the search or pick All."
 
 ## 18. Method page (How Grip works)
 
