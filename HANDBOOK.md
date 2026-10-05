@@ -6,6 +6,7 @@ Grip is a dry-rock forecast for the sea cliffs of north-east Scotland, Girdle Ne
 
 - Live page: https://stevewallsmountain.github.io/grip/ with a hour-by-hour page per crag under `detail/` and the bird register at `birds.html`.
 - Public repository: https://github.com/stevewallsmountain/grip. `grip.py` (the whole model and page, Python 3.12, standard library only), `crags.json` (generated, do not hand edit), `data/smc_coast.json` (structured facts from the SMC routes database), `data/overrides.json` (local corrections by wall label), `tools/build_crags.py` (builds `crags.json` from the two data files), `calibration.json` and `calibration.csv` (scored logs), `.github/workflows/update.yml` (runs hourly at 17 past, builds the crag list, scores, deploys).
+- `CLAUDE.md`: instructions for Claude Code sessions; points to this handbook and sets the change sequence.
 - Private repository: https://github.com/stevewallsmountain/grip-private. Full scraped text: `smc_coast_full.json` (473 records, 2,627 routes) and `ukc_coast_full.json` (254 crags). Working data only, not published, SMC and UKC copyright.
 - Log form: https://docs.google.com/forms/d/e/1FAIpQLSems6Y-X4CypSu96Vt8DuGh4yH1bWv05wjYPxsN8fnhKPMWBA/viewform. Entry IDs: crag 769015387, wall 1131909785, date 2085482145, from 764556216, until 1083400377, feel 1126435114, problems 525175392, initials 1772081994. Responses spreadsheet 12G-V5UOe7wDu5niXQrvsE3SEEY0z1c1QxYRTLl_E89c: raw tab is private (has the contact column), the `Public` tab mirrors columns A to J and is what the build reads, the `Log notes` tab is the analysis record (one row per logged day: follow-up detail, what it told us, what changed).
 - Crag notes form: https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9yiBWbQ27h_CLWvUP52EbOWPg/viewform. Entry IDs: crag 1230562053, wall 763167181. Responses spreadsheet 171ELMVi8Y4tvfLVS7r5luaRnNVSU8fOF9Zj6zypIRXE.
@@ -48,9 +49,22 @@ Log review (whenever logs arrive):
 
 Scoring change:
 1. Reproduce the day locally with the hourly data (the hour-by-hour page shows the breakdown), test the change on every day with data, check the forecast grid does not go flat or run away.
-2. Bump `MODEL_VERSION` so all logged days re-score, update the "How Grip works" table on the page, commit, run the workflow three times to re-score all logs, re-check correlation, write the row in `Log notes`.
+2. Bump `MODEL_VERSION` so all logged days re-score, update the "How Grip works" table on the page, commit and merge as under Changing the repository below, run the workflow on `main` three times to re-score all logs, re-check correlation, write the row in `Log notes`.
 
-Committing from a chat: the Claude in Chrome extension edits files through GitHub's web editor (a script applies line edits to the CodeMirror document, checked by SHA-1 before and after) and runs the workflow from the Actions page. Google Forms and Sheets are edited through their normal pages. Facebook group files need a real click to download.
+Changing the repository: every change is made in Claude Code from a clone, following `CLAUDE.md`. Log reviews and the Google Sheets stay in a separate Claude chat, and Steve carries change briefs from there to Claude Code and the reports back.
+1. Pull the latest `main` and edit on a branch. Nothing is pushed to `main` directly.
+2. Test offline: build the crag list, then `GRIP_FAKE=1 python grip.py`, and revert any generated files the run changed. This proves the page builds, nothing more: it uses synthetic weather and skips real calibration and back-scoring.
+3. Run the targeted test named in the brief for the behaviour being changed (for example, recomputing the calibration summary from the committed `calibration.json`, or a live Open-Meteo request for a past date).
+4. Show Steve the diff and the targeted test's results. Nothing is committed without Steve's confirmation.
+5. Commit, push the branch and open a PR whose summary says what changed, why, whether it touches scoring, and what result to check. Steve squash merges it.
+6. After the merge, start the workflow on `main` and read its job log with the session's GitHub access (connector tools in a cloud session, `gh` on a clone), then check the page or `calibration.csv` for the expected result.
+7. Report item by item what changed, with the merge commit hash, for the Grip chat.
+
+Never run the workflow on any branch other than `main`: the page deploys from whichever branch it runs on. Testing on a branch is offline only, with `GRIP_FAKE=1`. The workflow runs Python 3.12 and a Claude Code session may run 3.11, so code must run on both, without 3.12-only syntax, and is tested on 3.12 where it is available.
+
+Fallback when Claude Code is unavailable: the Grip chat edits through GitHub's web editor in Claude in Chrome (line edits checked by SHA-1 before and after), commits to a new branch with a PR using the commit dialog's pull request option, and Steve merges as usual. The same confirmation and testing rules apply, with the targeted test run in the chat's sandbox.
+
+Google Forms and Sheets are edited through their normal pages. Facebook group files need a real click to download.
 
 ## Calibration procedure
 
