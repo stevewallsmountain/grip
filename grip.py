@@ -58,13 +58,16 @@ FORM_ENTRIES = {"crag": "entry.769015387", "wall": "entry.1131909785", "date": "
                 "contact": "entry.1160807926"}  # the page log form submits into the Google Form by these IDs
 FORM_CRAGS_FILE = os.path.join(HERE, "data", "form_crags.json")  # the Google Form's crag options, in order
 FORM_ELSEWHERE = "Somewhere else on the coast"
-LOG_FEELS = ["Soaked: wet rock", "Greasy: damp and slippery, training at best", "Usable: climbable with care",
-             "Crisp: good friction", "Prime: as dry as this coast gets"]  # exact option strings on the Google Form
+LOG_FEELS = ["Soaked: wet rock", "Greasy: damp and slippery, training at best", "Climbable: fine with care",
+             "Grippy: good friction", "Prime: as dry as this coast gets"]  # exact option strings on the Google Form
+FEEL_ALIASES = {"Climbable": "Usable", "Grippy": "Crisp"}  # band names as people see them -> the internal keys logs are stored under
 LOG_PROBLEMS = ["Wet from rain", "Greasy or sweating", "Seepage", "Haar or fog", "Spray from the sea",
                 "Still wet from the night before", "Fine until the sun left the face"]
 NOTES_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9yiBWbQ27h_CLWvUP52EbOWPg/viewform"
 NOTES_CRAG = "entry.1230562053"
 NOTES_WALL = "entry.763167181"
+FEEDBACK_URL = "https://docs.google.com/forms/d/e/1FAIpQLSc7K1EeOhs2swtdZqFqffm3A02RSLHIn01_sKwN85Xlw-7qGQ/viewform"
+POPULAR_FILE = os.path.join(HERE, "data", "popular.json")  # the crags people climb most, in order, for the front page table
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
 MODEL_VERSION = "3.7"  # bump when the scoring or crag details change; logged days are then re-scored
@@ -88,6 +91,7 @@ LABEL_ALIASES = {  # names used in logs before the crag list was rebuilt from th
     "Redhythe Point": "Redhythe Point Eastern Area",
 }
 FEEL_RANGE = {"Soaked": (0, 2), "Greasy": (2, 4), "Usable": (4, 6), "Crisp": (6, 8), "Prime": (8, 11)}  # lower edge included, upper excluded
+FEEL_NAME = {"Soaked": "Soaked", "Greasy": "Greasy", "Usable": "Climbable", "Crisp": "Grippy", "Prime": "Prime"}  # internal key -> name shown
 
 COMPASS = {"N": 0, "NNE": 22.5, "NE": 45, "ENE": 67.5, "E": 90, "ESE": 112.5,
            "SE": 135, "SSE": 157.5, "S": 180, "SSW": 202.5, "SW": 225,
@@ -97,12 +101,12 @@ POINTS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 # Grip index 0-10. (min index, name, note, css class, range label)
 BANDS = [
     (8, "Prime", "As dry as this coast gets", "b5", "8 to 10"),
-    (6, "Crisp", "Good friction", "b4", "6 to 7"),
-    (4, "Usable", "Climbable with care; choose the wall well", "b3", "4 to 5"),
+    (6, "Grippy", "Good friction", "b4", "6 to 7"),
+    (4, "Climbable", "Fine with care; choose the wall well", "b3", "4 to 5"),
     (2, "Greasy", "Damp and slippery; training at best", "b2", "2 to 3"),
     (0, "Soaked", "Wet rock", "b1", "0 to 1"),
 ]
-USABLE = 4  # index at or above this counts as a usable hour
+USABLE = 4  # index at or above this counts as a climbable hour
 
 
 # ---------------------------------------------------------------- utilities
@@ -510,7 +514,7 @@ def end_of(hr):
 
 
 def usable_from(hs):
-    """The first hour from which the score, as shown, stays usable for at least two consecutive hours; None if none."""
+    """The first hour from which the score, as shown, stays climbable for at least two consecutive hours; None if none."""
     for a, b in zip(hs, hs[1:]):
         if rnd(a["index"]) >= USABLE and rnd(b["index"]) >= USABLE and hour_of(b) == hour_of(a) + 1:
             return a
@@ -518,19 +522,20 @@ def usable_from(hs):
 
 
 def plain_line(hs, now_hour=None, tomorrow=False):
-    """The plain-words line in the crag search, for one wall's daylight hours of the day shown (earlier hours included).
-    Today: the band this hour, when it becomes usable and the best window still to come. Tomorrow: the whole day."""
+    """The plain-words line under a wall's strip on its crag page, for one wall's daylight hours of the day shown (earlier hours included).
+    Today: the band this hour, when it becomes climbable and the best window still to come. A later day (tomorrow=True): the whole day;
+    the heading above the strip names the day."""
     rest = hs if tomorrow else [x for x in hs if hour_of(x) >= now_hour]
     if not rest:
-        return "No daylight hours left today." if not tomorrow else "Tomorrow: no hours scored."
+        return "No daylight hours left today." if not tomorrow else "No hours scored."
     start = usable_from(rest)
     if tomorrow:
-        parts = ["Tomorrow: " + (f"usable from {start['t'][11:16]}" if start else "not usable")]
+        parts = [f"climbable from {start['t'][11:16]}" if start else "not climbable"]
     else:
         cur = rest[0] if hour_of(rest[0]) == now_hour else None
         parts = [f"{band(cur['index'])[0]} now"] if cur else []
         if not (cur and rnd(cur["index"]) >= USABLE):
-            parts.append(f"usable from {start['t'][11:16]}" if start else "not usable today")
+            parts.append(f"climbable from {start['t'][11:16]}" if start else "not climbable today")
     bw = best_window(rest)
     if bw:
         parts.append(f"best {bw[1][0]['t'][11:16]} to {end_of(bw[1][-1])}")
@@ -784,8 +789,8 @@ def fetch_log():
             crag = r[ic].strip()
             d = parse_date(r[idate])
             t1, t2 = parse_time(r[ifrom]), parse_time(r[ito])
-            feel = r[ifeel].split(":")[0].strip()
-            if not crag or d is None or t1 is None or t2 is None or feel not in FEEL:
+            feel = parse_feel(r[ifeel])
+            if not crag or d is None or t1 is None or t2 is None or feel is None:
                 continue
             if t2 <= t1:
                 t2 = t1 + 1
@@ -795,6 +800,13 @@ def fetch_log():
         except Exception:  # noqa: BLE001
             continue
     return out
+
+
+def parse_feel(x):
+    """The internal band key for a logged feel option, old or new wording ("Usable: ..." and "Climbable: ..." both give "Usable"); None if unknown."""
+    name = (x or "").split(":")[0].strip()
+    name = FEEL_ALIASES.get(name, name)
+    return name if name in FEEL else None
 
 
 def parse_date(x):
@@ -932,7 +944,7 @@ def write_calibration_csv(cache):
         for v in rows:
             lo, hi = FEEL_RANGE[v["feel"]]
             r2 = lambda x: "" if x is None else f"{x:.1f}"  # noqa: E731
-            wr.writerow([v["date"], v["crag"], f'{v["from"]:02d}:00', f'{v["to"]:02d}:00', v["feel"], lo, min(hi - 1, 10),
+            wr.writerow([v["date"], v["crag"], f'{v["from"]:02d}:00', f'{v["to"]:02d}:00', FEEL_NAME[v["feel"]], lo, min(hi - 1, 10),
                          r2(v["grip"]), r2(band_miss(v["grip"], v["feel"]))]
                         + [r2(v.get("models", {}).get(lab)) for lab in labs]
                         + [r2(v.get("era")), r2(band_miss(v["era"], v["feel"]) if v.get("era") is not None else None)]
@@ -1043,12 +1055,8 @@ a{color:inherit}
 .scale b{display:block;font:600 1.3rem/1.1 "Barlow Condensed",system-ui,sans-serif}
 .scale span{display:block;font-size:.82rem;line-height:1.3}
 @media (max-width:560px){.scale{grid-template-columns:1fr}.scale div{display:grid;grid-template-columns:6.2rem 1fr;align-items:center;gap:10px;padding:6px 10px}.scale b{font-size:1.15rem;white-space:nowrap}}
-.bets{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
-.day h3{font:600 1.1rem "Barlow Condensed",system-ui,sans-serif;margin:0 0 8px}
-.bet{display:grid;grid-template-columns:3.2rem 1fr;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--rule)}
 .num{font:600 1.7rem/1 "Barlow Condensed",system-ui,sans-serif;text-align:center;padding:8px 0;border-radius:4px}
-.bet .who{font-weight:600}
-.bet .sub{color:var(--muted);font-size:.9rem}
+.sub{color:var(--muted);font-size:.9rem}
 .b1{background:var(--b1);color:var(--b1t)}.b2{background:var(--b2);color:var(--b2t)}.b3{background:var(--b3);color:var(--b3t)}
 .b4{background:var(--b4);color:var(--b4t)}.b5{background:var(--b5);color:var(--b5t)}
 .wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--rule);border-radius:4px;background:var(--card)}
@@ -1066,7 +1074,6 @@ table{border-collapse:collapse;width:100%}
 .key i.risk::after{top:2px;right:2px;width:5px;height:5px}
 .grid td div.none{color:var(--muted);font-weight:400}
 .hint{color:var(--muted);font-size:.9rem;margin:-4px 0 10px}
-.log{margin:-10px 0 26px;color:var(--muted);font-size:.92rem}
 .btn{display:inline-block;padding:7px 14px;border-radius:4px;background:var(--ink);color:var(--paper);text-decoration:none;font-weight:600;margin-right:10px}
 .btn:hover{opacity:.9}
 .cal{width:auto;font-size:.85rem}
@@ -1116,12 +1123,26 @@ COAST_CSS = """
 .find{margin:18px 0 26px;max-width:40rem}
 .find label{display:block;font-weight:600;margin:0 0 4px}
 .find input{display:block;width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--rule);border-radius:4px;background:var(--card);color:var(--ink)}
-.found{list-style:none;margin:10px 0 0;padding:0}
-.found li{padding:10px 0;border-top:1px solid var(--rule)}
-.found li>a{font-weight:600;display:inline-block;margin:0 0 4px}
-.found p{margin:4px 0 0;font-size:.92rem}
-.find .note{color:var(--muted);font-size:.9rem;margin:8px 0 0}
+.find .hint{margin:6px 0 0}
+.find .note{font-weight:600;margin:8px 0 0}
 .find .note:empty{display:none}
+.grid tr[hidden]{display:none}
+.forms{list-style:none;margin:0 0 10px;padding:0;max-width:52rem}
+.forms li{display:grid;grid-template-columns:12rem minmax(0,1fr);gap:4px 14px;align-items:center;padding:8px 0;border-top:1px solid var(--rule);color:var(--muted);font-size:.92rem}
+.forms .btn{margin:0;text-align:center}
+.btn.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
+@media (max-width:560px){.forms li{grid-template-columns:minmax(0,1fr)}.forms .btn{justify-self:start}}
+.popw{max-width:46rem}
+.pop th,.pop td{padding:7px 10px;border-bottom:1px solid var(--rule);text-align:left;vertical-align:middle}
+.pop thead th{color:var(--muted);font-weight:600;font-size:.9rem}
+.pop thead th small{font-weight:400}
+.pop tbody th a{font-weight:600}
+.pc .num{display:inline-block;min-width:2.3rem;font-size:1.25rem;padding:4px 6px;margin:0 8px 0 0;vertical-align:middle}
+.pc .pw{display:inline-block;vertical-align:middle;font-size:.9rem;line-height:1.35}
+.pc .w{white-space:nowrap}
+.pc small{display:block;color:var(--muted);font-size:.8rem}
+@media (max-width:560px){.pop th,.pop td{padding:6px 5px}.pop tbody th{font-size:.88rem}.pc .num{display:block;margin:0 0 3px}.pc .pw{font-size:.8rem}
+.pc .w,.pc .h{display:block}.pc .dot{display:none}.pop thead th small{display:block}}
 """
 
 MATCH_JS = r"""
@@ -1139,47 +1160,26 @@ var GripMatch=(function(){  // crag name matching shared by the front page searc
 })();
 """
 
-SEARCH_JS = r"""
-var GripFind=(function(){
-  var D=__COAST__;  // {h: daylight hours shown, now: the current hour or -1, b: bands [min, name, css], w: [[label, detail page name, scores by hour, plain words], ...]}
-  var KEYS=D.w.map(function(w){return GripMatch.key(w[0]);});
-  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  function band(v){for(var i=0;i<D.b.length;i++){if(v>=D.b[i][0]){return D.b[i];}}return D.b[D.b.length-1];}
-  function strip(vals){  // the same blocks as the Coast panel rows
-    var head='', cells='';
-    D.h.forEach(function(h,i){
-      var hh=(h<10?'0':'')+h, v=vals[i];
-      head+='<span>'+hh+'</span>';
-      if(v===null||v===undefined){cells+='<span></span>';return;}
-      var b=band(v), when=D.now<0?'':h<D.now?'past':h===D.now?'now':'';
-      cells+='<span role="img" class="'+b[2]+(when?' '+when:'')+'" aria-label="'+hh+':00, '+(when?when+', ':'')+b[1].toLowerCase()+', '+v+'">'+v+'</span>';
-    });
-    return '<div class="strip hrs" aria-hidden="true">'+head+'</div><div class="strip">'+cells+'</div>';
-  }
-  function search(q, limit){  // indices of the matching walls, in coast order; nothing for an empty box
-    var test=GripMatch.matcher(q), out=[];
-    if(!GripMatch.norm(q)){return out;}
-    for(var i=0;i<D.w.length&&out.length<limit;i++){if(test(KEYS[i])){out.push(i);}}
-    return out;
-  }
-  return {D:D,strip:strip,search:search,esc:esc};
-})();
-if(typeof document!=='undefined'){(function(){
-  var F=GripFind, box=document.getElementById('find'), res=document.getElementById('find-res'),
-      note=document.getElementById('find-note'), count=document.getElementById('find-count'), MAX=20;
+FIND_JS = r"""
+(function(){  // Find a crag: filters the seven-day grid's rows as you type; headings with no matching rows are hidden
+  var box=document.getElementById('find'), note=document.getElementById('find-note'), count=document.getElementById('find-count'),
+      rows=[].slice.call(document.querySelectorAll('table.grid tbody tr'));
+  var keys=rows.map(function(tr){return tr.dataset.find===undefined?null:GripMatch.key(tr.dataset.find);});
   function draw(){
-    var hits=F.search(box.value, MAX+1), more=hits.length>MAX, q=GripMatch.norm(box.value);
-    hits=hits.slice(0,MAX);
-    res.innerHTML=hits.map(function(i){
-      var w=F.D.w[i];
-      return '<li><a href="detail/'+F.esc(w[1])+'.html">'+F.esc(w[0])+'</a>'+F.strip(w[2])+'<p>'+F.esc(w[3])+'</p></li>';
-    }).join('');
-    note.textContent=!q?'':!hits.length?'No crag matches. Try fewer letters.':more?'Keep typing to narrow it down.':'';
-    count.textContent=!q?'':more?'More than '+MAX+' matches':hits.length+(hits.length===1?' match':' matches');
+    var q=GripMatch.norm(box.value), test=GripMatch.matcher(box.value), n=0, head=null, seen=0;
+    rows.forEach(function(tr,i){
+      if(keys[i]===null){if(head){head.hidden=!!q&&!seen;}head=tr;seen=0;return;}
+      var on=!q||test(keys[i]);
+      tr.hidden=!on;
+      if(on){n++;seen++;}
+    });
+    if(head){head.hidden=!!q&&!seen;}
+    note.textContent=q&&!n?'No crag matches. Try fewer letters.':'';
+    count.textContent=!q?'':n+(n===1?' crag matches':' crags match');
   }
   box.addEventListener('input',draw);
   draw();  // a value restored on going back to the page
-})();}
+})();
 """
 
 
@@ -1372,7 +1372,7 @@ def sea_text(height, wave_dir, period, aspect, inlet=False, sea_sheltered=False,
         parts.append("Grip counts it in full.")
     pts, ft, eff = f_sea(height, wave_dir, period, COMPASS.get(aspect or ""), inlet, sea_sheltered)
     spray_at = 2.0 if tidal else 2.5
-    parts.append(f"That is {ft:.1f} ft at the wall, {pts:+d} point{'s' if abs(pts) != 1 else ''} for the sea"
+    parts.append(f"That is {eff:.1f} m at the wall, {pts:+d} point{'s' if abs(pts) != 1 else ''} for the sea"
                  + (f", and spray is adding water to the rock (over {spray_at:g} m)." if eff >= spray_at
                     else f"; spray starts adding water to the rock over {spray_at:g} m at the wall."))
     return " ".join(parts)
@@ -1496,7 +1496,7 @@ def shapes_items(c, zone, tides, day, tomorrow):
 
 
 def week_html(r, today):
-    """One cell per day for the next seven days: score, best window and usable hours, coloured by band."""
+    """One cell per day for the next seven days: score, best window and climbable hours, coloured by band."""
     days = [d for d in sorted(r["daily"]) if date.fromisoformat(d) >= today][:7]
     if not days:
         return '<p class="sub">No days scored.</p>'
@@ -1506,7 +1506,7 @@ def week_html(r, today):
         name, _note, css = band(v["index"])
         dd = date.fromisoformat(d)
         cells.append(f'<div class="{css}" role="listitem" aria-label="{dd.strftime("%A %-d %B")}: {fmt(v["index"])}, {name}, best {v["start"]} to {v["end"]}, '
-                     f'{v["usable"]} of {v["hours"]} daylight hours usable"><span class="dn">{dd.strftime("%a")} {dd.day}</span><b>{fmt(v["index"])}</b>'
+                     f'{v["usable"]} of {v["hours"]} daylight hours climbable"><span class="dn">{dd.strftime("%a")} {dd.day}</span><b>{fmt(v["index"])}</b>'
                      f'<span>{v["start"]}</span><span>{v["end"]}</span><span>{v["usable"]} h</span></div>')
     return '<div class="week" role="list">' + "".join(cells) + "</div>"
 
@@ -1544,7 +1544,7 @@ def hours_table(r, tides, today):
         f = x["f"]
         name, note, css = band(hr["index"])
         wind = f'{compass(x["wd"])} {x["ws"]:.0f} km/h' if x["ws"] is not None else "?"
-        sea = f'{x["ft"]:.1f} ft' if x["ft"] is not None else "-"
+        sea = f'{x["ft"] / 3.281:.1f} m' if x["ft"] is not None else "-"  # f_sea scores in feet; shown in metres"
         rh = f'{x["rh"]:.0f}%' if x["rh"] is not None else "?"
         margin = f'{x["margin"]:+.1f}°C' if x["margin"] is not None else "-"
         brk = (f'air {fpt(f["air"])}, fog {fpt(f["fog"])}, dew {fpt(f["dew"])}, wind {fpt(f["wdir"])}/{fpt(f["wind"])}, '
@@ -1580,12 +1580,13 @@ DETAIL_CSS = """
 """
 
 
-def render_detail(gname, walls, tides, now, today, cfg, view, here, logged):
-    """The conditions page for one crag: for each wall today's strip, why, what shapes it, recent weather, sea and the week;
+def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=None):
+    """The conditions page for one crag: for each wall today's and tomorrow's strips, why, what shapes it, recent weather, sea and the week;
     then how sure the models are, hour by hour for three days, and the days logged here.
-    view: coast_view() for the Today strip; here: zone_now(); logged: logged_days()."""
+    view: coast_view() for the Today strip; nxt: next_view() for the strip under it; here: zone_now(); logged: logged_days()."""
     day, tomorrow, now_hour, _rows, cols = view
     di = day.isoformat()
+    nday, ncols = nxt if nxt else (day + timedelta(days=1), [])
     multi = len(walls) > 1
     out = []
     w = out.append
@@ -1617,6 +1618,11 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged):
         w(f'<{hx}>{"Tomorrow" if tomorrow else "Today"} <small>{day.strftime("%a %-d %b")}</small></{hx}>')
         w(f'<div class="today" data-wall="{escape(label(c))}">' + (hours_head(cols) + strip_html(cols, vals, now_hour) if cols else "")
           + f'<p class="line">{escape(plain_line(hs, now_hour, tomorrow))}</p></div>')
+        nhs = day_hours(r, nday.isoformat())
+        nvals = {hour_of(hr): hr["index"] for hr in nhs}
+        w(f'<{hx}>{"Day after" if tomorrow else "Tomorrow"} <small>{nday.strftime("%a %-d %b")}</small></{hx}>')
+        w(f'<div class="today next" data-day="{nday.isoformat()}">' + (hours_head(ncols) + strip_html(ncols, nvals, -1) if ncols else "")
+          + f'<p class="line">{escape(plain_line(nhs, None, True))}</p></div>')
         w(f"<{hx}>Why</{hx}><p>{escape(why_text(hs, now_hour, tomorrow))}</p>"
           '<p class="hint">From the hourly factor points (the first model\'s figures, as in the breakdown column below). Only factors worth 2 points or more either way are named.</p>')
         w(f'<{hx}>What shapes this {"wall" if multi else "crag"}</{hx}><ul class="shapes">')
@@ -1641,11 +1647,11 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged):
         sea = zn.get("sea")
         if sea and sea["h"] is not None:
             mx = f", up to {sea['max']:.1f} m today" if sea.get("max") is not None else ""
-            w(f"<p>Waves now {sea['h']:.1f} m ({sea['h'] * 3.281:.1f} ft){mx}. "
+            w(f"<p>Waves now {sea['h']:.1f} m{mx}. "
               f"{escape(sea_text(sea['h'], sea['dir'], sea['period'], c.get('aspect'), bool(c.get('inlet')), bool(c.get('sea_sheltered')), bool(c.get('tidal'))))}</p>")
         else:
             w("<p>No sea forecast available.</p>")
-        w(f'<{hx}>Next seven days</{hx}><p class="hint">Each day: score, best window (start and end), usable hours.</p>{week_html(r, today)}')
+        w(f'<{hx}>Next seven days</{hx}><p class="hint">Each day: score, best window (start and end), climbable hours.</p>{week_html(r, today)}')
         w("</section>")
 
     w('<section class="sec"><h2>How sure</h2><p class="hint">Hours today and tomorrow where the three models\' scores differ by 3 or more.</p>')
@@ -1689,7 +1695,7 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged):
         for v, c in mine:
             n = f' <small>({v["n_logs"]} logs)</small>' if v.get("n_logs", 1) > 1 else ""
             w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(c.get("wall") or "Main face")}{n}</td>'
-              f'<td>{escape(v["feel"])}</td><td>{chip(v["grip"])} {band(v["grip"])[0]}</td><td>{chip(v.get("era"))}</td></tr>')
+              f'<td>{escape(FEEL_NAME[v["feel"]])}</td><td>{chip(v["grip"])} {band(v["grip"])[0]}</td><td>{chip(v.get("era"))}</td></tr>')
         w("</table></div>")
     w("</section>")
     w(f'<p class="foot">Source: <a href="https://routes.smc.org.uk/crag/{int(c0["smc_crag_id"])}">SMC routes database</a> &middot; <a href="../">Back to the forecast</a></p>')
@@ -2009,7 +2015,7 @@ def hours_head(cols):
 
 
 def coast_view(results, now, cfg):
-    """What the Coast panel, the crag search and the crag pages' Today strips share: (day, tomorrow, now_hour, rows, cols)."""
+    """What the Coast panel, the popular crags table and the crag pages' Today strips share: (day, tomorrow, now_hour, rows, cols)."""
     day, tomorrow = coast_day(results, now)
     now_hour = -1 if tomorrow else now.hour
     rows = coast_rows(results, cfg["zones"], day.isoformat())
@@ -2017,10 +2023,82 @@ def coast_view(results, now, cfg):
     return day, tomorrow, now_hour, rows, cols
 
 
+def next_view(results, view):
+    """The day after the one the Coast panel shows, for the second strip on the crag pages: (day, the hours scored that day)."""
+    day = view[0] + timedelta(days=1)
+    return day, sorted({hour_of(hr) for r in results for hr in day_hours(r, day.isoformat())})
+
+
+def load_popular(cfg):
+    """The popular crags from data/popular.json, in the file's order, keeping only names that match a crag in crags.json."""
+    try:
+        with open(POPULAR_FILE) as f:
+            names = json.load(f)
+    except Exception as e:  # noqa: BLE001
+        log(f"Warning: cannot read data/popular.json ({e}); the popular crags table will be empty")
+        return []
+    known = {c["name"] for c in cfg["crags"]}
+    missing = [n for n in names if n not in known]
+    if missing:
+        log(f"Warning: {len(missing)} name(s) in data/popular.json match no crag in crags.json: {', '.join(missing)}")
+    return [n for n in names if n in known]
+
+
+def popular_rows(groups, names, days):
+    """One row per popular crag, (name, walls, [(best wall result, its daily entry) for each day]), sorted by the first day's
+    score as shown, then its climbable hours, then the list order. A crag with no hours left that day sorts last."""
+    by_name = dict(groups)
+    rows = []
+    for i, n in enumerate(names):
+        if n in by_name:
+            walls = by_name[n]
+            rows.append((i, n, walls, [best_wall(walls, d.isoformat()) for d in days]))
+
+    def key(row):
+        d = row[3][0][1]
+        return (-rnd(d["index"]) if d else 1, -d["usable"] if d else 1, row[0])
+    return [(n, walls, cells) for _i, n, walls, cells in sorted(rows, key=key)]
+
+
+def popular_cell(r, d, day_iso, tides):
+    """One day of the popular crags table: the best wall's score in its band colour, best window and climbable hours,
+    and low water when that wall is tidal."""
+    if not d:
+        return '<td class="pc"><span class="sub">No daylight hours left</span></td>'
+    name, _note, css = band(d["index"])
+    lw = tides.get(r["crag"]["zone"], {}).get(day_iso, []) if r["crag"].get("tidal") else []
+    return (f'<td class="pc"><span class="num {css}">{fmt(d["index"])}</span><span class="vh"> {name},</span>'
+            f'<span class="pw"><span class="w"><span class="vh">best </span>{d["start"]} to {d["end"]}</span>'
+            f'<span class="h"><span class="dot"> &middot; </span>{d["usable"]} h<span class="vh"> climbable</span></span>'
+            + (f'<small>Low water {", ".join(lw)}</small>' if lw else "") + "</span></td>")
+
+
+def render_popular(results, tides, now, cfg):
+    """The popular crags table: today and tomorrow side by side (tomorrow and the day after once today's daylight is over)."""
+    day, tomorrow, _now_hour, _rows, _cols = coast_view(results, now, cfg)
+    days = (day, day + timedelta(days=1))
+    titles = ("Tomorrow", "Day after") if tomorrow else ("Today", "Tomorrow")
+    rows = popular_rows(groups_of(results), load_popular(cfg), days)
+    out = []
+    w = out.append
+    w('<section aria-labelledby="pop-h"><h2 id="pop-h">Popular crags</h2>'
+      f'<p class="hint">The crags people climb most. Each day shows the crag\'s best wall: score, best window and climbable hours. '
+      f'Sorted by {titles[0].lower()}\'s score. Tap a crag for its conditions page.</p>')
+    if not rows:
+        w('<p class="sub">No popular crags listed.</p></section>')
+        return "".join(out)
+    w('<div class="wrap popw"><table class="pop"><thead><tr><th scope="col">Crag</th>'
+      + "".join(f'<th scope="col">{t} <small>{d.strftime("%a %-d %b")}</small></th>' for t, d in zip(titles, days)) + "</tr></thead><tbody>")
+    for n, _walls, cells in rows:
+        w(f'<tr><th scope="row"><a href="detail/{slug(n)}.html">{escape(n)}</a></th>'
+          + "".join(popular_cell(r, d, dd.isoformat(), tides) for (r, d), dd in zip(cells, days)) + "</tr>")
+    w("</tbody></table></div></section>")
+    return "".join(out)
+
+
 def render_coast(results, now, cfg):
-    """The Coast panel (each weather point's walls, hour by hour, for the day) and the crag search below it."""
+    """The Coast panel: each weather point's walls, hour by hour, for the day."""
     day, tomorrow, now_hour, rows, cols = coast_view(results, now, cfg)
-    di = day.isoformat()
     out = []
     w = out.append
     w(f'<section class="coast" aria-labelledby="coast-h"><h2 id="coast-h">Coast {"tomorrow" if tomorrow else "today"} <small>{day.strftime("%a %-d %b")}</small></h2>')
@@ -2033,39 +2111,16 @@ def render_coast(results, now, cfg):
         for z, name, vals in rows:
             w(f'<div class="srow" role="group" aria-label="{escape(name)}"><span class="zn" aria-hidden="true">{escape(name)}</span>{strip_html(cols, vals, now_hour)}</div>')
     w("</section>")
-
-    walls = []
-    for r in results:
-        hs = day_hours(r, di)
-        vals = {hour_of(hr): rnd(hr["index"]) for hr in hs}
-        walls.append([label(r["crag"]), slug(r["crag"]["name"]), [vals.get(h) for h in cols],
-                      plain_line(hs, now_hour, tomorrow)])
-    data = {"h": cols, "now": now_hour, "b": [[lo, name, css] for lo, name, _n, css, _r in BANDS], "w": walls}
-    w('<div class="find" role="search"><label for="find">Find a crag</label>'
-      '<input id="find" type="search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-controls="find-res" aria-describedby="find-hint">'
-      '<p class="hint vh" id="find-hint">Matches the start of any word in the name. Results appear below as you type.</p>'
-      '<ul class="found" id="find-res"></ul><p class="note" id="find-note"></p><p class="vh" id="find-count" aria-live="polite"></p></div>')
-    w(f"<script>{MATCH_JS}{SEARCH_JS.replace('__COAST__', js(data))}</script>")
     return "".join(out)
 
 
 def render(results, tides, now, cfg, models_ok, cal=None):
     zones = cfg["zones"]
     today = now.date()
-    tomorrow = today + timedelta(days=1)
     all_days = sorted({d for r in results for d in r["daily"]})
     all_days = [d for d in all_days if date.fromisoformat(d) >= today][:7]
 
     groups = groups_of(results)
-
-    def best_list(day, n=5):
-        items = []
-        for name, walls in groups:
-            r, d = best_wall(walls, day.isoformat())
-            if d:
-                items.append((d["index"], r, d))
-        items.sort(key=lambda x: -x[0])
-        return items[:n]
 
     out = []
     w = out.append
@@ -2083,35 +2138,23 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     for lo, name, note, css, rng in reversed(BANDS):
         w(f'<div class="{css}"><b>{rng}</b><span>{name}: {note}</span></div>')
     w("</div>")
-    w(f'<p class="log"><a class="btn" href="log.html">Log a day on the rock</a>'
-      "Climbed on the coast? Say how the rock felt. It takes a minute, it is anonymous, and it is how Grip gets checked against reality. "
-      f'Know a crag better than the list does? <a href="{NOTES_URL}" target="_blank" rel="noopener">Send a crag note</a>: aspect, tides, seepage, shelter, birds. '
-      f'See the <a href="birds.html">nesting bird register</a> for what Grip currently believes.</p>')
+    w('<ul class="forms">'
+      '<li><a class="btn" href="log.html">Log a day on the rock</a>'
+      "<span>Climbed on the coast? Say how the rock felt. It takes a minute, it is anonymous, and it is how Grip gets checked against reality.</span></li>"
+      f'<li><a class="btn alt" href="{NOTES_URL}" target="_blank" rel="noopener">Send a crag note</a>'
+      '<span>Know a crag better than the list does? Aspect, tides, seepage, shelter, birds. '
+      'See the <a href="birds.html">nesting bird register</a> for what Grip currently believes.</span></li>'
+      f'<li><a class="btn alt" href="{FEEDBACK_URL}" target="_blank" rel="noopener">Give feedback</a>'
+      "<span>Something confusing, missing or wrong? Tell us.</span></li></ul>")
+    w(render_popular(results, tides, now, cfg))
 
-    pair = ((today, "Today"), (tomorrow, "Tomorrow"))
-    if not best_list(today):
-        pair = ((tomorrow, "Tomorrow"), (tomorrow + timedelta(days=1), "Day after"))
-    w('<section class="bets">')
-    for day, title in pair:
-        w(f'<div class="day"><h3>{title}, {day.strftime("%a %-d %b")}</h3>')
-        bl = best_list(day)
-        if not bl:
-            w('<p class="sub">No daylight hours left to score.</p>')
-        for s, r, d in bl:
-            name, note, css = band(s)
-            lt = tides.get(r["crag"]["zone"], {}).get(day.isoformat(), [])
-            tide = f" Low water {', '.join(lt)}." if lt else ""
-            risk = f" Wet-rock risk {pct(d['wet'])}." if d["wet"] >= 0.3 else ""
-            b = birds_in([r], [day.isoformat()])
-            birds = (" Restricted for nesting birds." if b["level"] == "restricted" else " Nesting birds at this time of year.") if b else ""
-            w(f'<div class="bet"><div class="num {css}">{fmt(s)}</div><div><div class="who">{escape(label(r["crag"]))}</div>'
-              f'<div class="sub">{name}, best {d["start"]} to {d["end"]}; {d["usable"]} of {d["hours"]} daylight hours usable.{risk}{birds}{tide}</div></div></div>')
-        w("</div>")
-    w("</section>")
-
-    w("<h2>Next 7 days</h2>")
-    w('<p class="hint">Crags with several walls show their best wall. Tap a crag name for its hour-by-hour page; tap any score for the other walls, what each weather model gives it, usable hours and wet-rock risk.</p>')
-    w('<div class="wrap"><table class="grid"><thead><tr><th class="crag">Crag</th>')
+    w('<h2 id="week-h">Next 7 days</h2>')
+    w('<div class="find" role="search"><label for="find">Find a crag</label>'
+      '<input id="find" type="search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-controls="grid" aria-describedby="find-hint">'
+      '<p class="hint" id="find-hint">Type the start of any word in a crag or wall name to filter the grid below.</p>'
+      '<p class="note" id="find-note"></p><p class="vh" id="find-count" aria-live="polite"></p></div>')
+    w('<p class="hint">Crags with several walls show their best wall. Tap a crag name for its hour-by-hour page; tap any score for the other walls, what each weather model gives it, climbable hours and wet-rock risk.</p>')
+    w('<div class="wrap"><table class="grid" id="grid" aria-labelledby="week-h"><thead><tr><th class="crag">Crag</th>')
     for d in all_days:
         dd = date.fromisoformat(d)
         w(f"<th>{dd.strftime('%a')}<br>{dd.day}</th>")
@@ -2133,7 +2176,8 @@ def render(results, tides, now, cfg, models_ok, cal=None):
             gb = birds_in(walls, all_days)
             if gb:
                 sub += ". Restricted: nesting birds" if gb["level"] == "restricted" else ". Nesting birds"
-            w(f'<tr><th class="crag"><a href="detail/{slug(gname)}.html" style="text-decoration:none">{escape(gname)}</a><small>{escape(sub)}</small></th>')
+            find = " ".join([gname] + [wr["crag"]["wall"] for wr in walls if wr["crag"].get("wall")])  # what Find a crag matches against
+            w(f'<tr data-find="{escape(find)}"><th class="crag"><a href="detail/{slug(gname)}.html" style="text-decoration:none">{escape(gname)}</a><small>{escape(sub)}</small></th>')
             for d in all_days:
                 r, v = best_wall(walls, d)
                 if not v:
@@ -2195,7 +2239,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
             cells = "".join(f'<td>{chip(v.get("models", {}).get(lab))}</td>' for _m, lab, _d, _w in MODELS) + f'<td>{chip(v.get("era"))}</td>'
             lo, hi = FEEL_RANGE[v["feel"]]
             times = f' <small>({v["n_logs"]} logs)</small>' if v.get("n_logs", 1) > 1 else ""
-            w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(v["crag"])}{times}</td><td>{escape(v["feel"])} ({lo:g} to {min(hi - 1, 10):g})</td>'
+            w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(v["crag"])}{times}</td><td>{escape(FEEL_NAME[v["feel"]])} ({lo:g} to {min(hi - 1, 10):g})</td>'
               f'<td>{chip(v["grip"])} {band(v["grip"])[0]}</td>{cells}</tr>')
         w("</table>")
     w("</div>")
@@ -2204,7 +2248,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "water on the surface, from rain, spray, sea salt drawing moisture out of damp air, or condensation on rock colder than the air's dew point; "
       "and how fast the air, wind and sun can dry it again. Each daylight hour collects points from the factors below, which are turned into a "
       "0 to 10 index. The three weather models are scored separately and blended, with the Met Office 2 km model weighted highest for the first two days. "
-      "A day's score is its best three-hour window; the number of usable hours and the wet-rock risk are shown alongside.</p>")
+      "A day's score is its best three-hour window; the number of climbable hours and the wet-rock risk are shown alongside.</p>")
     w("<table><tr><th>Factor</th><th>Points</th><th>Why</th></tr>"
       "<tr><td>Air moisture</td><td>+1 for every 4% below 76% humidity (up to +4 at 60%) and -1 for every 5% above (down to -4), with an extra -1 once humidity passes 75%. The penalties count in full when the rock is within 2&deg;C of the dew point and at half when it is 4&deg;C or more clear</td>"
       "<td>Sea salt on the rock starts drawing water out of the air at about 75% humidity. Humid air greases rock through condensation, so the penalty is tied to how close the rock is to the dew point: logged days showed dry rock in 80% air climbing well. Below 76% the reward was steepened after logged days showed the rock keeps improving as the air dries.</td></tr>"
@@ -2220,7 +2264,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "<td>Wind clears damp air off the rock and speeds drying, but a gale onshore carries spray.</td></tr>"
       "<tr><td>Sun</td><td>Cloud 0, sun +1, sun on the face +3 (+2 when the sun is under 10 degrees up). Halved while the rock is wet</td>"
       "<td>Direct sun warms the rock above the dew point and dries it. On the face means within 60 degrees of the wall's aspect.</td></tr>"
-      "<tr><td>Sea state</td><td>5 ft+ -2, 2.5-5 ft -1, 1-2.5 ft 0, under 1 ft +1</td>"
+      "<tr><td>Sea state</td><td>1.5 m+ -2, 0.8 to 1.5 m -1, 0.3 to 0.8 m 0, under 0.3 m +1</td>"
       "<td>Spray wets the rock and lays down fresh salt. Waves from behind or along the face count at 40%, or 70% for long-period swell, which wraps round headlands. In narrow inlets the swell funnels and reflects, so the height counts 1.5 times from any direction; walls protected by offshore rock count it at half.</td></tr>"
       "<tr><td>Water on the rock</td><td>Raining -5. Otherwise, by the water left on the rock: over 0.5 mm -3, 0.1-0.5 mm -2, a trace -1</td>"
       "<td>The film is tracked hour by hour. Rain adds to it, up to 2 mm; a big sea (over 2.5 m, or 2 m at tidal walls) adds a little spray; and at 85%+ humidity the salt draws in a thin brine film of up to 0.15 mm. "
@@ -2229,7 +2273,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "<tr><td>Seepage</td><td>5 mm+ of rain in the last 24 hours -2, 10 mm+ -3, a further -1 for 25 mm+ in the last three days</td>"
       "<td>Drainage after heavy rain lasts much longer than surface water.</td></tr>"
       "<tr><td>Dry rock</td><td>Up to +2 when there is no water on the rock, no rain, no haar and the rock is 3&deg;C or more above the dew point: the full +2 at 76% humidity and above, fading to nothing at 60%, where the air reward already covers it</td>"
-      "<td>Dry rock on a grey day is good rock. Without this, an overcast calm morning with nothing wrong scored Greasy; logged days said Crisp. The calm-air penalty is also waived when the rock is dry and the air is under 80%.</td></tr></table>")
+      "<td>Dry rock on a grey day is good rock. Without this, an overcast calm morning with nothing wrong scored Greasy; logged days said Grippy. The calm-air penalty is also waived when the rock is dry and the air is under 80%.</td></tr></table>")
     w("<p>The index is 3 plus half the points, held between 0 and 10. Hours with the sun less than 5 degrees above the horizon are not scored. "
       "Tides are shown for planning but not scored, and so are nesting birds: a crag in its bird season is marked, not marked down. Model disagreement is shown rather than hidden: striped cells and the wet-rock risk tell you when the forecasts differ. "
       "The weightings are a first estimate and are being checked against real days; expect them to change.</p>")
@@ -2240,6 +2284,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       '<p id="d-birds" style="display:none;color:var(--ink)"></p>'
       '<p><a id="d-detail" href="#">Hour by hour for this crag</a></p>'
       '<p><a id="d-log" href="#">Log how it actually was</a> &middot; <a id="d-note" href="#" target="_blank" rel="noopener">Send a crag note</a></p><button>Close</button></form></dialog>')
+    w(f"<script>{MATCH_JS}{FIND_JS}</script>")
     w("""<script>
 (function(){
   var dlg=document.getElementById('detail');
@@ -2249,11 +2294,11 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     b.addEventListener('click',function(){
       document.getElementById('d-title').textContent=b.dataset.crag;
       var who=b.dataset.wall?(' on '+b.dataset.wall):'';
-      document.getElementById('d-sub').textContent=b.dataset.day+', best window '+b.dataset.win+who+'. Usable hours: '+b.dataset.usable+'. Wet-rock risk: '+b.dataset.wet+'.'+(b.dataset.drying?(' '+b.dataset.drying+'.'):'');
+      document.getElementById('d-sub').textContent=b.dataset.day+', best window '+b.dataset.win+who+'. Climbable hours: '+b.dataset.usable+'. Wet-rock risk: '+b.dataset.wet+'.'+(b.dataset.drying?(' '+b.dataset.drying+'.'):'');
       var rows='';
       if(b.dataset.walls){
         rows+='<tr><td colspan="2" style="text-align:left"><strong>Walls</strong></td></tr>';
-        b.dataset.walls.split('|').forEach(function(m){var p=m.split('~');rows+='<tr><td>'+p[0]+'<br><small>'+p[2]+', '+p[3]+' usable, wet risk '+p[4]+'</small></td><td>'+chip(parseFloat(p[1]))+'</td></tr>';});
+        b.dataset.walls.split('|').forEach(function(m){var p=m.split('~');rows+='<tr><td>'+p[0]+'<br><small>'+p[2]+', '+p[3]+' climbable, wet risk '+p[4]+'</small></td><td>'+chip(parseFloat(p[1]))+'</td></tr>';});
         rows+='<tr><td colspan="2" style="text-align:left"><strong>Models'+who+'</strong></td></tr>';
       }
       rows+='<tr><td>'+(b.dataset.walls?'Blended':'<strong>Blended</strong>')+'</td><td>'+chip(parseFloat(b.dataset.score))+'</td></tr>';
@@ -2344,9 +2389,10 @@ def main():
         f.write(render_log(cfg))
     os.makedirs(os.path.join(SITE_DIR, "detail"), exist_ok=True)
     view, here, logged = coast_view(results, now, cfg), zone_now(cfg, models, marine, now), logged_days(cfg)
+    nxt = next_view(results, view)
     for gname, walls in groups_of(results):
         with open(os.path.join(SITE_DIR, "detail", slug(gname) + ".html"), "w") as f:
-            f.write(render_detail(gname, walls, tides, now, now.date(), cfg, view, here, logged))
+            f.write(render_detail(gname, walls, tides, now, now.date(), cfg, view, here, logged, nxt))
     with open(os.path.join(SITE_DIR, ".nojekyll"), "w") as f:
         f.write("")
     log(f"Wrote page ({len(html) // 1024} KB), models: {', '.join(models_ok)}")

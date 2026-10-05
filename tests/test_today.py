@@ -1,4 +1,4 @@
-"""Tests for the Coast panel and the crag search: the plain-words line and the median per stretch of coast.
+"""Tests for the Coast panel and the crag pages' strips: the plain-words line and the median per stretch of coast.
 
 Standard library only. Run from the repository root or anywhere: python3 tests/test_today.py
 """
@@ -18,34 +18,34 @@ def series(start, vals, day=TODAY):
     return [{"t": f"{day}T{start + i:02d}:00", "index": v} for i, v in enumerate(vals)]
 
 
-# (case, scores from 08:00 to 17:00, current hour or None for tomorrow, expected line)
+# (case, scores from 08:00 to 17:00, current hour or None for a whole later day, expected line)
 LINES = [
     ("low all day", [1, 1.5, 2, 2.4, 3, 3.4, 3.2, 2.5, 2, 1], 11,
-     "Greasy now, not usable today, best 12:00 to 15:00."),
+     "Greasy now, not climbable today, best 12:00 to 15:00."),
     ("low morning then rising", [1, 2, 2.5, 3, 3.6, 4.6, 5.8, 6.2, 5.5, 4.4], 9,
-     "Greasy now, usable from 12:00, best 14:00 to 17:00."),
-    ("usable now for one hour, then a dip", [2, 4, 3, 3, 4, 5, 6, 6, 5, 3], 9,
-     "Usable now, best 13:00 to 16:00."),
-    ("usable from the first hour, before daylight", [4.5, 5, 6, 6.5, 7, 7, 6, 5, 4, 4], 7,
-     "Usable from 08:00, best 11:00 to 14:00."),
-    ("usable from the first hour, mid-morning", [4.5, 5, 6, 6.5, 7, 7, 6, 5, 4, 4], 10,
-     "Crisp now, best 11:00 to 14:00."),
-    ("usable then falling away, still usable", [5, 6, 5.5, 4.6, 3.4, 2, 1, 1, 1, 0], 10,
-     "Crisp now, best 10:00 to 13:00."),
-    ("usable then falling away, now past it", [5, 6, 5.5, 4.6, 3.4, 2, 1, 1, 1, 0], 13,
-     "Greasy now, not usable today, best 13:00 to 16:00."),
-    ("a single usable hour at the end does not count", [1, 1, 2, 2, 2, 2, 2, 3, 3, 4], 15,
-     "Greasy now, not usable today, best 16:00 to 18:00."),
-    ("3.5 shows as 4 and counts as usable", [2, 3.5, 3.5, 2, 2, 2, 2, 2, 2, 2], 8,
-     "Greasy now, usable from 09:00, best 08:00 to 11:00."),
+     "Greasy now, climbable from 12:00, best 14:00 to 17:00."),
+    ("climbable now for one hour, then a dip", [2, 4, 3, 3, 4, 5, 6, 6, 5, 3], 9,
+     "Climbable now, best 13:00 to 16:00."),
+    ("climbable from the first hour, before daylight", [4.5, 5, 6, 6.5, 7, 7, 6, 5, 4, 4], 7,
+     "Climbable from 08:00, best 11:00 to 14:00."),
+    ("climbable from the first hour, mid-morning", [4.5, 5, 6, 6.5, 7, 7, 6, 5, 4, 4], 10,
+     "Grippy now, best 11:00 to 14:00."),
+    ("climbable then falling away, still climbable", [5, 6, 5.5, 4.6, 3.4, 2, 1, 1, 1, 0], 10,
+     "Grippy now, best 10:00 to 13:00."),
+    ("climbable then falling away, now past it", [5, 6, 5.5, 4.6, 3.4, 2, 1, 1, 1, 0], 13,
+     "Greasy now, not climbable today, best 13:00 to 16:00."),
+    ("a single climbable hour at the end does not count", [1, 1, 2, 2, 2, 2, 2, 3, 3, 4], 15,
+     "Greasy now, not climbable today, best 16:00 to 18:00."),
+    ("3.5 shows as 4 and counts as climbable", [2, 3.5, 3.5, 2, 2, 2, 2, 2, 2, 2], 8,
+     "Greasy now, climbable from 09:00, best 08:00 to 11:00."),
     ("last daylight hour", [5, 5, 5, 5, 5, 5, 5, 5, 5, 3], 17,
-     "Greasy now, not usable today."),
-    ("after daylight: tomorrow rising", [2, 2.5, 3, 4, 5, 6.4, 6.6, 6, 5, 4], None,
-     "Tomorrow: usable from 11:00, best 13:00 to 16:00."),
-    ("after daylight: tomorrow low all day", [1, 1, 2, 2, 3, 3, 2, 2, 1, 1], None,
-     "Tomorrow: not usable, best 11:00 to 14:00."),
-    ("after daylight: tomorrow usable from the start", [4, 5, 6, 8, 8.4, 8, 6, 5, 4, 4], None,
-     "Tomorrow: usable from 08:00, best 11:00 to 14:00."),
+     "Greasy now, not climbable today."),
+    ("whole day: rising", [2, 2.5, 3, 4, 5, 6.4, 6.6, 6, 5, 4], None,
+     "Climbable from 11:00, best 13:00 to 16:00."),
+    ("whole day: low all day", [1, 1, 2, 2, 3, 3, 2, 2, 1, 1], None,
+     "Not climbable, best 11:00 to 14:00."),
+    ("whole day: climbable from the start", [4, 5, 6, 8, 8.4, 8, 6, 5, 4, 4], None,
+     "Climbable from 08:00, best 11:00 to 14:00."),
 ]
 
 
@@ -58,7 +58,7 @@ class PlainLine(unittest.TestCase):
                 self.assertEqual(grip.plain_line(hs, now_hour, tomorrow), expected)
 
     def test_best_window_is_the_builds_own(self):
-        """The line's best window is the one the Today and Tomorrow lists show for the same hours."""
+        """The line's best window is the one the popular crags table and the grid show for the same hours."""
         for case, vals, now_hour, _expected in LINES:
             with self.subTest(case):
                 tomorrow = now_hour is None
@@ -68,6 +68,10 @@ class PlainLine(unittest.TestCase):
                 if bw:
                     self.assertIn(f"best {bw[1][0]['t'][11:16]} to {grip.end_of(bw[1][-1])}",
                                   grip.plain_line(hs, now_hour, tomorrow))
+
+    def test_no_hours(self):
+        self.assertEqual(grip.plain_line([], 18), "No daylight hours left today.")
+        self.assertEqual(grip.plain_line([], None, True), "No hours scored.")
 
     def test_usable_from_needs_consecutive_hours(self):
         hs = series(8, [2, 2, 2, 4]) + series(13, [4, 4])  # 12:00 missing, so 11:00 and 13:00 are not consecutive
@@ -90,7 +94,7 @@ class Median(unittest.TestCase):
         self.assertEqual(vals["a"], {9: 2.0, 10: 3.0, 11: 4.4, 12: 4.6})  # odd count: the middle wall
         self.assertEqual(vals["b"], {11: 2.7, 12: 7.5})  # even count: halfway between; tomorrow's hour left out
         self.assertEqual([grip.rnd(v) for v in vals["b"].values()], [3, 8])
-        self.assertEqual(grip.band(vals["a"][11])[0], "Usable")
+        self.assertEqual(grip.band(vals["a"][11])[0], "Climbable")
 
 
 if __name__ == "__main__":

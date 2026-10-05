@@ -126,19 +126,32 @@ class Swell(unittest.TestCase):
     def test_wording(self):
         self.assertEqual(grip.sea_text(1.0, 100, 6, "E"),
                          "Coming from the E, onto the face, period 6.0 s (short wind sea). Grip counts it in full. "
-                         "That is 3.3 ft at the wall, -1 point for the sea; spray starts adding water to the rock over 2.5 m at the wall.")
+                         "That is 1.0 m at the wall, -1 point for the sea; spray starts adding water to the rock over 2.5 m at the wall.")
         self.assertEqual(grip.sea_text(1.0, 270, 6, "E"),
                          "Coming from the W, from behind the face, period 6.0 s (short wind sea). Grip counts it at 40% of its height. "
-                         "That is 1.3 ft at the wall, +0 points for the sea; spray starts adding water to the rock over 2.5 m at the wall.")
+                         "That is 0.4 m at the wall, +0 points for the sea; spray starts adding water to the rock over 2.5 m at the wall.")
         self.assertIn("along the face, period 11.0 s (long swell). Grip counts it at 70% of its height, as long swell wraps round headlands.",
                       grip.sea_text(1.0, 200, 11, "E"))
         self.assertIn("1.5 times its height from any direction", grip.sea_text(1.0, 270, 6, "E", inlet=True))
-        self.assertIn("5.9 ft at the wall, -2 points", grip.sea_text(1.2, 270, 6, "E", inlet=True))
+        self.assertIn("1.8 m at the wall, -2 points", grip.sea_text(1.2, 270, 6, "E", inlet=True))
         self.assertIn("Offshore rock breaks it, so Grip counts it at half height.", grip.sea_text(1.0, 90, 6, "E", sea_sheltered=True))
         self.assertIn("spray is adding water to the rock (over 2 m)", grip.sea_text(2.2, 90, 6, "E", tidal=True))
         self.assertIn("spray starts adding water to the rock over 2.5 m", grip.sea_text(2.2, 90, 6, "E"))
         self.assertIn("the face's aspect is unknown, so Grip counts it in full", grip.sea_text(1.0, 90, 6, None))
         self.assertEqual(grip.sea_text(None, 90, 6, "E"), "No sea forecast for this hour.")
+
+    def test_metres_shown_feet_scored(self):
+        """f_sea still scores on its feet thresholds (5, 2.5 and 1 ft); the pages show the same height in metres."""
+        self.assertEqual([grip.f_sea(ft / 3.281, 90, 6, 90)[0] for ft in (5.01, 4.99, 2.51, 2.49, 1.01, 0.99)], [-2, -1, -1, 0, 0, 1])
+        for h in (0.2, 0.35, 0.76, 0.8, 1.2, 1.53, 2.4):
+            pts, ft, eff = grip.f_sea(h, 90, 6, 90)
+            self.assertIn(f"That is {eff:.1f} m at the wall, {pts:+d} point", grip.sea_text(h, 90, 6, "E"))
+            hr = {"t": "2026-10-05T10:00", "index": 5, "wet": 0, "models": [], "d": {
+                "f": {k: 0 for k in ("air", "fog", "dew", "wdir", "wind", "sun", "sea", "wet", "seep")}, "wd": 90, "ws": 10, "ft": ft,
+                "rh": 70, "margin": 4, "sun": "cloud", "note": ""}}
+            table = grip.hours_table({"crag": {"zone": "z"}, "hours": [hr]}, {}, date(2026, 10, 5))
+            self.assertIn(f"<td>{eff:.1f} m</td>", table)
+            self.assertNotIn(" ft<", table)
 
 
 class WaterOnRock(unittest.TestCase):
