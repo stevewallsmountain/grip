@@ -67,10 +67,10 @@ Items marked **(B)** depend on a proposal in group B of the change list. Build t
 ## 7. Popular crags
 
 - `h2` "Popular crags". Box: card, rule border, radius 10.
-- Column header row: Today | Tomorrow, 13px display caps, muted; from 900px a Crag heading over the names as well.
+- Column header row: Today | Tomorrow, 13px display caps, muted; from 1100px a Crag heading over the names as well.
 - Rows: the crags in `data/popular.json`, ranked by the first day's score as shown, then climbable hours, then list order. The top 5 show (`POPULAR_TOP`: of 5 to 8, the number that brings the column closest to the coast panel at 1280px).
-- Each crag row, under 900px: name (16px 600 link) on its own line, then a two-column grid. Each cell: score block 40px (number 22px) + two lines at 13px: window "16:00 to 18:00" (600, ink) and "4 h · LW 15:18" (muted). LW only for tidal walls.
-- From 900px each crag row is one line: name on the left, then the two cells, same content, in columns 1fr / 1.2fr / 1.2fr, centred vertically.
+- Each crag row, under 1100px: name (16px 600 link) on its own line, then a two-column grid. Each cell: score block 40px (number 22px) + two lines at 13px: window "16:00 to 18:00" (600, ink) and "4 h · LW 15:18" (muted). LW only for tidal walls.
+- From 1100px each crag row is one line: name on the left, then the two cells, same content, in columns 1fr / 1.2fr / 1.2fr, centred vertically.
 - Show-all button under the rows: full width, 44px, 1px rule above, 16px 600 ink, left aligned, with a chevron pointing down. "Show all 15 popular crags" shows the rest in place and becomes "Show fewer" (chevron up); `aria-expanded` and `aria-controls` point at the rows. Hover `--sunk`; the focus ring is drawn inside the box. Without JavaScript every row shows and there is no button.
 - Footer link "All 165 crags, next 7 days" (jumps to grid), below the button.
 - Desktop: in the right column, beside the coast panel.

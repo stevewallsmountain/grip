@@ -1433,7 +1433,7 @@ COAST_CSS = """
 .pc .h{display:block;color:var(--muted)}
 .pc .dot{display:none}
 .pc small{display:block;color:var(--muted);font-size:var(--t-small)}
-@media (min-width:900px){.pop tr{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.2fr);align-items:center}.pop tbody th{grid-column:auto}.pop thead th:first-child{position:static;width:auto;height:auto;overflow:visible;clip:auto}}  /* from 900 px each crag on one line: name, then its two days */
+@media (min-width:1100px){.pop tr{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.2fr);align-items:center}.pop tbody th{grid-column:auto}.pop thead th:first-child{position:static;width:auto;height:auto;overflow:visible;clip:auto}}  /* from 1100 px each crag on one line: name, then its two days; below that the column is too narrow for the times */
 """
 
 HOME_CSS = """
