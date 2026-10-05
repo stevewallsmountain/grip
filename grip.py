@@ -105,6 +105,7 @@ FEEDBACK_PAGES = {"home": "Home page", "crag": "A crag page", "log": "Log a day"
                   "feedback": "Give feedback", "birds": "Nesting birds", "method": "How Grip works", "": "Somewhere else"}  # ?from= key: the form's option
 DEVICES = ["Phone", "Tablet", "Computer"]  # the feedback form's options; prefilled from the screen width, under 600 px and under 1024 px
 POPULAR_FILE = os.path.join(HERE, "data", "popular.json")  # the crags people climb most, in order, for the front page table
+POPULAR_TOP = 5  # how many the table shows before "Show all": of 5 to 8, the one that brings the column closest to the coast panel at 1280 px
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
 MODEL_VERSION = "3.7"  # bump when the scoring or crag details change; logged days are then re-scored
@@ -1413,8 +1414,9 @@ COAST_CSS = """
 .grid tr[hidden]{display:none}
 .popw{max-width:40rem}
 .pop,.pop thead,.pop tbody{display:block}
-.pop tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s-6) var(--s-12);padding:10px var(--s-12);border-bottom:1px solid var(--rule)}
-.pop tbody tr:last-child{border-bottom:0}
+.pop tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s-6) var(--s-12);padding:10px var(--s-12)}
+.pop tbody tr{border-top:1px solid var(--rule)}
+.pop tr[hidden]{display:none}
 .pop th,.pop td{display:block;padding:0;text-align:left;min-width:0}
 .pop thead tr{padding:var(--s-8) var(--s-12)}
 .pop thead th{font:600 var(--t-small)/1.2 var(--font-display);text-transform:uppercase;letter-spacing:var(--overline-tracking);color:var(--muted)}
@@ -1431,6 +1433,7 @@ COAST_CSS = """
 .pc .h{display:block;color:var(--muted)}
 .pc .dot{display:none}
 .pc small{display:block;color:var(--muted);font-size:var(--t-small)}
+@media (min-width:1100px){.pop tr{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.2fr);align-items:center}.pop tbody th{grid-column:auto}.pop thead th:first-child{position:static;width:auto;height:auto;overflow:visible;clip:auto}}  /* from 1100 px each crag on one line: name, then its two days; below that the column is too narrow for the times */
 """
 
 HOME_CSS = """
@@ -1444,7 +1447,6 @@ main.home{padding-top:0}
 .card>div{min-width:0}
 .card .ln{margin:2px 0 0;font:600 21px/1.2 var(--font-display)}
 .card .cm{margin:2px 0 0;font-size:var(--t-meta);color:var(--muted)}
-.num.past{background:var(--past);color:var(--past-ink)}
 .num.none{background:var(--sunk);color:var(--muted);box-shadow:inset 0 0 0 1px var(--rule)}
 .top{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s-24) var(--s-32);margin:var(--s-24) 0 0;align-items:start}
 .top h2{margin-top:0}
@@ -1453,6 +1455,12 @@ main.home{padding-top:0}
 .top .scale{margin-bottom:0}
 .popw .all{display:flex;align-items:center;min-height:var(--tap);padding:0 var(--s-12);border-top:1px solid var(--rule);font-weight:500}
 a.all:focus-visible{border-radius:0 0 var(--r-l) var(--r-l)}
+.popw .pmore{display:flex;align-items:center;gap:var(--s-8);width:100%;min-height:var(--tap);padding:0 var(--s-12);border:0;border-top:1px solid var(--rule);background:transparent;color:var(--ink);font:600 var(--t-body)/1.2 var(--font-body);text-align:left;cursor:pointer}
+.popw .pmore[hidden]{display:none}
+.popw .pmore::after{content:"";width:7px;height:7px;margin-top:-4px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.popw .pmore[aria-expanded=true]::after{margin-top:4px;transform:rotate(-135deg)}
+.popw .pmore:focus-visible{box-shadow:inset 0 0 0 2px var(--paper),inset 0 0 0 4px var(--ink)}
+@media (hover:hover){.popw .pmore:hover{background:var(--sunk)}}
 .ch{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--s-8) var(--s-12)}
 .coast .ch h2{margin:0}
 .coast .hint{margin:var(--s-6) 0 10px}
@@ -3801,7 +3809,8 @@ def popular_cell(r, d, day_iso, tides):
 
 
 def render_popular(results, tides, now, cfg):
-    """The popular crags table: today and tomorrow side by side (tomorrow and the day after once today's daylight is over)."""
+    """The popular crags table: today and tomorrow side by side (tomorrow and the day after once today's daylight is over).
+    The best POPULAR_TOP rows show; the rest are one tap away, and without JavaScript every row shows."""
     day, tomorrow, _now_hour, _rows, _cols = coast_view(results, now, cfg)
     days = (day, day + timedelta(days=1))
     titles = ("Tomorrow", "Day after") if tomorrow else ("Today", "Tomorrow")
@@ -3816,12 +3825,32 @@ def render_popular(results, tides, now, cfg):
         return "".join(out)
     w('<div class="wrap popw"><table class="pop" role="table"><thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Crag</th>'
       + "".join(f'<th scope="col" role="columnheader">{t} <small>{d.strftime("%a %-d %b")}</small></th>' for t, d in zip(titles, days))
-      + '</tr></thead><tbody role="rowgroup">')  # the rows are laid out as a grid, so the table roles are stated outright
-    for n, _walls, cells in rows:
-        w(f'<tr role="row"><th scope="row" role="rowheader"><a href="detail/{slug(n)}.html">{escape(n)}</a></th>'
+      + '</tr></thead><tbody role="rowgroup" id="pop-rows">')  # the rows are laid out as a grid, so the table roles are stated outright
+    for i, (n, _walls, cells) in enumerate(rows):
+        more = ' class="more"' if i >= POPULAR_TOP else ""
+        w(f'<tr role="row"{more}><th scope="row" role="rowheader"><a href="detail/{slug(n)}.html">{escape(n)}</a></th>'
           + "".join(popular_cell(r, d, dd.isoformat(), tides) for (r, d), dd in zip(cells, days)) + "</tr>")
-    w(f'</tbody></table><a class="all" href="#week-h">All {len(groups_of(results))} crags, next 7 days</a></div></section>')
+    w("</tbody></table>")
+    if len(rows) > POPULAR_TOP:
+        w(f'<button type="button" class="pmore" id="pop-more" aria-controls="pop-rows" aria-expanded="true" hidden>Show all {len(rows)} popular crags</button>'
+          f"<script>{POPULAR_JS}</script>")  # straight after the rows, so they fold before the page is first drawn
+    w(f'<a class="all" href="#week-h">All {len(groups_of(results))} crags, next 7 days</a></div></section>')
     return "".join(out)
+
+
+POPULAR_JS = r"""
+(function(){  // Popular crags: the best rows show and the button folds the rest away; without JavaScript every row shows
+  var b=document.getElementById('pop-more'), rows=[].slice.call(document.querySelectorAll('.pop tr.more')), all=b.textContent;
+  function draw(open){
+    rows.forEach(function(tr){tr.hidden=!open;});
+    b.setAttribute('aria-expanded',open?'true':'false');
+    b.textContent=open?'Show fewer':all;
+  }
+  b.addEventListener('click',function(){draw(b.getAttribute('aria-expanded')!=='true');});
+  draw(false);
+  b.hidden=false;
+})();
+"""
 
 
 def render_coast(results, now, cfg):
@@ -3982,24 +4011,9 @@ def day_summary(results, cfg, day_iso):
     return {"best": best, "grippy": grippy, "crags": len(groups)}
 
 
-def day_over(results, day_iso):
-    """The best score anywhere on a day that is already over: the highest best-window mean over its hours. None if none."""
-    wins = [best_window(day_hours(r, day_iso)) for r in results]
-    wins = [x[0] for x in wins if x]
-    return max(wins) if wins else None
-
-
-def summary_card(title, day, s=None, over=None):
-    """One summary card. s: day_summary() for a day still to come; over: the best score of a day whose daylight is over."""
-    head = f'<p class="ovl">{title}, {day.strftime("%a %-d %b")}</p>'
-    if s is None:
-        if over is None:
-            block, line = '<span class="num sz-xl none" aria-hidden="true">-</span>', "Today is over"
-        else:
-            name = band(over)[0]
-            block = f'<span class="num sz-xl past" role="img" aria-label="Best today: {fmt(over)}, {name}">{fmt(over)}</span>'
-            line = "Today is over"
-        return f'<div class="card">{block}<div>{head}<p class="ln">{line}</p></div></div>'
+def summary_card(title, day, s):
+    """One summary card. title: "Today" or "Tomorrow", or None for a card headed by its date alone; s: day_summary()."""
+    head = f'<p class="ovl">{title + ", " if title else ""}{day.strftime("%a %-d %b")}</p>'
     b = s["best"]
     if not b:
         return f'<div class="card"><span class="num sz-xl none" aria-hidden="true">-</span><div>{head}<p class="ln">No hours scored.</p></div></div>'
@@ -4021,16 +4035,14 @@ def summary_card(title, day, s=None, over=None):
 
 
 def render_summary(results, now, cfg):
-    """The Today and Tomorrow cards at the top of home. After dark Today reads "Today is over" and Tomorrow comes first."""
-    today = now.date()
-    tomorrow = today + timedelta(days=1)
-    _day, after_dark, *_rest = coast_view(results, now, cfg)
-    later = summary_card("Tomorrow", tomorrow, day_summary(results, cfg, tomorrow.isoformat()))
-    if after_dark:
-        cards = later + summary_card("Today", today, over=day_over(results, today.isoformat()))
-    else:
-        cards = summary_card("Today", today, day_summary(results, cfg, today.isoformat())) + later
-    return f'<section class="cards" aria-label="Best today and tomorrow">{cards}</section>'
+    """The two cards at the top of home: Today and Tomorrow, or once today's daylight is over, Tomorrow and the day after,
+    the day after headed by its date alone. The same two days as the Popular crags table and the crag pages."""
+    day, after_dark, *_rest = coast_view(results, now, cfg)
+    later = day + timedelta(days=1)
+    cards = (summary_card("Tomorrow" if after_dark else "Today", day, day_summary(results, cfg, day.isoformat()))
+             + summary_card(None if after_dark else "Tomorrow", later, day_summary(results, cfg, later.isoformat())))
+    said = "Best tomorrow and the day after" if after_dark else "Best today and tomorrow"
+    return f'<section class="cards" aria-label="{said}">{cards}</section>'
 
 
 def render_help():

@@ -35,7 +35,7 @@ Items marked **(B)** depend on a proposal in group B of the change list. Build t
 - Two cards in a flex row (wrap, basis 300px, gap 12). Card: `--card`, 1px rule, radius 10, padding 14/16, flex with 14px gap.
 - Left: score block XL (56px, number 34px). Right: overline (13px display caps, muted) "Today, Mon 5 Oct"; line (21px display 600) "Prime late on, 16:00 to 18:00"; meta (14px muted) "Best from Cove to Newtonhill. 118 of 165 crags reach Grippy."
 - Generator picks the best stretch by its best wall's score, ties broken by longest window.
-- **After dark:** the Today card reads "Today is over" with a past-coloured block showing the day's best score, and the Tomorrow card moves first.
+- **After dark:** once today's daylight is over the cards show Tomorrow ("Tomorrow, Tue 6 Oct") and the day after, headed by its date alone ("Wed 7 Oct"), both in the same format as by day: score block, line with the band and best window, best stretch and Grippy count. There is no "Today is over" card. These are the same two days as the Popular crags table and the crag pages.
 - **No good day:** if nothing reaches 4, the line reads "Nowhere climbable. Best is Greasy, 3, at …".
 
 ## 4. Coast panel
@@ -67,11 +67,14 @@ Items marked **(B)** depend on a proposal in group B of the change list. Build t
 ## 7. Popular crags
 
 - `h2` "Popular crags". Box: card, rule border, radius 10.
-- Column header row: Today | Tomorrow, 13px display caps, muted.
-- Each crag row: name (16px 600 link) on its own line, then a two-column grid. Each cell: score block 40px (number 22px) + two lines at 13px: window "16:00 to 18:00" (600, ink) and "4 h · LW 15:18" (muted). LW only for tidal walls.
-- Footer link "All 165 crags, next 7 days" (jumps to grid).
-- Desktop: same structure in the right column (basis 360px).
-- States: **after dark** the Today column shows past blocks with the day's score; **no window** (score under 4): window line reads "No climbable hours".
+- Column header row: Today | Tomorrow, 13px display caps, muted; from 1100px a Crag heading over the names as well.
+- Rows: the crags in `data/popular.json`, ranked by the first day's score as shown, then climbable hours, then list order. The top 5 show (`POPULAR_TOP`: of 5 to 8, the number that brings the column closest to the coast panel at 1280px).
+- Each crag row, under 1100px: name (16px 600 link) on its own line, then a two-column grid. Each cell: score block 40px (number 22px) + two lines at 13px: window "16:00 to 18:00" (600, ink) and "4 h · LW 15:18" (muted). LW only for tidal walls.
+- From 1100px each crag row is one line: name on the left, then the two cells, same content, in columns 1fr / 1.2fr / 1.2fr, centred vertically.
+- Show-all button under the rows: full width, 44px, 1px rule above, 16px 600 ink, left aligned, with a chevron pointing down. "Show all 15 popular crags" shows the rest in place and becomes "Show fewer" (chevron up); `aria-expanded` and `aria-controls` point at the rows. Hover `--sunk`; the focus ring is drawn inside the box. Without JavaScript every row shows and there is no button.
+- Footer link "All 165 crags, next 7 days" (jumps to grid), below the button.
+- Desktop: in the right column, beside the coast panel.
+- States: **after dark** the columns are Tomorrow | Day after, ranked by tomorrow; **no window** (score under 4): window line reads "No climbable hours".
 
 ## 8. Search box
 

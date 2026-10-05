@@ -95,19 +95,47 @@ class Summary(unittest.TestCase):
         self.assertNotIn("Nowhere", grip.summary_card("Tomorrow", date(2026, 10, 6), grip.day_summary(results, CFG, TOMORROW)))
 
     def test_after_dark(self):
-        """Once today's daylight is over, Tomorrow comes first and Today reads "Today is over" with the day's best, greyed."""
+        """Once today's daylight is over: Tomorrow first, then the day after headed by its date alone, in the same format."""
         gone = hours(TODAY, 9, [5, 6, 8, 8, 8, 6])
-        results = [result("A", "S", {TOMORROW: hours(TOMORROW, 9, [6, 6, 6])}, earlier=gone)]
-        now = datetime(2026, 10, 5, 20, 0, tzinfo=grip.TZ)
-        html = grip.render_summary(results, now, CFG)
-        self.assertLess(html.index("Tomorrow, Tue 6 Oct"), html.index("Today, Mon 5 Oct"))
-        self.assertIn('class="num sz-xl past" role="img" aria-label="Best today: 8, Prime">8<', html)
-        self.assertIn("Today is over", html)
-        # during the day: Today first, from the hours still to come
-        results = [result("A", "S", {TODAY: hours(TODAY, 14, [6, 6, 6]), TOMORROW: hours(TOMORROW, 9, [6, 6, 6])})]
+        results = [result("A", "south", {TOMORROW: hours(TOMORROW, 9, [6, 6, 6]), LATER: hours(LATER, 9, [4, 5, 7, 7, 7, 5])},
+                          earlier=gone),
+                   result("B", "north", {TOMORROW: hours(TOMORROW, 9, [3, 3, 3]), LATER: hours(LATER, 9, [6, 6, 6, 4, 4, 4])})]
+        html = grip.render_summary(results, datetime(2026, 10, 5, 20, 0, tzinfo=grip.TZ), CFG)
+        first, second = html.split('<div class="card">')[1:]
+        self.assertIn('<p class="ovl">Tomorrow, Tue 6 Oct</p>', first)
+        self.assertIn("Grippy all day, 09:00 to 12:00", first)
+        self.assertIn('<p class="ovl">Wed 7 Oct</p>', second)
+        self.assertIn('class="num sz-xl b4" role="img" aria-label="7, Grippy">7<', second)
+        self.assertIn("Grippy around midday, 11:00 to 14:00", second)
+        self.assertIn("Best from Nigg Bay to Findon. 2 of 2 crags reach Grippy.", second)
+        self.assertIn('aria-label="Best tomorrow and the day after"', html)
+        for gone_words in ("Today", "Today is over", "past"):
+            self.assertNotIn(gone_words, html)
+
+    def test_after_dark_day_after_nowhere_climbable(self):
+        results = [result("Souter Head", "S", {TOMORROW: hours(TOMORROW, 9, [6, 6, 6]), LATER: hours(LATER, 9, [2, 3, 3, 3, 2])}),
+                   result("Cove", "S", {TOMORROW: hours(TOMORROW, 9, [5, 5, 5]), LATER: hours(LATER, 9, [1, 1, 2, 1, 1])})]
+        html = grip.render_summary(results, datetime(2026, 10, 5, 20, 0, tzinfo=grip.TZ), CFG)
+        second = html.split('<div class="card">')[2]
+        self.assertIn('<p class="ovl">Wed 7 Oct</p>', second)
+        self.assertIn("Nowhere climbable. Best is Greasy, 3, at Souter Head.", second)
+        self.assertIn("0 of 2 crags reach Grippy.", second)
+        self.assertNotIn("Best from", second)
+
+    def test_after_dark_day_after_not_scored(self):
+        results = [result("A", "S", {TOMORROW: hours(TOMORROW, 9, [6, 6, 6])})]
+        html = grip.render_summary(results, datetime(2026, 10, 5, 20, 0, tzinfo=grip.TZ), CFG)
+        self.assertIn('<p class="ovl">Wed 7 Oct</p><p class="ln">No hours scored.</p>', html)
+
+    def test_daytime_unchanged(self):
+        """During the day: Today first, from the hours still to come, then Tomorrow; the day after is not shown."""
+        results = [result("A", "S", {TODAY: hours(TODAY, 14, [6, 6, 6]), TOMORROW: hours(TOMORROW, 9, [7, 7, 7]),
+                                     LATER: hours(LATER, 9, [9, 9, 9])})]
         html = grip.render_summary(results, datetime(2026, 10, 5, 14, 5, tzinfo=grip.TZ), CFG)
-        self.assertLess(html.index("Today, Mon 5 Oct"), html.index("Tomorrow, Tue 6 Oct"))
-        self.assertNotIn("Today is over", html)
+        self.assertLess(html.index('<p class="ovl">Today, Mon 5 Oct</p>'), html.index('<p class="ovl">Tomorrow, Tue 6 Oct</p>'))
+        self.assertIn('aria-label="Best today and tomorrow"', html)
+        self.assertNotIn("Wed 7 Oct", html)
+        self.assertNotIn("Prime", html)
 
     def test_band_run_and_when_words(self):
         day = hours(TOMORROW, 8, [3, 4, 5, 6, 6, 5, 6, 8, 9, 8])  # 08:00 to 18:00
@@ -133,6 +161,60 @@ class SearchAndPopular(unittest.TestCase):
         with unittest.mock.patch.object(grip, "load_popular", return_value=["A"]):
             html = grip.render_popular(results, {}, datetime(2026, 10, 5, 14, 5, tzinfo=grip.TZ), CFG)
         self.assertIn('<a class="all" href="#week-h">All 2 crags, next 7 days</a></div></section>', html)
+
+
+class PopularTop(unittest.TestCase):
+    """The Popular crags table shows the best POPULAR_TOP rows, ranked as before, and folds the rest behind a button."""
+
+    def render(self, results, names, now, top=5):
+        with unittest.mock.patch.object(grip, "load_popular", return_value=names), \
+                unittest.mock.patch.object(grip, "POPULAR_TOP", top):
+            return grip.render_popular(results, {}, now, CFG)
+
+    @staticmethod
+    def shown(html):
+        """The crag names in the table's rows, in order, and which rows are folded away."""
+        rows = re.findall(r'<tr role="row"( class="more")?><th scope="row" role="rowheader"><a href="[^"]+">([^<]+)</a>', html)
+        return [n for _m, n in rows], [n for m, n in rows if m]
+
+    def test_top_rows_and_ties(self):
+        # day scores as shown: A 7; B 6 with 5 climbable hours; C and H 6 with 3 hours; E and D 5 with 3 hours, the fifth and
+        # sixth rows, a tie broken by list order; F 4; G 3
+        spec = {"A": [7, 7, 7], "B": [6, 6, 6, 6, 6], "C": [6, 6, 6], "H": [6, 6, 6], "D": [5, 5, 5], "E": [5, 5, 5],
+                "F": [4, 4, 4], "G": [3, 3, 3]}
+        results = [result(n, "S", {TODAY: hours(TODAY, 12, v), TOMORROW: hours(TOMORROW, 9, [5, 5, 5])}) for n, v in spec.items()]
+        names = ["G", "F", "E", "D", "C", "H", "B", "A"]  # list order puts C before H and E before D
+        html = self.render(results, names, datetime(2026, 10, 5, 11, 5, tzinfo=grip.TZ))
+        order, folded = self.shown(html)
+        self.assertEqual(order, ["A", "B", "C", "H", "E", "D", "F", "G"])  # every row is in the page: all show without JavaScript
+        self.assertEqual(folded, ["D", "F", "G"])
+        self.assertIn('<button type="button" class="pmore" id="pop-more" aria-controls="pop-rows" aria-expanded="true" hidden>'
+                      "Show all 8 popular crags</button>", html)
+        self.assertIn('<tbody role="rowgroup" id="pop-rows">', html)
+        self.assertLess(html.index('id="pop-more"'), html.index('<a class="all"'))  # the grid link stays at the foot
+        self.assertIn("<script>" + grip.POPULAR_JS + "</script>", html)
+
+    def test_after_dark_ranks_by_tomorrow(self):
+        gone = hours(TODAY, 9, [9, 9, 9])
+        spec = {"A": 3, "B": 8, "C": 5, "D": 6, "E": 7, "F": 4, "G": 2}
+        results = [result(n, "S", {TOMORROW: hours(TOMORROW, 9, [v] * 3), LATER: hours(LATER, 9, [10 - v] * 3)}, earlier=gone)
+                   for n, v in spec.items()]
+        html = self.render(results, list(spec), datetime(2026, 10, 5, 20, 0, tzinfo=grip.TZ))
+        order, folded = self.shown(html)
+        self.assertEqual(order, ["B", "E", "D", "C", "F", "A", "G"])
+        self.assertEqual(folded, ["A", "G"])
+        self.assertIn("Tomorrow <small>Tue 6 Oct</small>", html)
+        self.assertIn("Day after <small>Wed 7 Oct</small>", html)
+
+    def test_no_button_when_nothing_to_fold(self):
+        results = [result(n, "S", {TODAY: hours(TODAY, 12, [6, 6, 6])}) for n in "ABCDE"]
+        html = self.render(results, list("ABCDE"), datetime(2026, 10, 5, 11, 5, tzinfo=grip.TZ))
+        self.assertEqual(self.shown(html), (list("ABCDE"), []))
+        self.assertNotIn("pop-more", html)
+        self.assertNotIn("<script>", html)
+
+    def test_default_top(self):
+        self.assertEqual(grip.POPULAR_TOP, 5)
 
 
 class Stale(unittest.TestCase):
