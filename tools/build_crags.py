@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Build crags.json for Grip from the SMC routes database facts (data/smc_coast.json) plus manual overrides."""
-import json, math, collections, sys, re
+"""Build crags.json for Grip from the SMC routes database facts (data/smc_coast.json), the bird register (data/birds.json)
+and manual overrides (data/overrides.json). Birds come only from data/birds.json, never from the SMC keyword flags."""
+import json, math, collections, os, sys, re
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else "data/smc_coast.json"
 OVR = sys.argv[2] if len(sys.argv) > 2 else "data/overrides.json"
 OUT = sys.argv[3] if len(sys.argv) > 3 else "crags.json"
+BIRDS = sys.argv[4] if len(sys.argv) > 4 else os.path.join(os.path.dirname(os.path.abspath(OVR)), "birds.json")
 
 d = json.load(open(SRC)); R = {r["id"]: r for r in d["records"]}
 try:
@@ -178,11 +180,6 @@ for sec_label, crag in walk_sections():
             e["sea_sheltered"] = True
         if f.get("seep"):
             e["seeps"] = True
-        if f.get("birds") in ("affected", "restricted", "mixed"):
-            e["birds"] = {"months": [4, 5, 6, 7], "level": "restricted" if f["birds"] == "restricted" else "affected",
-                          "note": "Birds reported nesting; months not confirmed"}
-        elif f.get("birds") == "clear":
-            e["birds"] = {"months": [], "level": "clear", "note": "Free of nesting birds (SMC database)"}
         label = e["name"] + (f" ({e['wall']})" if wall else "")
         if label in seen_labels:
             dropped.append((label, "duplicate"))
@@ -190,7 +187,8 @@ for sec_label, crag in walk_sections():
         seen_labels.add(label)
         crags.append(e)
 
-# manual overrides by label
+# manual overrides by label (a "birds" key here wins over data/birds.json)
+bird_overridden = set()
 for label, ov in overrides.get("walls", {}).items():
     hits = [c for c in crags if (c["name"] + (f" ({c['wall']})" if c.get("wall") else "")) == label]
     if not hits:
@@ -202,8 +200,49 @@ for label, ov in overrides.get("walls", {}).items():
                 c.pop(k, None)
             else:
                 c[k] = v
+        if "birds" in ov:
+            bird_overridden.add(id(c))
 drop = set(overrides.get("drop", []))
 crags = [c for c in crags if (c["name"] + (f" ({c['wall']})" if c.get("wall") else "")) not in drop]
+
+# nesting birds by label, from data/birds.json only
+NESTING = ("restricted", "affected", "partly")
+PLACEHOLDER_MONTHS = [4, 5, 6, 7]  # shown hatched, "months not confirmed", until a source gives the months
+
+
+def bird_entry(b):
+    """A wall's birds as crags.json carries them, from its data/birds.json entry; None for no information."""
+    level = b.get("level")
+    if level not in NESTING + ("clear",):
+        return None
+    months = sorted(b.get("months") or []) if level in NESTING else []
+    confirmed = bool(months and b.get("months_source"))
+    out = {"months": months if confirmed else (PLACEHOLDER_MONTHS if level in NESTING else []), "level": level,
+           "note": b.get("note") or "", "confirmed": confirmed}
+    if confirmed:
+        out["months_source"] = b["months_source"]
+    if b.get("source"):
+        out["source"] = b["source"]
+    return out
+
+
+try:
+    bird_data = json.load(open(BIRDS))["walls"]
+except FileNotFoundError:
+    bird_data = {}
+    print(f"warning: {BIRDS} not found; no wall has bird information")
+labels = {c["name"] + (f" ({c['wall']})" if c.get("wall") else ""): c for c in crags}
+for label, b in bird_data.items():
+    if label not in labels:
+        print(f"warning: {BIRDS} names {label!r}, which is not a wall")
+        continue
+    entry = bird_entry(b)
+    if entry and id(labels[label]) not in bird_overridden:
+        labels[label]["birds"] = entry
+missing = [lb for lb in labels if lb not in bird_data]
+if missing:
+    print(f"warning: {len(missing)} walls have no entry in {BIRDS}, so no bird information: " + ", ".join(missing[:5]))
+
 
 out = {"zones": ZONES, "crags": crags, "source": "Crag details from the SMC routes database (routes.smc.org.uk), with local corrections"}
 json.dump(out, open(OUT, "w"), indent=1, ensure_ascii=False)

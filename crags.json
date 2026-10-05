@@ -83,7 +83,19 @@
    "lat": 57.12512,
    "lon": -2.05284,
    "sheltered": true,
-   "inlet": true
+   "inlet": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Reported as largely free of nesting birds; not confirmed clear",
+    "confirmed": false,
+    "source": "UKC"
+   }
   },
   {
    "name": "Bridge of One Hair",
@@ -212,7 +224,19 @@
    "aspect_note": "east and south",
    "tidal_note": "Non Tidal",
    "lat": 57.11793,
-   "lon": -2.05943
+   "lon": -2.05943,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds nest on the Red Rocks wall, mostly on the routes right of Pedestal Corner",
+    "confirmed": false,
+    "source": "SMC and UKC"
+   }
   },
   {
    "name": "The Long Slough",
@@ -251,7 +275,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Birds nest on the Red Rocks wall, mostly on the routes right of Pedestal Corner",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -493,7 +519,9 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -510,13 +538,15 @@
    "tidal_note": "Mainly Tidal",
    "lat": 57.10715,
    "lon": -2.06271,
+   "inlet": true,
+   "sheltered": true,
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
-   },
-   "inlet": true,
-   "sheltered": true
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Souter Head",
@@ -532,13 +562,15 @@
    "tidal_note": "Mainly Tidal",
    "lat": 57.10715,
    "lon": -2.06271,
+   "inlet": true,
+   "sheltered": true,
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
-   },
-   "inlet": true,
-   "sheltered": true
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Souter Head",
@@ -554,13 +586,15 @@
    "tidal_note": "Mainly Tidal",
    "lat": 57.10715,
    "lon": -2.06271,
+   "inlet": true,
+   "sheltered": true,
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
-   },
-   "inlet": true,
-   "sheltered": true
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Souter Head",
@@ -576,13 +610,15 @@
    "tidal_note": "Mainly Tidal",
    "lat": 57.10715,
    "lon": -2.06271,
+   "inlet": true,
+   "sheltered": true,
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
-   },
-   "inlet": true,
-   "sheltered": true
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Souter Head",
@@ -598,13 +634,15 @@
    "tidal_note": "Mainly Tidal",
    "lat": 57.10715,
    "lon": -2.06271,
+   "inlet": true,
+   "sheltered": true,
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
-   },
-   "inlet": true,
-   "sheltered": true
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Souter Head",
@@ -621,12 +659,14 @@
    "lat": 57.10715,
    "lon": -2.06271,
    "inlet": true,
+   "sheltered": true,
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
-   },
-   "sheltered": true
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Souter Head",
@@ -642,13 +682,15 @@
    "tidal_note": "Mainly Tidal",
    "lat": 57.10715,
    "lon": -2.06271,
+   "inlet": true,
+   "sheltered": true,
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
-   },
-   "inlet": true,
-   "sheltered": true
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Souter Head",
@@ -664,13 +706,15 @@
    "tidal_note": "Mainly Tidal",
    "lat": 57.10715,
    "lon": -2.06271,
+   "inlet": true,
+   "sheltered": true,
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
-   },
-   "inlet": true,
-   "sheltered": true
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Souter Head",
@@ -686,13 +730,15 @@
    "tidal_note": "Mainly Tidal",
    "lat": 57.10715,
    "lon": -2.06271,
+   "inlet": true,
+   "sheltered": true,
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
-   },
-   "inlet": true,
-   "sheltered": true
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "The Red Cliff",
@@ -716,7 +762,10 @@
      8
     ],
     "level": "affected",
-    "note": "Nesting gulls occupy most of the holds April to August; mess slow to clear, can prohibit climbing into winter (SMC)"
+    "note": "Gulls take over most holds in season; the mess is slow to clear and can stop climbing into winter",
+    "confirmed": true,
+    "months_source": "guidebook",
+    "source": "SMC and UKC"
    }
   },
   {
@@ -731,7 +780,14 @@
    "tidal": true,
    "tidal_note": "Tidal",
    "lat": 57.10445,
-   "lon": -2.07261
+   "lon": -2.07261,
+   "birds": {
+    "months": [],
+    "level": "clear",
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Black Cove",
@@ -744,7 +800,19 @@
    "type": "trad",
    "lat": 57.10121,
    "lon": -2.07409,
-   "inlet": true
+   "inlet": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Crowded with birds in summer",
+    "confirmed": false,
+    "source": "SMC and UKC"
+   }
   },
   {
    "name": "Cove Harbour Crag",
@@ -785,7 +853,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -811,7 +881,10 @@
      8
     ],
     "level": "restricted",
-    "note": "Birds nest on the cliff April to August (SMC)"
+    "note": "An access notice for birds is listed, with no detail. Birds nest on the cliff in season",
+    "confirmed": true,
+    "months_source": "guidebook",
+    "source": "SMC"
    }
   },
   {
@@ -835,8 +908,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Usually clear of birds, though nesting is reported elsewhere at South Cove",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -861,7 +936,9 @@
      7
     ],
     "level": "restricted",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "An access notice for birds is listed, with no detail. Kittiwakes nest on parts, mainly around Red Planet's red slabs; most left-hand routes stay clear",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -887,8 +964,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Usually clear of birds, though nesting is reported elsewhere at South Cove",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -910,11 +989,12 @@
      4,
      5,
      6,
-     7,
-     8
+     7
     ],
-    "level": "affected",
-    "note": "Birds nest from spring to summer on the stretch from The Slide to Insect Groove; they leave in August, nests can linger into autumn (SMC)"
+    "level": "partly",
+    "note": "The stretch from The Slide to Insect Groove; routes right of Insect Groove are mostly clear. Nests can linger into autumn",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -953,7 +1033,10 @@
      8
     ],
     "level": "affected",
-    "note": "Nesting birds a major problem from April to August (SMC)"
+    "note": "Heavily nested in season; worth a visit in early spring, ahead of the birds",
+    "confirmed": true,
+    "months_source": "guidebook",
+    "source": "SMC and UKC"
    }
   },
   {
@@ -971,7 +1054,9 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Bird free (UKC and SMC)"
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -989,14 +1074,11 @@
    "lon": -2.08479,
    "seeps": true,
    "birds": {
-    "months": [
-     4,
-     5,
-     6,
-     7
-    ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "months": [],
+    "level": "clear",
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1013,12 +1095,15 @@
    "lon": -2.08743,
    "birds": {
     "months": [
+     4,
+     5,
      6,
-     7,
-     8
+     7
     ],
-    "level": "affected",
-    "note": "An occasional fulmar in summer (SMC)"
+    "level": "partly",
+    "note": "The odd fulmar in summer",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1067,9 +1152,16 @@
    "lon": -2.08841,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Reported as largely free of nesting birds; not confirmed clear",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1088,9 +1180,16 @@
    "lon": -2.08825,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Reported as largely free of nesting birds; not confirmed clear",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1108,9 +1207,16 @@
    "lon": -2.08825,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Reported as largely free of nesting birds; not confirmed clear",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1128,9 +1234,16 @@
    "lon": -2.08841,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Reported as largely free of nesting birds; not confirmed clear",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1168,8 +1281,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Kittiwakes nest on the left side; routes right of New Horizons are clear",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1193,8 +1308,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Some of the crag is nested, mainly the left side of the Red Roof",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1219,8 +1336,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Some of the crag is nested, mainly the left side of the Red Roof",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1245,8 +1364,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Some of the crag is nested, mainly the left side of the Red Roof",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1271,8 +1392,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Some of the crag is nested, mainly the left side of the Red Roof",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1286,7 +1409,14 @@
    "type": "trad",
    "tidal_note": "Non Tidal",
    "lat": 57.08701,
-   "lon": -2.08314
+   "lon": -2.08314,
+   "birds": {
+    "months": [],
+    "level": "clear",
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Spike Wall",
@@ -1299,7 +1429,14 @@
    "type": "trad",
    "tidal_note": "Non Tidal",
    "lat": 57.08674,
-   "lon": -2.08347
+   "lon": -2.08347,
+   "birds": {
+    "months": [],
+    "level": "clear",
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Kay Hole",
@@ -1332,9 +1469,16 @@
    "lon": -2.09447,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Some of the cliff is nested, but not the routes themselves",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1353,9 +1497,16 @@
    "lon": -2.09447,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Some of the cliff is nested, but not the routes themselves",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1373,9 +1524,16 @@
    "lon": -2.09447,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Some of the cliff is nested, but not the routes themselves",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1393,7 +1551,19 @@
    "lat": 57.0667,
    "lon": -2.09645,
    "inlet": true,
-   "seeps": true
+   "seeps": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Can be heavily nested",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Findon Hole",
@@ -1409,7 +1579,14 @@
    "lat": 57.06652,
    "lon": -2.09678,
    "inlet": true,
-   "seeps": true
+   "seeps": true,
+   "birds": {
+    "months": [],
+    "level": "clear",
+    "note": "No nesting birds reported; the neighbouring Storm Wall can be nested",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Findon Hole",
@@ -1425,7 +1602,14 @@
    "lat": 57.06634,
    "lon": -2.09695,
    "inlet": true,
-   "seeps": true
+   "seeps": true,
+   "birds": {
+    "months": [],
+    "level": "clear",
+    "note": "No nesting birds reported; the neighbouring Storm Wall can be nested",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Pow Kebbuck Cave (aka Sharmasheugh)",
@@ -1439,7 +1623,19 @@
    "tidal": true,
    "tidal_note": "Partially Tidal",
    "lat": 57.06544,
-   "lon": -2.09975
+   "lon": -2.09975,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds about in summer; no nests reported on the climbing",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Pow Kebbuck Cave (aka Sharmasheugh)",
@@ -1455,7 +1651,19 @@
    "tidal_note": "Partially Tidal",
    "lat": 57.06544,
    "lon": -2.09975,
-   "seeps": true
+   "seeps": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds about in summer; no nests reported on the climbing",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Findon Shore Crag",
@@ -1469,7 +1677,19 @@
    "tidal": true,
    "tidal_note": "Tidal",
    "lat": 57.0631,
-   "lon": -2.10452
+   "lon": -2.10452,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "A few birds may nest here; most lines are unaffected",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Pow Kebbuck",
@@ -1487,12 +1707,15 @@
    "seeps": true,
    "birds": {
     "months": [
+     4,
+     5,
      6,
-     7,
-     8
+     7
     ],
     "level": "affected",
-    "note": "Birds in summer (SMC)"
+    "note": "Birds present in summer",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1524,9 +1747,16 @@
    "lon": -2.09696,
    "sheltered": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "A seabird colony on the Left Wall; fulmars hold some Right Wall ledges",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1544,9 +1774,16 @@
    "lon": -2.09696,
    "sheltered": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Kittiwakes, guillemots and razorbills nest here in large numbers",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1564,9 +1801,16 @@
    "lon": -2.09696,
    "sheltered": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Fulmars hold some ledges, notably at the foot of the Thug Wall pitches and in Deathcap's eyrie; Necromancer to Bat's Belfry is clear",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1582,12 +1826,7 @@
    "tidal_note": "Non Tidal",
    "lat": 57.07344,
    "lon": -2.09696,
-   "sheltered": true,
-   "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
-   }
+   "sheltered": true
   },
   {
    "name": "The Pink Band Cliff",
@@ -1610,7 +1849,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1635,7 +1876,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -1661,7 +1904,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -1680,14 +1925,11 @@
    "sheltered": true,
    "seeps": true,
    "birds": {
-    "months": [
-     4,
-     5,
-     6,
-     7
-    ],
-    "level": "affected",
-    "note": "Gets birded in spring and summer (UKC)"
+    "months": [],
+    "level": "clear",
+    "note": "No nesting birds reported; the Red Band Cliff beside it is nested",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -1706,9 +1948,16 @@
    "sheltered": true,
    "inlet": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Generally bird free (UKC)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Kittiwakes cover the red band in season; other birds elsewhere on the cliff rarely cause trouble",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -1809,10 +2058,14 @@
      4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": true,
+    "months_source": "guidebook",
+    "source": "SMC and UKC"
    }
   },
   {
@@ -1832,13 +2085,17 @@
    "seeps": true,
    "birds": {
     "months": [
+     4,
      5,
      6,
      7,
      8
     ],
     "level": "affected",
-    "note": "Best avoided while birds nest, from late April to mid August (UKC)"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": true,
+    "months_source": "guidebook",
+    "source": "SMC and UKC"
    }
   },
   {
@@ -1857,13 +2114,17 @@
    "lon": -2.09349,
    "birds": {
     "months": [
+     4,
      5,
      6,
      7,
      8
     ],
     "level": "affected",
-    "note": "Best avoided while birds nest, from late April to mid August (UKC)"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": true,
+    "months_source": "guidebook",
+    "source": "SMC and UKC"
    }
   },
   {
@@ -1883,13 +2144,17 @@
    "seeps": true,
    "birds": {
     "months": [
+     4,
      5,
      6,
      7,
      8
     ],
     "level": "affected",
-    "note": "Best avoided while birds nest, from late April to mid August (UKC)"
+    "note": "Avoid while birds are present; in quiet years the back wall routes can go",
+    "confirmed": true,
+    "months_source": "guidebook",
+    "source": "UKC"
    }
   },
   {
@@ -1909,13 +2174,15 @@
    "seeps": true,
    "birds": {
     "months": [
+     4,
      5,
      6,
-     7,
-     8
+     7
     ],
-    "level": "affected",
-    "note": "A few kittiwakes nest in summer, closing some routes for a few months (UKC)"
+    "level": "partly",
+    "note": "Some routes are out of bounds in the nesting season",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -1932,6 +2199,7 @@
    "lat": 57.06931,
    "lon": -2.09366,
    "inlet": true,
+   "seep_note": "Does not seep badly; dries out for long periods every year (developers' notes, 2020)",
    "birds": {
     "months": [
      4,
@@ -1939,10 +2207,11 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
-   },
-   "seep_note": "Does not seep badly; dries out for long periods every year (developers' notes, 2020)"
+    "level": "partly",
+    "note": "Nesting hits Shag's Hole and the North Wall hardest; other walls less so",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Crazy Band Walls and The Shag’s Hole",
@@ -1959,6 +2228,8 @@
    "lon": -2.09366,
    "inlet": true,
    "seeps": true,
+   "seep_note": "Bad seepage, worst at the left end; usually wet until May, with some holds staying wet beyond that (developers' notes, 2020)",
+   "seep_until_month": 5,
    "birds": {
     "months": [
      4,
@@ -1966,11 +2237,11 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
-   },
-   "seep_note": "Bad seepage, worst at the left end; usually wet until May, with some holds staying wet beyond that (developers' notes, 2020)",
-   "seep_until_month": 5
+    "level": "partly",
+    "note": "Nesting hits Shag's Hole and the North Wall hardest; other walls less so",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Crazy Band Walls and The Shag’s Hole",
@@ -1988,13 +2259,17 @@
    "inlet": true,
    "birds": {
     "months": [
+     4,
      5,
      6,
      7,
      8
     ],
     "level": "affected",
-    "note": "Birds on the ledges from late April to August (SMC)"
+    "note": "Ledges busy with birds in season; dirty until storms clear them",
+    "confirmed": true,
+    "months_source": "guidebook",
+    "source": "SMC"
    }
   },
   {
@@ -2022,7 +2297,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Shags roost under the roofs at the seaward end; nesting birds in season",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -2113,7 +2390,19 @@
    "tidal": true,
    "tidal_note": "Partially Tidal",
    "lat": 57.04692,
-   "lon": -2.1203
+   "lon": -2.1203,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Some nesting reported, towards the crag's north end",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "The Knaps - The Gorilla’s Head",
@@ -2127,7 +2416,19 @@
    "wall": "Cave Wall",
    "tidal_note": "Non Tidal",
    "lat": 57.04692,
-   "lon": -2.1203
+   "lon": -2.1203,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Some nesting reported, towards the crag's north end",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "The Knaps - The Gorilla’s Head",
@@ -2142,7 +2443,19 @@
    "tidal": true,
    "tidal_note": "Tidal",
    "lat": 57.04692,
-   "lon": -2.1203
+   "lon": -2.1203,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Some nesting reported, towards the crag's north end",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "The Knaps - The Gorilla’s Head",
@@ -2166,8 +2479,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Birds nest on top of the stack in season",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -2190,8 +2505,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Gulls favour the ramp at nesting time; the odd fulmar elsewhere",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -2215,7 +2532,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Sources disagree: one says birds affect most routes in season, the other that the crag is mostly free of them",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -2240,7 +2559,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Sources disagree: one says birds affect most routes in season, the other that the crag is mostly free of them",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -2265,7 +2586,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Sources disagree: one says birds affect most routes in season, the other that the crag is mostly free of them",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -2290,7 +2613,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Sources disagree: one says birds affect most routes in season, the other that the crag is mostly free of them",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -2314,7 +2639,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Sources disagree: one says birds affect most routes in season, the other that the crag is mostly free of them",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -2335,11 +2662,12 @@
      4,
      5,
      6,
-     7,
-     8
+     7
     ],
     "level": "affected",
-    "note": "Very birdy; go in spring or late autumn (SMC)"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -2365,8 +2693,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "A few nests in season; the routes should still go",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -2403,7 +2733,9 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -2420,9 +2752,16 @@
    "lon": -2.13015,
    "inlet": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Few birds, bar the odd nesting gull",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -2440,9 +2779,16 @@
    "lon": -2.13015,
    "inlet": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Few birds, bar the odd nesting gull",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -2460,9 +2806,16 @@
    "lon": -2.13015,
    "inlet": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Few birds, bar the odd nesting gull",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -2480,9 +2833,16 @@
    "lon": -2.13015,
    "inlet": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Few birds, bar the odd nesting gull",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -2505,7 +2865,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Hundreds of gulls nest at the foot in summer and dive at climbers",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -2524,6 +2886,7 @@
    "lat": 57.03433,
    "lon": -2.13509,
    "inlet": true,
+   "sheltered": true,
    "birds": {
     "months": [
      4,
@@ -2531,10 +2894,11 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
-   },
-   "sheltered": true
+    "level": "partly",
+    "note": "Few nesting birds reported; not confirmed clear",
+    "confirmed": false,
+    "source": "SMC and UKC"
+   }
   },
   {
    "name": "Craig Stirling",
@@ -2550,12 +2914,19 @@
    "lat": 57.03433,
    "lon": -2.13509,
    "inlet": true,
+   "sheltered": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
-   },
-   "sheltered": true
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Few nesting birds reported; not confirmed clear",
+    "confirmed": false,
+    "source": "SMC and UKC"
+   }
   },
   {
    "name": "Craig Stirling",
@@ -2571,12 +2942,19 @@
    "tidal_note": "Tidal",
    "lat": 57.03433,
    "lon": -2.13509,
+   "sheltered": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
-   },
-   "sheltered": true
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Few nesting birds reported; not confirmed clear",
+    "confirmed": false,
+    "source": "SMC and UKC"
+   }
   },
   {
    "name": "Rotter’s Rock",
@@ -2621,9 +2999,16 @@
    "lat": 57.03198,
    "lon": -2.14117,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Housemartins nest under the overhangs; seabirds are not reported as a problem",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -2640,9 +3025,16 @@
    "lat": 57.03252,
    "lon": -2.14002,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Housemartins nest under the overhangs; seabirds are not reported as a problem",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -2660,9 +3052,16 @@
    "lon": -2.14019,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Housemartins nest under the overhangs; seabirds are not reported as a problem",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -2788,7 +3187,19 @@
    "tidal_note": "Non Tidal",
    "lat": 57.02713,
    "lon": -2.1456,
-   "inlet": true
+   "inlet": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Nesting affects only the central tower routes",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Murray Heugh",
@@ -2805,7 +3216,19 @@
    "lat": 57.02587,
    "lon": -2.14741,
    "sheltered": true,
-   "seeps": true
+   "seeps": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds nest high on the cliff and on the right of the bay; most routes are unaffected",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Murray Heugh",
@@ -2821,7 +3244,19 @@
    "tidal_note": "Partially Tidal",
    "lat": 57.02578,
    "lon": -2.14675,
-   "sheltered": true
+   "sheltered": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds nest high on the cliff and on the right of the bay; most routes are unaffected",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Murray Heugh",
@@ -2838,7 +3273,19 @@
    "lat": 57.02587,
    "lon": -2.14741,
    "sheltered": true,
-   "seeps": true
+   "seeps": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds nest high on the cliff and on the right of the bay; most routes are unaffected",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Brown Band Crag",
@@ -2872,10 +3319,14 @@
      4,
      5,
      6,
-     7
+     7,
+     8
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Fulmars and razorbills nest here; keep off while birds or eggs are about, above all on the Jaded headwall",
+    "confirmed": true,
+    "months_source": "access notes",
+    "source": "access notes"
    }
   },
   {
@@ -2892,9 +3343,16 @@
    "lon": -2.1497,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds affect only the routes further right; the main wall itself is clear",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3023,7 +3481,9 @@
      7
     ],
     "level": "restricted",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "An access notice for birds is listed, with no detail. Gulls nest on some routes",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3041,13 +3501,15 @@
    "lon": -2.16773,
    "birds": {
     "months": [
+     4,
      5,
      6,
-     7,
-     8
+     7
     ],
-    "level": "affected",
-    "note": "Nesting birds present throughout summer; Wild is the Wind unaffected (SMC)"
+    "level": "restricted",
+    "note": "An access notice for birds is listed, with no detail. Birds nest through summer, though Wild is the Wind is unaffected",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3070,7 +3532,9 @@
      7
     ],
     "level": "restricted",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "An access notice for birds is listed, with no detail",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3094,7 +3558,9 @@
      7
     ],
     "level": "restricted",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "An access notice for birds is listed, with no detail",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3118,7 +3584,9 @@
      7
     ],
     "level": "restricted",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "An access notice for birds is listed, with no detail",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3169,17 +3637,7 @@
    "rock": null,
    "type": "trad",
    "lat": 56.85565,
-   "lon": -2.24791,
-   "birds": {
-    "months": [
-     4,
-     5,
-     6,
-     7
-    ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
-   }
+   "lon": -2.24791
   },
   {
    "name": "Crawton Bay",
@@ -3225,11 +3683,12 @@
      4,
      5,
      6,
-     7,
-     8
+     7
     ],
-    "level": "affected",
-    "note": "Some years nesting birds take over a few ledges (SMC)"
+    "level": "partly",
+    "note": "Some years birds take over a few ledges and it gets messy in season",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3253,8 +3712,11 @@
      7,
      8
     ],
-    "level": "affected",
-    "note": "Some routes have nesting birds from April to August (UKC)"
+    "level": "partly",
+    "note": "Some nests on top and on some routes",
+    "confirmed": true,
+    "months_source": "guidebook",
+    "source": "SMC and UKC"
    }
   },
   {
@@ -3278,7 +3740,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "The top is usually crowded with gulls",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3302,7 +3766,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3326,7 +3792,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3349,7 +3817,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3365,7 +3835,19 @@
    "tidal": true,
    "tidal_note": "Tidal",
    "lat": 57.38018,
-   "lon": -1.87525
+   "lon": -1.87525,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Berry’s Loop Stack",
@@ -3381,7 +3863,19 @@
    "tidal": true,
    "tidal_note": "Tidal",
    "lat": 57.38018,
-   "lon": -1.87525
+   "lon": -1.87525,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Berry’s Loop Stack",
@@ -3397,7 +3891,19 @@
    "tidal": true,
    "tidal_note": "Tidal",
    "lat": 57.38018,
-   "lon": -1.87525
+   "lon": -1.87525,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Berry’s Loop Stack",
@@ -3413,7 +3919,19 @@
    "tidal": true,
    "tidal_note": "Tidal",
    "lat": 57.38018,
-   "lon": -1.87525
+   "lon": -1.87525,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Parent Cliff",
@@ -3428,7 +3946,19 @@
    "tidal": true,
    "tidal_note": "Partially Tidal",
    "lat": 57.38018,
-   "lon": -1.87525
+   "lon": -1.87525,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Heavily nested in season, as are the cliffs around it",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Silkies Cliff",
@@ -3443,7 +3973,19 @@
    "tidal_note": "Non Tidal",
    "lat": 57.38018,
    "lon": -1.87525,
-   "sheltered": true
+   "sheltered": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Birds return in spring and leave mess; best before they arrive",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Carriage Crag",
@@ -3457,7 +3999,14 @@
    "wall": "Wagon Wall",
    "tidal_note": "Non Tidal",
    "lat": 57.38467,
-   "lon": -1.87025
+   "lon": -1.87025,
+   "birds": {
+    "months": [],
+    "level": "clear",
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Carriage Crag",
@@ -3493,8 +4042,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birdy through the nesting season (UKC); months not confirmed"
+    "level": "restricted",
+    "note": "Most of the promontory is closed by nesting birds; the north-east corner has clean routes",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -3518,7 +4069,9 @@
      7
     ],
     "level": "restricted",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "An access notice for birds is listed, with no detail",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3536,9 +4089,16 @@
    "lat": 57.36673,
    "lon": -1.90689,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Reported as largely free of nesting birds; not confirmed clear",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3550,17 +4110,7 @@
    "aspect": null,
    "rock": null,
    "type": "trad",
-   "inlet": true,
-   "birds": {
-    "months": [
-     4,
-     5,
-     6,
-     7
-    ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
-   }
+   "inlet": true
   },
   {
    "name": "Fulmar Wall",
@@ -3578,9 +4128,16 @@
    "sea_sheltered": true,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Almost no nesting birds, even in season (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Sources disagree: one reports nesting birds, the other says the wall is almost free of them in season",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -3600,9 +4157,16 @@
    "sea_sheltered": true,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Almost no nesting birds, even in season (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Sources disagree: one reports nesting birds, the other says the wall is almost free of them in season",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -3621,9 +4185,16 @@
    "sea_sheltered": true,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Almost no nesting birds, even in season (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Sources disagree: one reports nesting birds, the other says the wall is almost free of them in season",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -3646,7 +4217,9 @@
      7
     ],
     "level": "affected",
-    "note": "Seabirds can cause trouble while nesting (UKC); months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "UKC"
    }
   },
   {
@@ -3670,7 +4243,9 @@
      7
     ],
     "level": "affected",
-    "note": "Seabirds can cause trouble while nesting (UKC); months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "UKC"
    }
   },
   {
@@ -3700,9 +4275,16 @@
    "lat": 57.42503,
    "lon": -1.82348,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Reported as largely free of nesting birds; not confirmed clear",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3721,9 +4303,16 @@
    "sheltered": true,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "A few birds in the nesting season",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -3741,7 +4330,9 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Birds not a problem (UKC)"
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "UKC"
    }
   },
   {
@@ -3766,7 +4357,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3791,7 +4384,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3816,7 +4411,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3841,7 +4438,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3866,7 +4465,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3881,7 +4482,19 @@
    "aspect_note": "east and south-east",
    "tidal_note": "Non Tidal",
    "lat": 57.42746,
-   "lon": -1.81573
+   "lon": -1.81573,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Gulls nest where Airegin, Ostrichism and the routes beside them top out, and on the Aiguille's top; Groovin' High is clear",
+    "confirmed": false,
+    "source": "access notes"
+   }
   },
   {
    "name": "Grey Mare Slabs",
@@ -3896,7 +4509,19 @@
    "aspect_note": "east and south-east",
    "tidal_note": "Non Tidal",
    "lat": 57.42746,
-   "lon": -1.81573
+   "lon": -1.81573,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Gulls nest where Airegin, Ostrichism and the routes beside them top out, and on the Aiguille's top; Groovin' High is clear",
+    "confirmed": false,
+    "source": "access notes"
+   }
   },
   {
    "name": "Grey Mare Slabs",
@@ -3911,7 +4536,19 @@
    "aspect_note": "east and south-east",
    "tidal_note": "Non Tidal",
    "lat": 57.42746,
-   "lon": -1.81573
+   "lon": -1.81573,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Gulls nest where Airegin, Ostrichism and the routes beside them top out, and on the Aiguille's top; Groovin' High is clear",
+    "confirmed": false,
+    "source": "access notes"
+   }
   },
   {
    "name": "Grey Mare Slabs",
@@ -3927,7 +4564,19 @@
    "tidal_note": "Non Tidal",
    "lat": 57.42746,
    "lon": -1.81573,
-   "inlet": true
+   "inlet": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Gulls nest where Airegin, Ostrichism and the routes beside them top out, and on the Aiguille's top; Groovin' High is clear",
+    "confirmed": false,
+    "source": "access notes"
+   }
   },
   {
    "name": "Lammylair",
@@ -3949,7 +4598,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Kittiwakes in summer; shags use the central cave",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -3962,7 +4613,19 @@
    "rock": "Granite",
    "type": "trad",
    "lat": 57.42957,
-   "lon": -1.81586
+   "lon": -1.81586,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "restricted",
+    "note": "Birds keep climbers out in the nesting season; good early in the year",
+    "confirmed": false,
+    "source": "SMC and UKC"
+   }
   },
   {
    "name": "Arthur Fowlie",
@@ -3987,7 +4650,10 @@
      8
     ],
     "level": "restricted",
-    "note": "Auks and gulls take over the cliff between April and August, putting most routes out of bounds (SMC)"
+    "note": "Auks and gulls take over most routes in season; nests usually need clearing afterwards",
+    "confirmed": true,
+    "months_source": "guidebook",
+    "source": "SMC"
    }
   },
   {
@@ -3999,7 +4665,19 @@
    "aspect": null,
    "rock": null,
    "type": "trad",
-   "inlet": true
+   "inlet": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "The pillar's south wall is packed with kittiwakes in season; fewer on the other routes",
+    "confirmed": false,
+    "source": "SMC and UKC"
+   }
   },
   {
    "name": "Rob’s Butt",
@@ -4022,7 +4700,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Heavily nested in season",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -4044,8 +4724,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Birds on the seaward side",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -4071,7 +4753,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Heavily nested; debris can stay all year in this sheltered spot",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -4089,13 +4773,15 @@
    "inlet": true,
    "birds": {
     "months": [
+     4,
      5,
      6,
-     7,
-     8
+     7
     ],
     "level": "affected",
-    "note": "Kittiwakes rule the cliff in summer; the chimneys largely unaffected; nests wash off quickly afterwards (SMC)"
+    "note": "Kittiwakes take over in summer, though the chimneys are mostly clear; nests wash off quickly afterwards",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -4112,9 +4798,16 @@
    "lat": 57.43849,
    "lon": -1.81176,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds affect some faces more than others",
+    "confirmed": false,
+    "source": "UKC"
    }
   },
   {
@@ -4132,9 +4825,16 @@
    "lat": 57.43849,
    "lon": -1.81176,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Reported as largely free of nesting birds; not confirmed clear",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -4152,9 +4852,16 @@
    "lat": 57.43849,
    "lon": -1.81176,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Reported as largely free of nesting birds; not confirmed clear",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -4172,9 +4879,16 @@
    "lat": 57.43849,
    "lon": -1.81176,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds affect some faces more than others",
+    "confirmed": false,
+    "source": "UKC"
    }
   },
   {
@@ -4197,7 +4911,9 @@
      7
     ],
     "level": "affected",
-    "note": "Nesting seabirds have moved into the quarry in recent years (UKC); months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "UKC"
    }
   },
   {
@@ -4221,7 +4937,9 @@
      7
     ],
     "level": "affected",
-    "note": "Nesting seabirds have moved into the quarry in recent years (UKC); months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "UKC"
    }
   },
   {
@@ -4245,7 +4963,9 @@
      7
     ],
     "level": "affected",
-    "note": "Nesting seabirds have moved into the quarry in recent years (UKC); months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "UKC"
    }
   },
   {
@@ -4269,8 +4989,11 @@
      7,
      8
     ],
-    "level": "restricted",
-    "note": "Restricted access: heavily affected by nesting seabirds from about mid-March to late summer, and the cliff needs stormy weather to clean up afterwards, especially routes starting at the base (UKC)"
+    "level": "affected",
+    "note": "Seabirds crowd the cliff from around mid-March into late summer; routes starting at the foot stay dirty until storms wash them",
+    "confirmed": true,
+    "months_source": "access notes",
+    "source": "access notes"
    }
   },
   {
@@ -4284,7 +5007,19 @@
    "type": "trad",
    "tidal_note": "Non Tidal",
    "lat": 57.44298,
-   "lon": -1.8084
+   "lon": -1.8084,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Nests on some climbs; most are free of them",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "The Plateau South Wall",
@@ -4298,7 +5033,19 @@
    "wall": "Monkey",
    "tidal_note": "Non Tidal",
    "lat": 57.44298,
-   "lon": -1.8084
+   "lon": -1.8084,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Nests on some climbs; most are free of them",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "The Plateau South Wall",
@@ -4312,7 +5059,19 @@
    "wall": "Munich Buttress",
    "tidal_note": "Non Tidal",
    "lat": 57.44298,
-   "lon": -1.8084
+   "lon": -1.8084,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Nests on some climbs; most are free of them",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "The Plateau South Wall",
@@ -4326,7 +5085,19 @@
    "wall": "Bloody Wall",
    "tidal_note": "Non Tidal",
    "lat": 57.44298,
-   "lon": -1.8084
+   "lon": -1.8084,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Nests on some climbs; most are free of them",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "The Plateau South Wall",
@@ -4340,7 +5111,19 @@
    "wall": "Plateau North Face",
    "tidal_note": "Non Tidal",
    "lat": 57.44298,
-   "lon": -1.8084
+   "lon": -1.8084,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Nests on some climbs; most are free of them",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "The Hawk’s Nest",
@@ -4353,7 +5136,19 @@
    "type": "trad",
    "tidal_note": "Non Tidal",
    "lat": 57.44297,
-   "lon": -1.80674
+   "lon": -1.80674,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "affected",
+    "note": "Routes badly nested",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "The Quarries",
@@ -4416,7 +5211,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -4440,7 +5237,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting reported at this crag; the walls aren't specified",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -4473,8 +5272,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Large guano ledge in the centre (UKC); months not confirmed"
+    "level": "partly",
+    "note": "A big guano ledge in the centre",
+    "confirmed": false,
+    "source": "UKC"
    }
   },
   {
@@ -4517,9 +5318,16 @@
    "lat": 57.44655,
    "lon": -1.79839,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds affect the easier routes; many harder ones are clear",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -4553,13 +5361,15 @@
    "sea_sheltered": true,
    "birds": {
     "months": [
+     4,
      5,
      6,
-     7,
-     8
+     7
     ],
     "level": "affected",
-    "note": "Most climbs messed up with kittiwake nests in summer (SMC)"
+    "note": "Kittiwake nests spoil most climbs in summer",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -4577,9 +5387,16 @@
    "sheltered": true,
    "seeps": true,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds crowd the platform at the foot in season, not the routes",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -4597,7 +5414,9 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -4625,6 +5444,7 @@
    "lat": 57.45552,
    "lon": -1.79167,
    "inlet": true,
+   "seep_note": "One corner sometimes carries a wet streak (developers' notes, 2024)",
    "birds": {
     "months": [
      4,
@@ -4633,9 +5453,10 @@
      7
     ],
     "level": "affected",
-    "note": "Some kittiwakes and cormorants nest low on the left side (developers' notes, 2024); months not confirmed"
-   },
-   "seep_note": "One corner sometimes carries a wet streak (developers' notes, 2024)"
+    "note": "Birded in season and dirty for a while after; kittiwakes and cormorants nest low on the left",
+    "confirmed": false,
+    "source": "SMC and UKC"
+   }
   },
   {
    "name": "Meackie Point (Point Wall)",
@@ -4653,7 +5474,9 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -4691,7 +5514,10 @@
      8
     ],
     "level": "affected",
-    "note": "Nesting kittiwakes April to August (SMC)"
+    "note": "Kittiwakes nest here in season",
+    "confirmed": true,
+    "months_source": "guidebook",
+    "source": "SMC"
    }
   },
   {
@@ -4708,7 +5534,19 @@
    "lat": 57.45821,
    "lon": -1.78832,
    "sheltered": true,
-   "inlet": true
+   "inlet": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Reported as largely free of nesting birds; not confirmed clear",
+    "confirmed": false,
+    "source": "UKC"
+   }
   },
   {
    "name": "Cock’s Caim",
@@ -4723,7 +5561,19 @@
    "tidal": true,
    "tidal_note": "Tidal",
    "lat": 57.45911,
-   "lon": -1.78832
+   "lon": -1.78832,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "The South Face is heavily nested",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Cock’s Caim",
@@ -4764,7 +5614,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Heavily nested in season",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -4796,7 +5648,9 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -4814,7 +5668,9 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Not affected by nesting birds (UKC)"
+    "note": "No nesting birds reported",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -5033,8 +5889,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Two or so nests on the routes and kittiwake debris below; a gull may nest on top",
+    "confirmed": false,
+    "source": "UKC"
    }
   },
   {
@@ -5059,8 +5917,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "The wall stays clean; a gull may nest on the crag top",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -5085,8 +5945,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Kittiwake debris below and a couple of nests on routes",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -5106,7 +5968,9 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "note": "No nesting birds reported on this wall by a local climber",
+    "confirmed": false,
+    "source": "climber report"
    }
   },
   {
@@ -5123,9 +5987,16 @@
    "lat": 57.70005,
    "lon": -2.79289,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -5149,8 +6020,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Nesting birds can trouble the routes at the ridge's seaward tip (UKC); months not confirmed"
+    "level": "partly",
+    "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -5175,8 +6048,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -5201,7 +6076,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Nesting birds in season, reported by a local climber",
+    "confirmed": false,
+    "source": "climber report"
    }
   },
   {
@@ -5224,8 +6101,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -5242,9 +6121,16 @@
    "lat": 57.69959,
    "lon": -2.79389,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -5263,9 +6149,16 @@
    "lat": 57.69977,
    "lon": -2.79389,
    "birds": {
-    "months": [],
-    "level": "clear",
-    "note": "Free of nesting birds (SMC database)"
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -5290,8 +6183,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Nesting birds can trouble the routes at the ridge's seaward tip (UKC); months not confirmed"
+    "level": "partly",
+    "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+    "confirmed": false,
+    "source": "SMC and UKC"
    }
   },
   {
@@ -5362,7 +6257,9 @@
      7
     ],
     "level": "restricted",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "An access notice for birds is listed, with no detail. Birds nest on the middle pinnacle in summer",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -5403,7 +6300,19 @@
    "type": "trad",
    "tidal": true,
    "tidal_note": "Partially Tidal",
-   "inlet": true
+   "inlet": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "The odd fulmar below the wall",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "Mull Cleave",
@@ -5426,8 +6335,10 @@
      6,
      7
     ],
-    "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "level": "partly",
+    "note": "Gulls on the summit area in season",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -5451,7 +6362,9 @@
      7
     ],
     "level": "affected",
-    "note": "Birds reported nesting; months not confirmed"
+    "note": "Badly birded in season, especially the west-facing overhangs",
+    "confirmed": false,
+    "source": "SMC"
    }
   },
   {
@@ -5493,7 +6406,19 @@
    "tidal_note": "Partially Tidal",
    "lat": 57.67952,
    "lon": -2.16632,
-   "inlet": true
+   "inlet": true,
+   "birds": {
+    "months": [
+     4,
+     5,
+     6,
+     7
+    ],
+    "level": "partly",
+    "note": "Gulls nest on the big ledge above the left side",
+    "confirmed": false,
+    "source": "SMC"
+   }
   },
   {
    "name": "East of Quarryhead",
