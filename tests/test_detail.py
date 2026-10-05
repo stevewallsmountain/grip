@@ -64,8 +64,8 @@ class Why(unittest.TestCase):
         """The window explained is the one the plain-words line names, from the current hour on; earlier hours count as early."""
         past = {"air": 0, "dew": 0}
         hs = hours(8, [(8, past)] * 3 + [(2, {"air": -4, "dew": -4})] * 3 + [(7, {"sun": 3})] * 3)
-        self.assertIn("best 08:00 to 11:00", grip.plain_line(hs, None, tomorrow=True))
-        self.assertIn("best 14:00 to 17:00", grip.plain_line(hs, 11))
+        self.assertIn("Best 08:00 to 11:00.", grip.plain_line(hs, None, tomorrow=True))
+        self.assertIn("Best 14:00 to 17:00.", grip.plain_line(hs, 11))
         self.assertEqual(grip.why_text(hs, 11),
                          "Held back until 14:00 by humid air and rock close to the dew point. The best window comes from sun on the face.")
 
@@ -146,10 +146,10 @@ class Swell(unittest.TestCase):
         for h in (0.2, 0.35, 0.76, 0.8, 1.2, 1.53, 2.4):
             pts, ft, eff = grip.f_sea(h, 90, 6, 90)
             self.assertIn(f"That is {eff:.1f} m at the wall, {pts:+d} point", grip.sea_text(h, 90, 6, "E"))
-            hr = {"t": "2026-10-05T10:00", "index": 5, "wet": 0, "models": [], "d": {
+            hr = {"t": "2026-10-05T10:00", "index": 5, "wet": 0, "n": 1, "spread": 0, "models": [], "d": {
                 "f": {k: 0 for k in ("air", "fog", "dew", "wdir", "wind", "sun", "sea", "wet", "seep")}, "wd": 90, "ws": 10, "ft": ft,
                 "rh": 70, "margin": 4, "sun": "cloud", "note": ""}}
-            table = grip.hours_table({"crag": {"zone": "z"}, "hours": [hr]}, {}, date(2026, 10, 5))
+            table = grip.hours_table([hr], "Monday 5 October")
             self.assertIn(f"<td>{eff:.1f} m</td>", table)
             self.assertNotIn(" ft<", table)
 

@@ -523,7 +523,8 @@ def usable_from(hs):
 
 
 def plain_line(hs, now_hour=None, tomorrow=False):
-    """The plain-words line under a wall's strip on its crag page, for one wall's daylight hours of the day shown (earlier hours included).
+    """The plain-words line beside a wall's strip on its crag page, for one wall's daylight hours of the day shown (earlier hours included),
+    one short sentence per point: "Grippy now. Best 16:00 to 18:00."
     Today: the band this hour, when it becomes climbable and the best window still to come. A later day (tomorrow=True): the whole day;
     the heading above the strip names the day."""
     rest = hs if tomorrow else [x for x in hs if hour_of(x) >= now_hour]
@@ -540,8 +541,7 @@ def plain_line(hs, now_hour=None, tomorrow=False):
     bw = best_window(rest)
     if bw:
         parts.append(f"best {bw[1][0]['t'][11:16]} to {end_of(bw[1][-1])}")
-    line = ", ".join(parts)
-    return line[0].upper() + line[1:] + "."
+    return " ".join(x[0].upper() + x[1:] + "." for x in parts)
 
 
 def day_hours(r, day_iso):
@@ -1148,7 +1148,9 @@ table{border-collapse:collapse;width:100%}
 .cal td,.cal th{padding:var(--s-6) var(--s-12);border-bottom:1px solid var(--rule);text-align:left;vertical-align:middle}
 .cal th{font:600 var(--t-meta)/1.2 var(--font-body)}
 .cal tr:first-child th{font:600 var(--t-micro)/1.1 var(--font-display);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
-.method{max-width:72ch;color:var(--muted);font-size:var(--t-meta)}
+.method{color:var(--muted);font-size:var(--t-meta)}
+.method>*{max-width:72ch}
+.method>table.factors{max-width:none;width:100%}
 .method p{margin:0 0 var(--s-12)}
 .method table{width:auto;font-size:var(--t-small);margin:var(--s-8) 0 var(--s-16)}
 .method td,.method th{border:1px solid var(--rule);padding:var(--s-6) var(--s-8);text-align:left;vertical-align:top}
@@ -1527,8 +1529,62 @@ def worth_saying(means, sign=0, n=2):
     return sorted(keys, key=lambda k: -abs(means[k]))[:n]
 
 
-def phrase(means, keys):
-    return " and ".join(WHY_WORDS[k][0 if means[k] > 0 else 1] for k in keys)
+def why_figures(hs):
+    """The first model's figures behind the factor points over some hours, as the hour-by-hour table shows them: mean humidity, rock
+    over the dew point, wind speed and direction, sea at the wall (feet, as f_sea scores it), water on the rock, whether it rained,
+    and the run of hours with the sun on the face. A figure the hours do not carry is left out, and its phrase is the plain one."""
+    def mean(key):
+        vals = [h["d"].get(key) for h in hs if h["d"].get(key) is not None]
+        return sum(vals) / len(vals) if vals else None
+    out = {k: mean(k) for k in ("rh", "margin", "ws", "ft", "film")}
+    dirs = [h["d"]["wd"] for h in hs if h["d"].get("wd") is not None]
+    if dirs:
+        x = sum(math.cos(math.radians(v)) for v in dirs)
+        y = sum(math.sin(math.radians(v)) for v in dirs)
+        out["wd"] = math.degrees(math.atan2(y, x)) % 360
+    notes = [h for h in hs if h["d"].get("sun") is not None]
+    face = [h for h in notes if "on the face" in h["d"]["sun"]]
+    out["face"] = (face[0]["t"][11:16], end_of(face[-1])) if face else None
+    out["sunny"] = bool(notes) and any(h["d"]["sun"] != "cloud" and h["d"]["sun"] != "night" for h in notes)
+    out["rain"] = any(h["d"].get("note") == "raining" for h in hs)
+    return out
+
+
+def why_phrase(k, v, fig):
+    """One factor in words, with its figure where the hours carry it. v: the factor's mean points (its sign says which side)."""
+    helps = v > 0
+    plain = WHY_WORDS[k][0 if helps else 1]
+    if k == "air" and fig.get("rh") is not None:
+        return f"{'dry' if helps else 'humid'} air ({fig['rh']:.0f}% humidity)"
+    if k == "dew" and fig.get("margin") is not None:
+        m = rnd(fig["margin"])
+        if helps:
+            return f"the rock {m}°C above the dew point"
+        return "rock at or below the dew point" if m <= 0 else f"rock only {m}°C above the dew point"
+    if k == "wdir" and fig.get("wd") is not None:
+        return f"{'an offshore wind' if helps else 'onshore air'} from the {compass(fig['wd'])}"
+    if k == "wind" and fig.get("ws") is not None:
+        if helps:
+            return f"a drying breeze ({fig['ws']:.0f} km/h)"
+        return f"still air ({fig['ws']:.0f} km/h)" if fig["ws"] < 5 else f"a strong onshore wind ({fig['ws']:.0f} km/h)"
+    if k == "sun" and helps:
+        if fig.get("face"):
+            return f"sun on the face ({fig['face'][0]} to {fig['face'][1]})"
+        if fig.get("sunny"):
+            return "sunshine"
+    if k == "sea" and fig.get("ft") is not None:
+        return f"{'a calm' if helps else 'a big'} sea ({fig['ft'] / 3.281:.1f} m at the wall)"
+    if k == "wet" and not helps:
+        if fig.get("rain"):
+            return "rain"
+        if fig.get("film") is not None and fig["film"] > 0.02:
+            return {"a trace": "a trace of water on the rock", "damp": "damp rock", "wet": "wet rock"}[water_words(fig["film"])]
+    return plain
+
+
+def phrase(means, keys, hs=None):
+    fig = why_figures(hs) if hs else {}
+    return " and ".join(why_phrase(k, means[k], fig) for k in keys)
 
 
 def why_text(hs, now_hour=None, tomorrow=False):
@@ -1548,17 +1604,17 @@ def why_text(hs, now_hour=None, tomorrow=False):
         when = "this morning" if hour_of(win[0]) <= 12 else f"until {start[11:16]}"
         if tomorrow:
             when = "tomorrow morning" if hour_of(win[0]) <= 12 else f"tomorrow until {start[11:16]}"
-        out.append(f"Held back {when} by {phrase(em, held)}.")
+        out.append(f"Held back {when} by {phrase(em, held, early)}.")
     wm = factor_means(win)
     keys = worth_saying(wm)
     pos = [k for k in keys if wm[k] > 0]
     neg = [k for k in keys if wm[k] < 0]
     if pos and neg:
-        out.append(f"The best window comes from {phrase(wm, pos)}, though {phrase(wm, neg)} still holds it back.")
+        out.append(f"The best window comes from {phrase(wm, pos, win)}, though {phrase(wm, neg, win)} still holds it back.")
     elif pos:
-        out.append(f"The best window comes from {phrase(wm, pos)}.")
+        out.append(f"The best window comes from {phrase(wm, pos, win)}.")
     elif neg:
-        out.append(f"Even the best window is held back by {phrase(wm, neg)}.")
+        out.append(f"Even the best window is held back by {phrase(wm, neg, win)}.")
     elif held:
         out.append("The best window comes as that eases, with no single factor worth 2 points or more.")
     else:
@@ -1691,68 +1747,250 @@ def logged_days(cfg):
 
 
 TIDAL_MEANS = "Grip pulls the rock temperature harder towards the sea's, and counts spray from a 2 m sea rather than 2.5 m."
-BIRD_LEVEL = {"restricted": "Climbing is restricted while birds nest.", "affected": "Climbing is affected while birds nest.",
-              "clear": "Climbing is not affected.", "possible": "Birds may nest here; not confirmed."}
+# Source tags in the data's notes, such as "(SMC)", "(UKC)", "(SMC database)", "(UKC and SMC)" or "(developers' notes, 2020)".
+# The crag pages leave them out (one sources line at the foot says where the facts come from); the data files keep them.
+SOURCE_TAG = re.compile(r"\s*\((?:SMC|UKC|UKClimbing|developers['’]? notes)\b[^()]*\)")
+STOCK_BIRD_NOTES = ("Nesting birds noted in the SMC database", "Free of nesting birds")  # say no more than the status itself
 
 
-def shapes_items(c, zone, tides, day, tomorrow):
-    """What shapes a wall, as (heading, text) pairs."""
-    items = []
-    asp = c.get("aspect")
-    face = f"Faces {asp}" if asp else "Aspect unknown"
-    if asp and c.get("aspect_note"):
-        face += f" ({c['aspect_note']} in places; scored as {asp})"
-    items.append(("Aspect", f"{face}. {face_text(face_hours(zone['lat'], zone['lon'], asp, day), 'tomorrow' if tomorrow else 'today')}"))
+def strip_sources(text):
+    """A note without its source tags; nothing else in it changes."""
+    return SOURCE_TAG.sub("", text or "").strip()
+
+
+def bird_status(b):
+    """A wall's nesting-bird status: "nesting", "clear" (bird free) or "unknown" (no information). Unknown is never clear."""
+    if not b:
+        return "unknown"
+    if b.get("level") == "clear":
+        return "clear"
+    return "nesting" if b.get("level") in ("affected", "restricted", "possible") else "unknown"
+
+
+def birds_line(b):
+    """The birds line on a wall card, mapped exactly from the status: "None reported" for bird free, "Reported nesting" with the months
+    (and "months not confirmed" while they are a placeholder) for nesting, "No information" when Grip has nothing."""
+    st = bird_status(b)
+    if st == "unknown":
+        return "No information. Grip does not know whether birds nest here."
+    note = strip_sources(b.get("note"))
+    note = re.sub(r";?\s*months not confirmed\.?$", "", note).strip().rstrip(".")
+    if note.startswith(STOCK_BIRD_NOTES):
+        note = ""
+    if st == "clear":
+        return "None reported." + (f" {note}." if note else "")
+    months = sorted(b.get("months") or [])
+    if months:
+        line = f"Reported nesting, {MONTHS[months[0]]} to {MONTHS[months[-1]]}" + ("" if b.get("confirmed") else ", months not confirmed") + "."
+    else:
+        line = "Reported nesting, months not known."
+    if b.get("level") == "restricted":
+        line += " Climbing is restricted while they nest."
+    return line + (f" {note}." if note else "")
+
+
+def birds_in_season(b, days):
+    """True when a wall's birds are reported nesting in the month of any of the given dates."""
+    return bird_status(b) == "nesting" and any(d.month in set(b.get("months") or []) for d in days)
+
+
+def tide_tag(c):
     note = (c.get("tidal_note") or "").lower()
     if c.get("tidal"):
-        tide = f"{note[0].upper() + note[1:] if 'tidal' in note and 'non' not in note else 'Tidal'}. {TIDAL_MEANS}"
-    elif "non" in note:
-        tide = "Not tidal."
+        return "Part tidal" if ("partial" in note or "partly" in note) else "Mainly tidal" if "mainly" in note else "Tidal"
+    return "Not tidal" if "non" in note else "Tide not known"
+
+
+def wall_sub(c):
+    """The line under a wall's name in the walls list and its summary: aspect, then tide and seepage where they apply."""
+    parts = [f"Faces {c['aspect']}" if c.get("aspect") else "Aspect not known"]
+    if c.get("tidal"):
+        parts.append(tide_tag(c).lower())
+    if c.get("seeps") or c.get("seep_note") or c.get("seep_until_month"):
+        parts.append("seeps")
+    return " · ".join(parts)
+
+
+def wall_tags(c, days):
+    """The pills under a wall's name: aspect, shelter, tide, and birds when they are nesting on the days shown."""
+    tags = [f"Faces {c['aspect']}" if c.get("aspect") else "Aspect not known"]
+    if c.get("inlet"):
+        tags.append("Inlet")
+    elif c.get("sheltered"):
+        tags.append("Sheltered bay")
+    elif not c.get("sea_sheltered"):
+        tags.append("Open")
+    if c.get("sea_sheltered"):
+        tags.append("Sea-sheltered")
+    tags.append(tide_tag(c))
+    if birds_in_season(c.get("birds"), days):
+        tags.append("Birds nesting now")
+    return tags
+
+
+def open_wall(walls, day_iso):
+    """The wall a multi-wall crag page opens by default: the best score on the day shown (today, or tomorrow after dark), as shown,
+    ties to the most climbable hours, then the first in the list. Returns its index."""
+    def key(i):
+        d = walls[i]["daily"].get(day_iso)
+        return (rnd(d["index"]), d["usable"], -i) if d else (-1, -1, -i)
+    return max(range(len(walls)), key=key)
+
+
+def wall_name(c):
+    return c.get("wall") or "Main face"
+
+
+def wall_ids(walls):
+    """An id per wall card from its name, for links and the URL hash, unique on the page."""
+    out, seen = [], {"walls-h", "sure-h", "across-h", "hour-by-hour", "logged-h"}
+    for r in walls:
+        base = slug(wall_name(r["crag"])) or "wall"
+        i, x = 1, base
+        while x in seen:
+            i += 1
+            x = f"{base}-{i}"
+        seen.add(x)
+        out.append(x)
+    return out
+
+
+def rock_word(r):
+    """The water on a wall's rock now, in words, with the film behind it; None when the build has no figure."""
+    if not r.get("film_now"):
+        return None
+    return water_words(r["film_now"][1])
+
+
+def rain_words(rain):
+    """The rain behind the current hour at the weather point, in words: "0.6 mm of rain in 24 hours, 1.4 mm in 72." """
+    if not rain:
+        return "Recent rain not available."
+    _lab, r24, r72 = rain
+    return f"{r24:.1f} mm of rain in 24 hours" + (f", {r72:.1f} mm in 72." if r72 is not None else ".")
+
+
+def across_facts(walls, zone, zn, tides, days, labels):
+    """What Across the crag states once, and what each wall card adds because it differs.
+    Across: rock now (the word most walls share, with the rain), low water, the sea, the weather point.
+    Returns (across: [(heading, text)], per_wall: [[(heading, text)]]): a wall carries Rock now only when its own word differs."""
+    words = [rock_word(r) for r in walls]
+    known = [x for x in words if x]
+    common = max(known, key=lambda x: (known.count(x), -known.index(x))) if known else None
+    if common is None:
+        rock = "Not available."
+    elif known.count(common) == len(walls) or len(walls) == 1:
+        rock = common[0].upper() + common[1:] + "."
     else:
-        tide = "Tidal status unknown; scored as not tidal."
+        rock = f"{common[0].upper() + common[1:]} on {known.count(common)} of {len(walls)} walls."
+    rock += " " + rain_words(zn.get("rain"))
     lw = []
-    for d, word in ((day, "today" if not tomorrow else "tomorrow"), (day + timedelta(days=1), "tomorrow" if not tomorrow else "the day after")):
-        t = tides.get(c["zone"], {}).get(d.isoformat(), [])
-        lw.append(f"{word} {' and '.join(t)}" if t else f"{word} not available")
-    items.append(("Tide", f"{tide} Low water {'; '.join(lw)}."))
+    for i, (d, word) in enumerate(zip(days, labels)):
+        t = tides.get(walls[0]["crag"]["zone"], {}).get(d.isoformat(), [])
+        lw.append(f"{word} {', '.join(t)}." if t else f"{word} not available.")
+    lw = " ".join(lw)
+    sea = zn.get("sea")
+    if sea and sea["h"] is not None:
+        sea_s = f"{sea['h']:.1f} m" + (f" from the {compass(sea['dir'])}" if sea.get("dir") is not None else "")
+        if sea.get("period") is not None:
+            sea_s += f", {sea['period']:.0f} s {'swell' if sea['period'] >= 9 else 'wind sea'}"
+        sea_s += "." + (f" Up to {sea['max']:.1f} m today." if sea.get("max") is not None else "")
+    else:
+        sea_s = "No sea forecast available."
+    faces = zone.get("coast_faces", 112.5)
+    facing = next((k for k, v in COMPASS.items() if v == faces), f"{faces:g} degrees")
+    weather = f"{zone['name']} point, shared along this stretch. Coast counted as facing {facing}."
+    across = [("Rock now", rock), ("Low water", lw), ("Sea", sea_s), ("Weather", weather)]
+    per_wall = []
+    for r, x in zip(walls, words):
+        items = []
+        if x and x != common:
+            items.append(("Rock now", f"{x[0].upper() + x[1:]} ({r['film_now'][1]:.2f} mm on the rock)."))
+        per_wall.append(items)
+    return across, per_wall
+
+
+def wall_sea_text(sea, c):
+    """The sea against one wall, in the wording table's form: where it comes from against the face, how much of it Grip counts,
+    and the height at the wall. "Onto the face, counted in full: 1.1 m at the wall." """
+    if not sea or sea["h"] is None:
+        return "No sea forecast available."
+    asp = COMPASS.get(c.get("aspect") or "")
+    inlet, sheltered = bool(c.get("inlet")), bool(c.get("sea_sheltered"))
+    side = swell_side(sea["dir"], c.get("aspect"))
+    long_ = sea.get("period") is not None and sea["period"] >= 9
+    where = {"onto": "Onto the face", "along": "Runs along the face", "behind": "Comes from behind the face"}.get(side, "Aspect not known")
+    if inlet:
+        how = "funnels in the inlet, counted at 1.5 times"
+    elif side in ("along", "behind"):
+        how = f"counted at {'70%, as long swell wraps round' if long_ else '40%'}"
+    elif sheltered:
+        how = "broken by offshore rock, counted at half"
+    else:
+        how = "counted in full"
+    _pts, _ft, eff = f_sea(sea["h"], sea["dir"], sea.get("period"), asp, inlet, sheltered)
+    return f"{where}, {how}: {eff:.1f} m at the wall."
+
+
+def sun_text(hours, when="today"):
+    """Sun on the face in the wording table's form: "On the face 09:00 to 14:00, when it shines." """
+    if hours is None:
+        return "Aspect not known, so Grip never counts the sun as on the face."
+    if not hours:
+        return f"Does not reach the face {when}."
+    return "On the face " + " and ".join(f"{a:02d}:00 to {b:02d}:00" for a, b in hours) + ", when it shines."
+
+
+def shapes_items(c, zone, day, when, sea):
+    """What shapes this wall, as (heading, text): only what is particular to the wall. The sun and the sea depend on its aspect;
+    shelter and tide appear when they change the scoring; seepage and birds always."""
+    items = []
+    asp = c.get("aspect")
+    sun = sun_text(face_hours(zone["lat"], zone["lon"], asp, day), when)
+    if asp and c.get("aspect_note"):
+        sun = f"Faces {c['aspect_note']} in places, scored as {asp}. " + sun
+    items.append(("Sun", sun))
     shelter = []
     if c.get("sheltered") and c.get("inlet"):
-        shelter.append("Sheltered in a narrow inlet: Grip halves the wind speed from every direction, as the inlet walls break it up.")
+        shelter.append("Narrow inlet. Wind counted at half from every direction.")
     elif c.get("sheltered"):
-        shelter.append("Sheltered at the back of a bay: Grip halves the wind speed unless it blows onto the face.")
-    if c.get("inlet"):
-        shelter.append("In an inlet: the swell funnels and reflects, so Grip counts it at 1.5 times its height from any direction.")
+        shelter.append("Back of a bay. Wind counted at half unless it blows onto the face.")
     if c.get("sea_sheltered"):
-        shelter.append("Protected from the sea by offshore rock: Grip counts the swell at half height.")
+        shelter.append("Offshore rock breaks the swell.")
     if c.get("sheltered"):
-        shelter.append("Shelter does not slow drying in the model.")
-    items.append(("Shelter", " ".join(shelter) or "Open to the wind and sea: no shelter adjustments."))
+        shelter.append("Shelter does not slow drying.")
+    if shelter:
+        items.append(("Shelter", " ".join(shelter)))
+    items.append(("Sea", wall_sea_text(sea, c)))
+    if c.get("tidal"):
+        items.append(("Tide", TIDAL_MEANS))
+    elif "non" not in (c.get("tidal_note") or "").lower():
+        items.append(("Tide", "Tidal status not known; scored as not tidal."))
     seep = []
     if c.get("seeps"):
         seep.append("Known to seep after rain.")
     if c.get("seep_note"):
-        seep.append(c["seep_note"].rstrip(".") + ".")
+        seep.append(strip_sources(c["seep_note"]).rstrip(".") + ".")
     if c.get("seep_until_month"):
         seep.append(f"Usually wet until {MONTHS[c['seep_until_month']]}.")
-    seep.append("Grip's seepage points are the same at every crag for now: after 5 mm of rain in a day or 25 mm in three.")
-    items.append(("Seepage", " ".join(seep) if len(seep) > 1 else "No seepage noted. " + seep[0]))
-    b = c.get("birds")
-    if b:
-        months = b.get("months") or []
-        span = f" {MONTHS[min(months)]} to {MONTHS[max(months)]}." if months else ""
-        now_in = " In season now." if months and day.month in months else ""
-        marked = " Grip marks the crag in season but does not mark it down." if months else ""
-        items.append(("Nesting birds", f"{BIRD_LEVEL.get(b.get('level'), '')}{span}{now_in} {b.get('note', '').rstrip('.')}.{marked}".strip()))
-    else:
-        items.append(("Nesting birds", "No information. If you know, send a crag note."))
-    faces = zone.get("coast_faces", 112.5)
-    items.append(("Weather point", f"{zone['name']}, shared with the other crags on that stretch. The coast there counts as facing "
-                  f"{next(k for k, v in COMPASS.items() if v == faces) if faces in COMPASS.values() else f'{faces:g} degrees'} for the wind direction."))
+    items.append(("Seepage", " ".join(seep) or "None noted."))
+    items.append(("Birds", birds_line(c.get("birds"))))
     return items
 
 
+def score_block(d, size="sz-m", when=""):
+    """A day's score block with its number, stripes when the models disagree and a dot for wet-rock risk; a dash when not scored."""
+    if not d:
+        return f'<span class="num {size} none" role="img" aria-label="{when + ": " if when else ""}not scored">-</span>'
+    name, _note, css = band(d["index"])
+    unsure, risk = d["spread"] > 2 or d["n"] < 2, d["wet"] >= 0.3
+    said = f"{when + ': ' if when else ''}{fmt(d['index'])} {name}" + (", wet-rock risk" if risk else "") + (", models disagree" if unsure else "")
+    cls = css + (" unsure" if unsure else "") + (" risk" if risk else "")
+    return f'<span class="num {size} {cls}" role="img" aria-label="{said}">{fmt(d["index"])}</span>'
+
+
 def week_html(r, today):
-    """One cell per day for the next seven days: score, best window and climbable hours, coloured by band."""
+    """One cell per day for the next seven days: score, best window as hours ("11–14") and climbable hours."""
     days = [d for d in sorted(r["daily"]) if date.fromisoformat(d) >= today][:7]
     if not days:
         return '<p class="sub">No days scored.</p>'
@@ -1762,223 +2000,377 @@ def week_html(r, today):
         name, _note, css = band(v["index"])
         dd = date.fromisoformat(d)
         cells.append(f'<div role="listitem" aria-label="{dd.strftime("%A %-d %B")}: {fmt(v["index"])}, {name}, best {v["start"]} to {v["end"]}, '
-                     f'{v["usable"]} of {v["hours"]} daylight hours climbable"><span class="dn">{dd.strftime("%a")} {dd.day}</span><b class="num sz-m {css}">{fmt(v["index"])}</b>'
-                     f'<span>{v["start"]}</span><span>{v["end"]}</span><span>{v["usable"]} h</span></div>')
+                     f'{v["usable"]} of {v["hours"]} daylight hours climbable"><span class="dn">{dd.strftime("%a")}</span><b class="num {css}">{fmt(v["index"])}</b>'
+                     f'<span>{v["start"][:2]}–{v["end"][:2]}</span><span>{v["usable"]} h</span></div>')
     return '<div class="week" role="list">' + "".join(cells) + "</div>"
 
 
-def unsure_rows(r, today):
-    """Hours today and tomorrow where the models' scores, as shown, differ by 3 or more."""
+def sure_items(walls, days, today):
+    """How sure on a crag page: the home pop-up's models sentence for every wall and day shown where the models do not agree.
+    Returns [(wall result, day, sentence)]; empty when they agree everywhere."""
     out = []
-    for hr in r["hours"]:
-        if date.fromisoformat(hr["t"][:10]) > today + timedelta(days=1):
-            break
-        shown = [rnd(s) for _l, s in hr["models"]]
-        if len(shown) >= 2 and max(shown) - min(shown) >= 3:
-            out.append(hr)
+    for r in walls:
+        for d in days:
+            di = d.isoformat()
+            v = r["daily"].get(di)
+            if not v:
+                continue
+            kind, said = models_sentence(r, di, v, d == today)
+            if kind != "a":
+                out.append((r, d, said))
     return out
 
 
-def hours_table(r, tides, today):
-    """The hour-by-hour table for one wall, three days, with the breakdown from the first model."""
-    c = r["crag"]
-    out = []
-    w = out.append
-    w('<div class="wrap"><table class="hours"><thead><tr><th>Time</th><th>Grip</th><th>Wet risk</th><th>Humidity</th>'
-      '<th>Rock vs dew point</th><th>Wind</th><th>Sun</th><th>Sea</th><th>Breakdown (points)</th><th>Models</th></tr></thead><tbody>')
-    last_day = None
-    for hr in r["hours"]:
-        d = hr["t"][:10]
-        if date.fromisoformat(d) > today + timedelta(days=2):
-            break
-        if d != last_day:
-            lt = tides.get(c["zone"], {}).get(d, [])
-            tide = f" (low water {', '.join(lt)})" if lt else ""
-            w(f'<tr class="dayrow"><td colspan="10">{date.fromisoformat(d).strftime("%A %-d %b")}{tide}</td></tr>')
-            last_day = d
-        x = hr["d"]
-        f = x["f"]
-        name, note, css = band(hr["index"])
-        wind = f'{compass(x["wd"])} {x["ws"]:.0f} km/h' if x["ws"] is not None else "?"
-        sea = f'{x["ft"] / 3.281:.1f} m' if x["ft"] is not None else "-"  # f_sea scores in feet; shown in metres"
-        rh = f'{x["rh"]:.0f}%' if x["rh"] is not None else "?"
-        margin = f'{x["margin"]:+.1f}°C' if x["margin"] is not None else "-"
-        brk = (f'air {fpt(f["air"])}, fog {fpt(f["fog"])}, dew {fpt(f["dew"])}, wind {fpt(f["wdir"])}/{fpt(f["wind"])}, '
-               f'sun {fpt(f["sun"])}, sea {fpt(f["sea"])}, wet {fpt(f["wet"])}, seep {fpt(f["seep"])}')
-        if x["note"]:
-            brk += f' ({x["note"]})'
-        mods = '<span class="vh">, </span>'.join(f'<span class="mb">{escape(lab[:3])} <span class="num sz-xs {band(round(s))[2]}">{s:.0f}</span></span>'
-                                                  for lab, s in hr["models"])  # coloured by the number shown
-        w(f'<tr><td>{hr["t"][11:16]}</td><td class="s"><span class="num sz-m {css}">{fmt(hr["index"])}</span></td>'
-          f'<td>{pct(hr["wet"])}</td><td>{rh}</td><td>{margin}</td><td>{wind}</td><td>{escape(x["sun"])}</td><td>{sea}</td>'
-          f'<td class="bd">{escape(brk)}</td><td>{mods}</td></tr>')
-    w("</tbody></table></div>")
+FACTOR_LABEL = [("air", "air"), ("fog", "haar"), ("dew", "dew"), ("wdir", "wind dir"), ("wind", "wind"), ("sun", "sun"),
+                ("sea", "sea"), ("wet", "wet"), ("dry", "dry rock"), ("seep", "seep")]  # the points column, in this order
+
+
+def wet_words(hr):
+    """Wet-rock risk for an hour: how many of the models scoring it have the rock wet, foggy or raining."""
+    n = hr.get("n") or len(hr.get("models") or []) or 1
+    k = round(hr["wet"] * n)
+    return "None" if k == 0 else f"{k} in {n}"
+
+
+def points_text(x):
+    """The points column: each factor worth something as shown, zero factors left out, then the water note."""
+    f = x["f"]
+    parts = [f"{lab} {fpt(f.get(k))}" for k, lab in FACTOR_LABEL if f.get(k) is not None and fpt(f.get(k)) not in ("+0", "-0")]
+    out = " · ".join(parts) or "all factors 0"
+    return out + (f" ({x['note']})" if x.get("note") else "")
+
+
+def hour_cells(hr):
+    """One row of the hour-by-hour table as shown: {time, grip, models [(name, score shown or None)], wet, humidity, margin, wind, sun,
+    sea, points}. The figures after the scores are the first model's that has the hour, as the factor points are."""
+    x = hr["d"]
+    m = dict(hr["models"])
+    return {
+        "time": hr["t"][11:16], "grip": fmt(hr["index"]),
+        "models": [(lab, fmt(m[lab]) if lab in m else None) for _id, lab, _d, _w in MODELS],  # rounded as Grip's own score
+        "wet": wet_words(hr),
+        "humidity": f'{x["rh"]:.0f}%' if x.get("rh") is not None else "?",
+        "margin": f'{x["margin"]:+.1f}°C' if x.get("margin") is not None else "-",
+        "wind": f'{compass(x["wd"])} {x["ws"]:.0f} km/h' if x.get("ws") is not None else "?",
+        "sun": x.get("sun") or "",
+        "sea": f'{x["ft"] / 3.281:.1f} m' if x.get("ft") is not None else "-",  # f_sea scores in feet; shown in metres
+        "points": points_text(x),
+    }
+
+
+def hours_table(hs, caption):
+    """The hour-by-hour table for one wall and one day."""
+    out = [f'<table class="hours"><caption>{escape(caption)}</caption><thead><tr><th scope="col">Time</th><th scope="col">Grip</th>'
+           '<th scope="col">Models</th><th scope="col">Wet risk</th><th scope="col">Humidity</th><th scope="col">Rock over dew point</th>'
+           '<th scope="col">Wind</th><th scope="col">Sun</th><th scope="col">Sea at wall</th><th scope="col">Points</th></tr></thead><tbody>']
+    for hr in hs:
+        x = hour_cells(hr)
+        name = band(hr["index"])[0]
+        unsure = hr.get("n", 2) >= 2 and hr.get("spread", 0) > 2
+        grip = (f'<span class="num sz-hb {band(hr["index"])[2]}{" unsure" if unsure else ""}" role="img" '
+                f'aria-label="{x["grip"]} {name}{", models differ by more than 2" if unsure else ""}">{x["grip"]}</span>')
+        mods = "".join(f'<span class="num sz-xs {band(float(s))[2]}" role="img" aria-label="{lab} {s}">{s}</span>' if s is not None
+                       else f'<span class="num sz-xs none" role="img" aria-label="{lab}: no forecast">-</span>' for lab, s in x["models"])
+        wr = ' class="wr"' if x["wet"] != "None" else ""  # wet risk in 600 weight only when there is one
+        out.append(f'<tr><th scope="row">{x["time"]}</th><td>{grip}</td><td class="mods">{mods}</td><td{wr}>{x["wet"]}</td>'
+                   f'<td>{x["humidity"]}</td><td>{x["margin"]}</td><td>{x["wind"]}</td><td>{escape(x["sun"])}</td><td>{x["sea"]}</td>'
+                   f'<td class="pts">{escape(x["points"])}</td></tr>')
+    out.append("</tbody></table>")
     return "".join(out)
 
 
 DETAIL_CSS = """
-@media (min-width:900px){main>h1{font-size:2.5rem}}
-.contents{margin:calc(-1 * var(--s-8)) 0 var(--s-24);font-size:var(--t-meta);color:var(--muted);max-width:72ch}
-.contents a{color:var(--ink)}
-.wall{background:var(--card);border:1px solid var(--rule);border-radius:var(--r-l);margin:var(--s-24) 0 0;padding:var(--s-4) var(--s-16) var(--s-20)}
-.wall>h2{margin:var(--s-12) 0 var(--s-4);font-size:var(--t-wall)}
-.wall>h2 small,.sec h2 small{font:400 var(--t-meta) var(--font-body);color:var(--muted)}
-.sec h3{font:600 var(--t-h3) var(--font-display);margin:var(--s-24) 0 var(--s-8)}
-.sec .ov{font:600 var(--t-small)/1.2 var(--font-display);text-transform:uppercase;letter-spacing:var(--overline-tracking);color:var(--muted);margin:var(--s-24) 0 var(--s-8)}
-.sec .ov small{font:500 var(--t-small)/1.2 var(--font-display);color:var(--muted)}
-.sec .ov.sep{margin-top:14px;padding-top:var(--s-12);border-top:1px solid var(--rule)}
-.sec p{margin:0 0 var(--s-8);max-width:72ch}
-.today{max-width:52rem}
-.today .dayline{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--s-2) 10px;margin:var(--s-24) 0 0}
-.today .dayline .ov{margin:0}
+.crumb{margin:0 0 var(--s-6);font-size:var(--t-meta);color:var(--muted)}
+.crumb a{color:var(--ink)}
+main.crag h1{margin:0}
+@media (min-width:900px){main.crag h1{font-size:2.5rem;line-height:1}}
+.tb{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--s-12) var(--s-24);margin:0 0 var(--s-20)}
+.meta{margin:var(--s-6) 0 0;font-size:var(--t-meta);color:var(--muted)}
+.acts{display:flex;flex-wrap:wrap;gap:var(--s-8);margin:0}
+.acts .btn{margin:0}
+.cols{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s-16) var(--s-32);align-items:start}
+@media (min-width:900px){.cols{grid-template-columns:minmax(0,320px) minmax(0,1fr)}}
+.side>*+*,.body>*+*{margin-top:var(--s-16)}
+.box{background:var(--card);border:1px solid var(--rule);border-radius:var(--r-l);padding:14px var(--s-16)}
+.box h2{margin:0 0 var(--s-8);font-size:var(--t-h3)}
+.ovl{margin:0;font:600 var(--t-small)/1.2 var(--font-display);letter-spacing:var(--overline-tracking);text-transform:uppercase;color:var(--muted)}
+.wlist{padding:0;overflow:hidden}
+.wlist ul{margin:0;padding:0;list-style:none}
+.wlist .wh,.wlist a{display:grid;grid-template-columns:minmax(0,1fr) 52px 52px;align-items:center;gap:var(--s-8);padding:0 var(--s-12)}
+.wlist .wh{align-items:end;padding-top:10px;padding-bottom:var(--s-6)}
+.wlist .wh h2{margin:0;line-height:1}
+.wlist .wh span{text-align:center;font-size:var(--t-micro);line-height:1}
+.wlist a{min-height:var(--tap);padding-top:5px;padding-bottom:5px;border-top:1px solid var(--rule);text-decoration:none;color:var(--ink)}
+.wlist a>.num{justify-self:center}
+.wlist a[aria-current]{background:var(--sunk);box-shadow:inset 3px 0 0 var(--ink)}
+.wlist a:focus-visible{border-radius:0;position:relative;z-index:1}
+.wlist a[aria-current]:focus-visible{box-shadow:inset 3px 0 0 var(--ink),var(--focus-ring)}
+.wlist .wn{font-size:15px;font-weight:600;line-height:1.2}
+.wlist .wn small{display:block;font-weight:400;font-size:var(--t-micro);color:var(--muted)}
+@media (hover:hover){.wlist a:hover .wn{text-decoration:underline}}
+.sure{border:2px solid var(--ink)}
+.sure p{margin:0 0 var(--s-8);font-size:15px}
+.sure p:last-child{margin-bottom:0}
+.sure h3{margin:var(--s-12) 0 var(--s-2);font:600 15px/1.2 var(--font-body)}
+.across dl,.wall dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s-6) 14px;margin:0;font-size:var(--t-meta)}
+.wall dl{gap:var(--s-4) 14px}
+.across dt,.wall dt{font-weight:600}
+.across dd,.wall dd{margin:0;max-width:72ch}
+.fn{margin:var(--s-8) 0 0;font-size:var(--t-small);color:var(--muted)}
+.wall{background:var(--card);border:1px solid var(--rule);border-radius:var(--r-l)}
+.wall>summary{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:var(--s-8);min-height:48px;padding:var(--s-8) var(--s-16);cursor:pointer;list-style:none;border-radius:var(--r-l)}
+.wall>summary::-webkit-details-marker{display:none}
+.wall>summary h2{margin:0;font-size:var(--t-h2);overflow-wrap:anywhere}
+@media (min-width:600px){.wall[open]>summary h2{font-size:var(--t-wall)}}
+.wall>summary h2 small{display:block;font:400 var(--t-meta)/1.3 var(--font-body);color:var(--muted)}
+.wall:not([open])>summary{padding-top:var(--s-6);padding-bottom:var(--s-6)}
+.wall:not([open])>summary h2{font-size:17px;line-height:1.2}
+.wall:not([open])>summary h2 small{display:inline;margin-left:var(--s-4);font-size:var(--t-small)}
+.wall:not([open])>summary .mk{color:var(--muted);font-size:1.25rem}
+.wl-hint{margin:0 0 calc(-1 * var(--s-8))}
+.wall>summary .sb{display:flex;align-items:center;gap:var(--s-8)}
+.wall>summary .mk{display:inline-flex;align-items:center;justify-content:center;width:var(--tap);height:var(--tap);font:500 1.75rem/1 var(--font-display)}
+.wall>summary .mk::before{content:"+"}
+.wall[open]>summary .mk::before{content:"\\2212"}
+.wall[open]>summary{border-bottom:1px solid var(--rule);border-radius:var(--r-l) var(--r-l) 0 0}
+@media (hover:hover){.wall>summary:hover h2{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}}
+.wb{padding:var(--s-4) var(--s-16) var(--s-20)}
+article.wall .wb{padding-top:var(--s-12)}
+article.wall h2{margin:0;font-size:var(--t-wall)}
+.wb .tr{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--s-2) var(--s-12);margin:var(--s-4) 0 0}
+.wb .lg{display:inline-flex;align-items:center;min-height:var(--tap);font-size:15px}
+.tags{display:flex;flex-wrap:wrap;gap:var(--s-6);margin:0;padding:0;list-style:none}
+.tags li{display:inline-flex;align-items:center;min-height:26px;padding:var(--s-2) 10px;border:1px solid var(--rule);border-radius:var(--r-pill);font-size:var(--t-small);line-height:1.2}
+.tags li.in{border-color:var(--ink);font-weight:600}
+.wb h3{margin:var(--s-20) 0 var(--s-6);font:600 var(--t-small)/1.2 var(--font-display);letter-spacing:var(--overline-tracking);text-transform:uppercase;color:var(--muted)}
+.wb p{margin:0 0 var(--s-6);max-width:72ch}
+.wb .why{margin-top:14px;padding-top:var(--s-12);border-top:1px solid var(--rule)}
+.wb .why h3{margin-top:0}
+.today .dayline{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--s-2) 10px;margin:var(--s-16) 0 0}
+.today .dayline h3{margin:0}
 .today .line{margin:0;font-size:var(--t-lead);font-weight:600;line-height:1.25}
-.shapes{margin:0;padding:0;list-style:none;max-width:46rem}
-.shapes li{display:grid;grid-template-columns:6.5rem minmax(0,1fr);gap:var(--s-2) 14px;padding:var(--s-2) 0;font-size:var(--t-meta)}
-.shapes b{font-weight:600}
-.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--s-3);max-width:34rem}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--s-3);max-width:36rem}
 .week div{text-align:center;font-size:var(--t-micro);line-height:1.3;min-width:0;color:var(--muted);font-variant-numeric:tabular-nums}
 .week span{display:block}
 .week .dn{font:600 var(--t-small)/1.3 var(--font-display);color:var(--ink)}
-.week span:nth-of-type(2),.week span:nth-of-type(3){color:var(--ink)}
-.week b{display:flex;margin:var(--s-3) auto}
-.hours{font-size:var(--t-meta);font-variant-numeric:tabular-nums}
-.hours th,.hours td{height:40px;padding:var(--s-4) var(--s-6);text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap}
-.hours th:first-child,.hours td:first-child{position:sticky;left:0;padding:var(--s-4) 10px;background:var(--card);box-shadow:1px 0 0 var(--rule)}
-.hours td:first-child{font:600 15px/1 var(--font-display)}
+.week span:nth-of-type(2){color:var(--ink)}
+.week b{display:flex;width:100%;max-width:48px;height:38px;margin:var(--s-3) auto;border-radius:5px;font-size:1.25rem}
+.num.none{background:var(--sunk);color:var(--muted);box-shadow:inset 0 0 0 1px var(--rule)}
+.hbc{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--s-8) var(--s-16);margin:0 0 var(--s-12)}
+.hbc[hidden]{display:none}
+.hbc label{display:flex;flex-direction:column;gap:var(--s-4);font-size:15px;font-weight:600}
+.hbc select{min-height:var(--tap);min-width:12rem;max-width:100%;padding:0 var(--s-8);font:400 16px var(--font-body);color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:var(--r-m)}
+.hbc select:focus-visible{border-color:var(--ink)}
+.tabs{display:inline-flex;flex-wrap:wrap;padding:2px;border:1px solid var(--rule);border-radius:var(--r-m);background:var(--card)}
+.tabs button{min-height:40px;padding:0 14px;border:0;border-radius:var(--r-s);background:transparent;color:var(--ink);font:500 var(--t-body)/1 var(--font-display);cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--inv-bg);color:var(--inv-fg);font-weight:600}
+@media (hover:hover){.tabs button[aria-selected=false]:hover{background:var(--sunk)}}
+details.hb{margin:0 0 var(--s-12)}
+details.hb>summary{min-height:var(--tap);display:flex;align-items:center;font-weight:600;cursor:pointer}
+.hbs.js details.hb>summary{display:none}
+details.hb[hidden]{display:none}
+.hours{min-width:820px;font-size:var(--t-meta);font-variant-numeric:tabular-nums}
+.hours caption{padding:var(--s-8) var(--s-12);text-align:left;font-size:var(--t-small);color:var(--muted);border-bottom:1px solid var(--rule);caption-side:top}
+.hours th,.hours td{height:40px;padding:var(--s-4) var(--s-6);text-align:left;border-top:1px solid var(--rule);white-space:nowrap}
+.hours tbody th{position:sticky;left:0;z-index:1;padding:var(--s-4) 10px;background:var(--card);box-shadow:1px 0 0 var(--rule);font:600 15px/1 var(--font-display)}
 .hours thead th{font:600 var(--t-micro)/1.1 var(--font-display);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
-.hours td.bd{color:var(--muted);text-align:left}
-.hours .mb{display:inline-flex;align-items:center;gap:var(--s-3);margin-right:var(--s-6);color:var(--muted);font-size:var(--t-small)}
-.hours tr.dayrow td{position:static;box-shadow:none;height:auto;font:600 15px/1.2 var(--font-display);padding:var(--s-16) var(--s-12) var(--s-6);background:var(--sunk)}
-.diff{font-variant-numeric:tabular-nums}
-.diff td,.diff th{padding:var(--s-6) var(--s-12);border-bottom:1px solid var(--rule);text-align:left;white-space:nowrap}
-.diff th{font:500 var(--t-small)/1.2 var(--font-display);text-transform:uppercase;letter-spacing:var(--overline-tracking);color:var(--muted)}
+.hours thead th:first-child{position:sticky;left:0;z-index:1;background:var(--card);box-shadow:1px 0 0 var(--rule)}
+.hours .sz-hb{width:34px;height:34px;font-size:var(--score-m-num);border-radius:var(--r-s)}
+.hours td.mods{display:table-cell}
+.hours td.mods .num{margin-right:var(--s-3)}
+.hours td.wr{font-weight:600}
+.hours td.pts{color:var(--muted)}
 .cal td small{color:var(--muted)}
-.sec .cal{width:100%;min-width:420px}
+.body .cal{width:100%;min-width:420px}
 .foot{color:var(--muted);font-size:var(--t-small);margin-top:var(--s-32);padding-top:var(--s-12);border-top:1px solid var(--rule)}
+"""
+
+CRAG_JS = r"""
+(function(){  // walls: open the best wall (or the one in the URL hash) and close the rest; the walls list marks the open wall
+  var walls=[].slice.call(document.querySelectorAll('details.wall')), links=[].slice.call(document.querySelectorAll('.wlist a'));
+  if(!walls.length){return;}
+  var main=document.querySelector('main.crag');
+  function mark(id){links.forEach(function(a){if(a.getAttribute('href')==='#'+id){a.setAttribute('aria-current','true');}else{a.removeAttribute('aria-current');}});}
+  function pick(id){
+    var t=id&&document.getElementById(id);
+    if(!t||walls.indexOf(t)<0){return false;}
+    t.open=true;mark(id);return true;
+  }
+  var h='';try{h=decodeURIComponent(location.hash.slice(1));}catch(e){}
+  walls.forEach(function(d){d.open=false;});
+  if(!pick(h)){pick(main.getAttribute('data-open'));}
+  walls.forEach(function(d){d.addEventListener('toggle',function(){if(d.open){mark(d.id);}});});
+  links.forEach(function(a){a.addEventListener('click',function(){pick(a.getAttribute('href').slice(1));});});
+  window.addEventListener('hashchange',function(){try{pick(decodeURIComponent(location.hash.slice(1)));}catch(e){}});
+})();
+(function(){  // hour by hour: one table at a time, chosen by the wall picker and the day tabs; without script every table shows
+  var box=document.getElementById('hbs');
+  if(!box){return;}
+  var panels=[].slice.call(box.querySelectorAll('details.hb')), sel=document.getElementById('hb-wall'),
+      tabs=[].slice.call(box.querySelectorAll('[role=tab]')), w=+box.getAttribute('data-w'), d=0;
+  function draw(){
+    panels.forEach(function(p){var on=+p.getAttribute('data-w')===w&&+p.getAttribute('data-d')===d;p.hidden=!on;if(on){p.open=true;}});
+    tabs.forEach(function(t,i){t.setAttribute('aria-selected',i===d?'true':'false');t.tabIndex=i===d?0:-1;t.setAttribute('aria-controls','hb-'+w+'-'+i);});
+  }
+  panels.forEach(function(p){p.setAttribute('role','tabpanel');p.setAttribute('aria-labelledby','hb-t'+p.getAttribute('data-d'));});
+  if(sel){sel.value=String(w);sel.addEventListener('change',function(){w=+sel.value;draw();});}
+  tabs.forEach(function(t,i){
+    t.addEventListener('click',function(){d=i;draw();});
+    t.addEventListener('keydown',function(e){
+      var k=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;
+      if(!k){return;}
+      e.preventDefault();d=(d+k+tabs.length)%tabs.length;draw();tabs[d].focus();
+    });
+  });
+  document.querySelectorAll('details.wall').forEach(function(x,i){x.addEventListener('toggle',function(){if(x.open&&sel){w=i;sel.value=String(i);draw();}});});
+  box.classList.add('js');document.getElementById('hb-ctl').hidden=false;draw();
+})();
 """
 
 
 def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=None):
-    """The conditions page for one crag: for each wall today's and tomorrow's strips, why, what shapes it, recent weather, sea and the week;
-    then how sure the models are, hour by hour for three days, and the days logged here.
-    view: coast_view() for the Today strip; nxt: next_view() for the strip under it; here: zone_now(); logged: logged_days()."""
+    """The conditions page for one crag. Title block; then, beside each other from 900 px (stacked on phones, in this order): the walls
+    list, How sure and Across the crag; the wall cards (one <details> each on multi-wall crags, the best wall open), hour by hour,
+    the days logged here and the sources line.
+    view: coast_view() for the first strip; nxt: next_view() for the second; here: zone_now(); logged: logged_days()."""
     day, tomorrow, now_hour, _rows, cols = view
     di = day.isoformat()
     nday, ncols = nxt if nxt else (day + timedelta(days=1), [])
+    days = [day, nday]
+    labels = ["Tomorrow", "Day after"] if tomorrow else ["Today", "Tomorrow"]
     multi = len(walls) > 1
+    zones = cfg["zones"]
+    c0 = walls[0]["crag"]
+    zone = zones[c0["zone"]]
+    zn = here.get(c0["zone"], {})
+    ids = wall_ids(walls)
+    best = open_wall(walls, di)
     out = []
     w = out.append
     w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
     w(f"<title>{escape(gname)}: Grip conditions</title>")
     w(fonts("../"))
     w(icon_links("../"))
-    w(f"<style>{CSS}{COAST_CSS}{DETAIL_CSS}</style></head><body>{header_bar('../')}<main>")
-    c0 = walls[0]["crag"]
-    log_here = f'<a href="{escape(log_link(c0, today.isoformat(), "../"))}">Log a day here</a> &middot; ' if not multi else ""
-    note = note_link(c0 if not multi else {"name": gname})
-    w(f'<h1>{escape(gname)}</h1><p class="updated">Conditions at this crag: the score, why, how sure, and what shapes the rock. '
-      f'Updated {now.strftime("%a %-d %b, %H:%M")}. {log_here}'
-      f'<a href="{escape(note)}" target="_blank" rel="noopener">Send a crag note</a></p>')
+    w(f'<style>{CSS}{COAST_CSS}{DETAIL_CSS}</style></head><body>{header_bar("../")}<main class="crag" data-open="{ids[best]}">')
+    w(f'<nav class="crumb" aria-label="Breadcrumb"><a href="../">Forecast</a> / {escape(zone["name"])}</nav>')
+    w(f'<div class="tb"><div><h1>{escape(gname)}</h1>')
+    w(f'<p class="meta">{len(walls)} wall{"s" if multi else ""} &middot; Weather from the {escape(zone["name"])} point &middot; '
+      f'Updated {now.strftime("%a %-d %b, %H:%M")}</p></div>')
+    log_c = c0 if not multi else {"name": gname}
+    w(f'<p class="acts"><a class="btn" href="{escape(log_link(log_c, today.isoformat(), "../"))}">Log a day here</a>'
+      f'<a class="btn alt" href="{escape(note_link(log_c))}" target="_blank" rel="noopener">Send a crag note</a></p></div>')
+    w('<div class="cols"><div class="side">')
+
     if multi:
-        w('<p class="contents">' + f"{len(walls)} walls: " + " &middot; ".join(
-            f'<a href="#w{i + 1}">{escape(r["crag"].get("wall") or "Main face")}</a>' for i, r in enumerate(walls)) + "</p>")
-    hx = "h3" if multi else "h2"
-    zones = cfg["zones"]
+        w('<section class="box wlist" aria-labelledby="walls-h"><div class="wh"><h2 id="walls-h">Walls</h2>'
+          f'<span class="ovl" aria-hidden="true">{"Tmrw" if tomorrow else "Today"}</span><span class="ovl" aria-hidden="true">{"Day after" if tomorrow else "Tmrw"}</span></div><ul>')
+        for i, r in enumerate(walls):
+            c = r["crag"]
+            cur = ' aria-current="true"' if i == best else ""
+            w(f'<li><a href="#{ids[i]}"{cur}><span class="wn">{escape(wall_name(c))}<small>{escape(wall_sub(c))}</small></span>'
+              + "".join(score_block(r["daily"].get(d.isoformat()), "sz-m", lab) for d, lab in zip(days, labels)) + "</a></li>")
+        w("</ul></section>")
+
+    sure = sure_items(walls, days, today)
+    w('<section class="box sure" aria-labelledby="sure-h"><h2 id="sure-h">How sure</h2>')
+    if not sure:
+        w(f'<p>{labels[0]} and {labels[1].lower()} the three models agree{" on every wall" if multi else ""}, within 2 points.</p>')
+    else:
+        last = None
+        for r, d, said in sure:
+            if multi and r is not last:
+                w(f'<h3>{escape(wall_name(r["crag"]))}</h3>')
+                last = r
+            w(f'<p><b>{labels[days.index(d)]}:</b> {escape(said)}</p>')
+    w("</section>")
+
+    across, per_wall = across_facts(walls, zone, zn, tides, days, labels)
+    w('<section class="box across" aria-labelledby="across-h"><h2 id="across-h">Across the crag</h2><dl>')
+    for head, text in across:
+        w(f"<dt>{escape(head)}</dt><dd>{escape(text)}</dd>")
+    rain = zn.get("rain")
+    src = f"{escape(rain[0])} figures, to {now.strftime('%H')}:00." if rain else ""
+    w(f'</dl><p class="fn">{src}</p></section>' if src else "</dl></section>")
+    w('</div><div class="body">')
+    if multi:
+        w(f'<p class="hint wl-hint">Open a wall for its strips, reasons and week. Scores are {labels[0].lower()}, then {"the day after" if tomorrow else "tomorrow"}.</p>')
+
     for i, r in enumerate(walls):
         c = r["crag"]
-        zone = zones[c["zone"]]
+        tags = "".join(('<li class="in">' if t == "Birds nesting now" else "<li>") + escape(t) + "</li>" for t in wall_tags(c, days))
+        blocks = "".join(score_block(r["daily"].get(d.isoformat()), "sz-m", lab) for d, lab in zip(days, labels))
+        sub = escape(wall_sub(c))
         if multi:
-            w(f'<section class="wall sec" id="w{i + 1}"><h2>{escape(c.get("wall") or "Main face")} <small>{escape(c.get("aspect") or "aspect unknown")} &middot; '
-              f'<a href="{escape(log_link(c, today.isoformat(), "../"))}">Log a day on this wall</a></small></h2>')
+            w(f'<details class="wall" id="{ids[i]}" open><summary><h2>{escape(wall_name(c))}<small>{sub}</small></h2>'
+              f'<span class="sb">{blocks}</span><span class="mk" aria-hidden="true"></span></summary><div class="wb">')
         else:
-            w('<section class="sec">')
+            w(f'<article class="wall" id="{ids[i]}" aria-labelledby="{ids[i]}-h"><div class="wb"><h2 id="{ids[i]}-h">{escape(wall_name(c) if c.get("wall") else gname)}</h2>')
+        lg = f'<a class="lg" href="{escape(log_link(c, today.isoformat(), "../"))}">Log a day on this wall</a>' if multi else ""
+        w(f'<div class="tr"><ul class="tags" aria-label="About this wall">{tags}</ul>{lg}</div>')
         hs = day_hours(r, di)
         vals = {hour_of(hr): hr["index"] for hr in hs}
-        w(f'<div class="today" data-wall="{escape(label(c))}"><div class="dayline"><{hx} class="ov">{"Tomorrow" if tomorrow else "Today"} '
-          f'<small>{day.strftime("%a %-d %b")}</small></{hx}><p class="line">{escape(plain_line(hs, now_hour, tomorrow))}</p></div>'
+        w(f'<div class="today"><div class="dayline"><h3>{labels[0]}, {day.strftime("%a %-d")}</h3>'
+          f'<p class="line">{escape(plain_line(hs, now_hour, tomorrow))}</p></div>'
           + (strip_html(cols, vals, now_hour) + hours_head(cols) if cols else "") + "</div>")
         nhs = day_hours(r, nday.isoformat())
         nvals = {hour_of(hr): hr["index"] for hr in nhs}
-        w(f'<div class="today next" data-day="{nday.isoformat()}"><div class="dayline"><{hx} class="ov">{"Day after" if tomorrow else "Tomorrow"} '
-          f'<small>{nday.strftime("%a %-d %b")}</small></{hx}><p class="line">{escape(plain_line(nhs, None, True))}</p></div>'
+        w(f'<div class="today next"><div class="dayline"><h3>{labels[1]}, {nday.strftime("%a %-d")}</h3>'
+          f'<p class="line">{escape(plain_line(nhs, None, True))}</p></div>'
           + (strip_html(ncols, nvals, -1) + hours_head(ncols) if ncols else "") + "</div>")
-        w(f'<{hx} class="ov sep">Why</{hx}><p>{escape(why_text(hs, now_hour, tomorrow))}</p>'
-          '<p class="hint">From the hourly factor points (the first model\'s figures, as in the breakdown column below). Only factors worth 2 points or more either way are named.</p>')
-        w(f'<{hx} class="ov">What shapes this {"wall" if multi else "crag"}</{hx}><ul class="shapes">')
-        for head, text in shapes_items(c, zone, tides, day, tomorrow):
-            w(f"<li><b>{escape(head)}</b>{escape(text)}</li>")
-        w("</ul>")
-        zn = here.get(c["zone"], {})
-        w(f'<{hx} class="ov">Recent weather and the rock</{hx}>')
-        rain = zn.get("rain")
-        if rain:
-            lab, r24, r72 = rain
-            w(f"<p>Rain in the last 24 hours {r24:.1f} mm, last 72 hours {r72:.1f} mm "
-              f"({escape(lab)} figures for the {escape(zone['name'])} weather point, to {now.strftime('%H')}:00).</p>")
-        else:
-            w("<p>Recent rain not available.</p>")
-        if r.get("film_now"):
-            lab, film = r["film_now"]
-            w(f"<p>Water on the rock now: {water_words(film)} ({film:.2f} mm, {escape(lab)} figures).</p>")
-        else:
-            w("<p>Water on the rock now: not available.</p>")
-        w(f'<{hx} class="ov">Sea</{hx}>')
-        sea = zn.get("sea")
-        if sea and sea["h"] is not None:
-            mx = f", up to {sea['max']:.1f} m today" if sea.get("max") is not None else ""
-            w(f"<p>Waves now {sea['h']:.1f} m{mx}. "
-              f"{escape(sea_text(sea['h'], sea['dir'], sea['period'], c.get('aspect'), bool(c.get('inlet')), bool(c.get('sea_sheltered')), bool(c.get('tidal'))))}</p>")
-        else:
-            w("<p>No sea forecast available.</p>")
-        w(f'<{hx} class="ov">Next seven days</{hx}><p class="hint">Each day: score, best window (start and end), climbable hours.</p>{week_html(r, today)}')
-        w("</section>")
+        w(f'<div class="why"><h3>Why</h3><p>{escape(why_text(hs, now_hour, tomorrow))}</p></div>')
+        w(f'<h3>What shapes this {"wall" if multi else "crag"}</h3><dl>')
+        for head, text in per_wall[i] + shapes_items(c, zones[c["zone"]], day, labels[0].lower(), zn.get("sea")):
+            w(f"<dt>{escape(head)}</dt><dd>{escape(text)}</dd>")
+        w("</dl>")
+        w(f'<h3>Next 7 days</h3>{week_html(r, today)}')
+        w("</div></details>" if multi else "</div></article>")
 
-    w('<section class="sec"><h2>How sure</h2><p class="hint">Hours today and tomorrow where the three models\' scores differ by 3 or more.</p>')
-    unsure = [(r, unsure_rows(r, today)) for r in walls]
-    if not any(rows for _r, rows in unsure):
-        w(f"<p>The models agree today and tomorrow{' on every wall' if multi else ''}.</p>")
-    elif multi and not all(rows for _r, rows in unsure):
-        w("<p>The models agree today and tomorrow on " + ", ".join(escape(r["crag"].get("wall") or "Main face") for r, rows in unsure if not rows) + ".</p>")
-    for r, rows in unsure:
-        if not rows:
-            continue
-        if multi:
-            w(f'<h3>{escape(r["crag"].get("wall") or "Main face")}</h3>')
-        labs = [lab for _m, lab, _d, _w in MODELS]
-        w('<div class="wrap"><table class="diff"><tr><th>Hour</th>' + "".join(f"<th>{lab}</th>" for lab in labs) + "</tr>")
-        for hr in rows:
-            m = dict(hr["models"])
-            w(f'<tr><td>{datetime.fromisoformat(hr["t"]).strftime("%a %H:%M")}</td>'
-              + "".join(f"<td>{rnd(m[lab]) if lab in m else '-'}</td>" for lab in labs) + "</tr>")
-        w("</table></div>")
-    w("</section>")
+    # hour by hour: the next three days, as before; one table per wall and day
+    hb_days = sorted({hr["t"][:10] for r in walls for hr in r["hours"] if date.fromisoformat(hr["t"][:10]) <= today + timedelta(days=2)})
+    w(f'<section class="hbs" id="hbs" data-w="{best}" aria-labelledby="hour-by-hour"><h2 id="hour-by-hour">Hour by hour</h2>'
+      '<p class="hint">Grip is the blend of the three models. The points column shows the Met Office figures (the next model\'s where it '
+      "does not reach), factors at zero left out. Wet risk is how many models have the rock wet, foggy or raining.</p>")
+    w('<div class="hbc" id="hb-ctl" hidden>')
+    if multi:
+        w('<label for="hb-wall">Wall<select id="hb-wall">' + "".join(f'<option value="{i}">{escape(wall_name(r["crag"]))}</option>' for i, r in enumerate(walls))
+          + "</select></label>")
+    w('<div class="tabs" role="tablist" aria-label="Day">' + "".join(
+        f'<button type="button" role="tab" id="hb-t{j}" aria-selected="false">{date.fromisoformat(d).strftime("%a %-d")}</button>'
+        for j, d in enumerate(hb_days)) + "</div></div>")
+    for i, r in enumerate(walls):
+        for j, d in enumerate(hb_days):
+            hs = [hr for hr in r["hours"] if hr["t"][:10] == d]
+            lt = tides.get(r["crag"]["zone"], {}).get(d, [])
+            dd = date.fromisoformat(d)
+            cap = dd.strftime("%A %-d %B") + (f" · low water {', '.join(lt)}" if lt else "")
+            name = (wall_name(r["crag"]) + ", " if multi else "") + dd.strftime("%a %-d %b")
+            w(f'<details class="hb" id="hb-{i}-{j}" data-w="{i}" data-d="{j}" open><summary>{escape(name)}</summary>')
+            if hs:
+                w(f'<div class="wrap" tabindex="0" role="region" aria-label="{escape(name)}, hour by hour">{hours_table(hs, cap)}</div>')
+            else:
+                w('<p class="sub">No hours scored.</p>')
+            w("</details>")
+    w('<p class="sub fn">Models: Met Office, ECMWF, ICON, in that order.</p></section>')
 
-    w('<section class="sec"><h2>Hour by hour</h2><p class="hint">Next three days. Scores are the blend of the models; '
-      "the breakdown columns show the Met Office figures. The table scrolls sideways.</p>")
-    for r in walls:
-        if multi:
-            w(f'<h3>{escape(r["crag"].get("wall") or "Main face")}</h3>')
-        w(hours_table(r, tides, today))
-    w("</section>")
-
-    w('<section class="sec"><h2>Logged days here</h2>')
+    w('<section aria-labelledby="logged-h"><h2 id="logged-h">Logged days here</h2>')
     mine = [(v, c) for v, c in logged if c is not None and c["name"] == gname]
     if not mine:
-        w("<p>No days logged here yet.</p>")
+        w(f'<p>No days logged here yet. Climbed here? <a href="{escape(log_link(log_c, today.isoformat(), "../"))}">Log a day</a>.</p>')
     else:
         def chip(x):
             if x is None:
                 return "-"
             return f'<span class="num sz-s {band(x)[2]}">{fmt(x)}</span>'
-        w('<div class="wrap"><table class="cal"><tr><th>Date</th><th>Wall</th><th>Felt</th><th>Grip</th><th>Actual weather</th></tr>')
+        w('<div class="wrap" tabindex="0" role="region" aria-label="Logged days here"><table class="cal"><tr><th>Date</th><th>Wall</th><th>Felt</th><th>Grip said</th><th>Actual weather</th></tr>')
         for v, c in mine:
             n = f' <small>({v["n_logs"]} logs)</small>' if v.get("n_logs", 1) > 1 else ""
-            w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(c.get("wall") or "Main face")}{n}</td>'
+            w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(wall_name(c))}{n}</td>'
               f'<td>{escape(FEEL_NAME[v["feel"]])}</td><td>{chip(v["grip"])} {band(v["grip"])[0]}</td><td>{chip(v.get("era"))}</td></tr>')
         w("</table></div>")
     w("</section>")
-    w(f'<p class="foot">Source: <a href="https://routes.smc.org.uk/crag/{int(c0["smc_crag_id"])}">SMC routes database</a> &middot; <a href="../">Back to the forecast</a></p>')
-    w(f'</main>{site_foot("../")}</body></html>')
+    w(f'<p class="foot">Crag facts from the <a href="https://routes.smc.org.uk/crag/{int(c0["smc_crag_id"])}">SMC routes database</a>, '
+      "climbers' reports and local developers' notes, reworded by Grip.</p>")
+    w(f"</div></div><script>{CRAG_JS}</script></main>{site_foot('../')}</body></html>")
     return "".join(out)
 
 
@@ -2988,7 +3380,7 @@ def render_method(cal, now, models_ok):
       "and how fast the air, wind and sun can dry it again. Each daylight hour collects points from the factors below, which are turned into a "
       "0 to 10 index. The three weather models are scored separately and blended, with the Met Office 2 km model weighted highest for the first two days. "
       "A day's score is its best three-hour window; the number of climbable hours and the wet-rock risk are shown alongside.</p>")
-    w("<table><tr><th>Factor</th><th>Points</th><th>Why</th></tr>"
+    w('<table class="factors"><tr><th>Factor</th><th>Points</th><th>Why</th></tr>'
       "<tr><td>Air moisture</td><td>+1 for every 4% below 76% humidity (up to +4 at 60%) and -1 for every 5% above (down to -4), with an extra -1 once humidity passes 75%. The penalties count in full when the rock is within 2&deg;C of the dew point and at half when it is 4&deg;C or more clear</td>"
       "<td>Sea salt on the rock starts drawing water out of the air at about 75% humidity. Humid air greases rock through condensation, so the penalty is tied to how close the rock is to the dew point: logged days showed dry rock in 80% air climbing well. Below 76% the reward was steepened after logged days showed the rock keeps improving as the air dries.</td></tr>"
       "<tr><td>Haar</td><td>Fog on the Met Office 2 km model or visibility under 1 km -4; patchy fog or visibility under 4 km -2</td>"
