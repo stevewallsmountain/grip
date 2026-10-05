@@ -34,7 +34,8 @@ Never run the workflow on any branch other than `main`: the page deploys from wh
 ## Design
 
 - Changes to what people see follow the handbook's Design rules and the spec and tokens in `docs/design/`.
-- If a brief references the Claude Design project, read it for reference only (Steve runs `/design-consent` if this session has no access). Never copy Design project files into the repository; `docs/design/` changes only when a brief asks for it.
+- If a brief references the Claude Design project, check you can read it before writing any code. If you can't, stop and ask Steve to run /design-consent.
+- Read the Design project for reference only. Never copy Design project files into the repository; `docs/design/` changes only when a brief asks for it.
 
 ## Writing
 

@@ -29,6 +29,19 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      # The daily forecast snapshots (history/YYYY-MM-DD.json, kept for good) live on their own branch, grip-history,
+      # outside main's history. It is checked out into history/ as a worktree; the first run starts the branch.
+      # If this fails the page still builds and deploys; today's snapshot is then published but not saved.
+      - name: Check out the forecast snapshots
+        continue-on-error: true
+        run: |
+          if git fetch origin grip-history; then
+            git worktree add -B grip-history history FETCH_HEAD
+          else
+            echo "No grip-history branch yet; starting it."
+            git worktree add --orphan -b grip-history history
+          fi
+
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -68,6 +81,33 @@ jobs:
           fi
           if ! git push; then
             echo "::warning title=State not saved::The push was rejected again after rebasing, so this run's state was not saved. The page still deploys; the next run recomputes the state."
+          fi
+
+      # Saves today's snapshot when this run wrote or replaced it. A failed save only warns: the page still deploys.
+      - name: Save the forecast snapshot (grip-history branch)
+        continue-on-error: true
+        working-directory: history
+        run: |
+          if [ "$(git symbolic-ref --short HEAD 2>/dev/null)" != "grip-history" ] || [ "$(git rev-parse --show-toplevel)" != "$PWD" ]; then
+            echo "::warning title=Snapshot not saved::The grip-history branch was not checked out, so this run's snapshot was published but not saved."
+            exit 0
+          fi
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No snapshot changes to save."
+            exit 0
+          fi
+          git config user.name "grip-bot"
+          git config user.email "grip-bot@users.noreply.github.com"
+          git add -A .
+          git commit -m "Forecast snapshot $(date -u +%Y-%m-%dT%H:%MZ)"
+          if git push origin grip-history; then
+            exit 0
+          fi
+          echo "Push rejected: grip-history has moved. Rebasing onto it."
+          git fetch origin grip-history
+          if ! git rebase FETCH_HEAD || ! git push origin grip-history; then
+            git rebase --abort 2>/dev/null || true
+            echo "::warning title=Snapshot not saved::Saving to grip-history failed, so this run's snapshot was published but not saved. A later run today saves its own."
           fi
 
       - uses: actions/configure-pages@v6

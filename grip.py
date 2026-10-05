@@ -56,14 +56,30 @@ FORM_POST = "https://docs.google.com/forms/d/e/1FAIpQLSems6Y-X4CypSu96Vt8DuGh4yH
 FORM_ENTRIES = {"crag": "entry.769015387", "wall": "entry.1131909785", "date": "entry.2085482145",
                 "from": "entry.764556216", "until": "entry.1083400377", "feel": "entry.1126435114",
                 "problems": "entry.525175392", "initials": "entry.1772081994", "other": "entry.960162223",
-                "contact": "entry.1160807926"}  # the page log form submits into the Google Form by these IDs
+                "contact": "entry.1160807926",
+                "seep": "entry.1941262796", "sweat": "entry.1648574416", "haar": "entry.488966077", "spray": "entry.590821068",
+                "water": "entry.2054188057", "wind": "entry.745293101", "sun": "entry.1196075429", "timing": "entry.1164703220",
+                "birds": "entry.2000108507", "shown": "entry.579200590", "first": "entry.814548769"}  # the page log form submits into the Google Form by these IDs
 FORM_CRAGS_FILE = os.path.join(HERE, "data", "form_crags.json")  # the Google Form's crag options, in order
 FORM_ELSEWHERE = "Somewhere else on the coast"
 LOG_FEELS = ["Soaked: wet rock", "Greasy: damp and slippery, training at best", "Climbable: fine with care",
              "Grippy: good friction", "Prime: as dry as this coast gets"]  # exact option strings on the Google Form
 FEEL_ALIASES = {"Climbable": "Usable", "Grippy": "Crisp"}  # band names as people see them -> the internal keys logs are stored under
-LOG_PROBLEMS = ["Wet from rain", "Greasy or sweating", "Seepage", "Haar or fog", "Spray from the sea",
-                "Still wet from the night before", "Fine until the sun left the face"]
+NOT_SURE = "Not sure"  # the last option of every observation; never compared with Grip
+LOG_OBS = [  # What did you see? In page order: (key, question, short name in the comparison table, options before Not sure)
+    ("water", "Water on the rock", "Water on the rock", ["Wet patches", "Damp", "Dry"]),
+    ("seep", "Seepage", "Seepage", ["Yes", "No"]),
+    ("sweat", "Rock sweating or greasy to the touch", "Sweating or greasy", ["Yes", "No"]),
+    ("haar", "Haar or fog", "Haar or fog", ["Yes", "No"]),
+    ("wind", "Wind on the wall", "Wind on the wall", ["None", "Light", "Strong"]),
+    ("sun", "Sun on the face", "Sun on the face", ["Most of the session", "Some", "None"]),
+    ("spray", "Spray reaching the routes", "Spray on the routes", ["Yes", "No"]),
+]
+OBS_PROBLEMS = [("water", "Wet patches", "Wet from rain"), ("sweat", "Yes", "Greasy or sweating"), ("seep", "Yes", "Seepage"),
+                ("haar", "Yes", "Haar or fog"), ("spray", "Yes", "Spray from the sea")]  # the problems column, filled from the observations, in the form's order
+TIMING_OPTIONS = ["Yes", "No, it stayed the same", "It changed the other way", "Not sure"]  # exact option strings on the Google Form
+BIRD_ANSWERS = ["On most of the wall", "On some routes", "None that I saw", "Didn't notice"]  # exact option strings on the Google Form
+WIND_LIGHT, WIND_STRONG = 8, 20  # Grip's wind on the wall, km/h after shelter: None under 8, Light 8 to 20, Strong over 20
 NOTES_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9yiBWbQ27h_CLWvUP52EbOWPg/viewform"
 NOTES_POST = "https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9yiBWbQ27h_CLWvUP52EbOWPg/formResponse"
 NOTES_CRAG = "entry.1230562053"
@@ -780,6 +796,88 @@ def build(cfg, models, marine):
     return results, tides, now
 
 
+# ---------------------------------------------------------------- daily forecast snapshots, for the log page
+HISTORY_DIR = os.environ.get("GRIP_HISTORY_DIR") or os.path.join(HERE, "history")  # the grip-history branch, checked out here by the workflow
+SNAPSHOT_HOUR = 7  # each day keeps the forecast from the run nearest 07:00; a late run still counts
+SNAPSHOT_COLS = ["h", "s", "water", "seep", "dew", "air", "haar", "wind", "sun", "sea"]
+
+
+def snapshot_due(prev_run, now):
+    """True when this run should be the day's snapshot: none saved for today yet, or this run is nearer 07:00 than the saved one
+    (a tie keeps the saved one). prev_run: the saved snapshot's run time, "YYYY-MM-DD HH:MM", or None."""
+    if not prev_run:
+        return True
+    prev = datetime.strptime(prev_run, "%Y-%m-%d %H:%M").replace(tzinfo=TZ)
+    if prev.date() != now.date():
+        return True
+    target = now.replace(hour=SNAPSHOT_HOUR, minute=0, second=0, microsecond=0)
+    return abs(now.replace(tzinfo=None) - target.replace(tzinfo=None)) < abs(prev.replace(tzinfo=None) - target.replace(tzinfo=None))
+
+
+def snapshot_row(hr, crag):
+    """One daylight hour as the snapshot keeps it, in SNAPSHOT_COLS order: the hour, the blended score as shown, then the crag page's
+    factor state for it (the first model's breakdown): water on the rock in mm, seepage active, dew-point and air-moisture points,
+    haar active, wind at the wall after shelter in km/h (halved as f_wind halves it), sun on the face, sea points."""
+    d = hr["d"]
+    f = d["f"]
+    ws = d.get("ws")
+    if ws is not None and in_shelter(bool(crag.get("sheltered")), d.get("wd"), COMPASS.get(crag.get("aspect") or ""), bool(crag.get("inlet"))):
+        ws *= 0.5
+
+    def r(x, n):
+        return None if x is None else round(x, n)
+    return [hour_of(hr), rnd(hr["index"]), r(d.get("film"), 3), int((f.get("seep") or 0) < 0), r(f.get("dew"), 2), r(f.get("air"), 2),
+            int((f.get("fog") or 0) < 0), r(ws, 1), int("on the face" in (d.get("sun") or "")), f.get("sea")]
+
+
+def snapshot(results, now):
+    """Today's forecast for every wall's daylight hours, as the log page compares it with a logged day."""
+    day = now.date().isoformat()
+    walls = {}
+    for r in results:
+        hs = day_hours(r, day)
+        if hs:
+            walls[label(r["crag"])] = [snapshot_row(hr, r["crag"]) for hr in hs]
+    return {"date": day, "run": now.strftime("%Y-%m-%d %H:%M"), "model": MODEL_VERSION, "cols": SNAPSHOT_COLS, "walls": walls}
+
+
+def save_snapshot(results, now, folder=None):
+    """Write today's snapshot into the history folder when this run is the one nearest 07:00 so far. Returns the file written, or None."""
+    folder = folder or HISTORY_DIR
+    path = os.path.join(folder, now.date().isoformat() + ".json")
+    prev = None
+    try:
+        with open(path) as f:
+            prev = json.load(f).get("run")
+    except FileNotFoundError:
+        pass
+    except Exception as e:  # noqa: BLE001
+        log(f"Snapshot {path} unreadable ({e}); replacing it")
+    if not snapshot_due(prev, now):
+        return None
+    snap = snapshot(results, now)
+    if not snap["walls"]:
+        return None
+    os.makedirs(folder, exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(snap, f, separators=(",", ":"), ensure_ascii=False)
+    log(f"Saved the forecast snapshot for {snap['date']} from the {snap['run'][11:]} run" + (f", replacing the {prev[11:]} one" if prev else ""))
+    return path
+
+
+def publish_history(site, folder=None):
+    """Copy every saved snapshot to site/history/, where the log page fetches them."""
+    folder = folder or HISTORY_DIR
+    if not os.path.isdir(folder):
+        return 0
+    out = os.path.join(site, "history")
+    os.makedirs(out, exist_ok=True)
+    names = sorted(n for n in os.listdir(folder) if re.fullmatch(r"\d{4}-\d{2}-\d{2}\.json", n))
+    for n in names:
+        shutil.copyfile(os.path.join(folder, n), os.path.join(out, n))
+    return len(names)
+
+
 # ---------------------------------------------------------------- calibration against logged days
 def fetch_log():
     """Logged days from the published response sheet. Returns a list of dicts, or [] on any failure."""
@@ -869,8 +967,14 @@ def fetch_reanalysis(zone, start, end):
     return h
 
 
+def log_window(hours, entry):
+    """The scored hours a logged day covers: from its first hour up to, not including, its last (entry["from"], entry["to"]).
+    The log page's Grip's view takes the same hours from the day's snapshot."""
+    return [h for h in hours if entry["from"] <= int(h["t"][11:13]) < entry["to"]]
+
+
 def window_mean(hours, entry, key):
-    win = [h for h in hours if entry["from"] <= int(h["t"][11:13]) < entry["to"] and h.get(key) is not None]
+    win = [h for h in log_window(hours, entry) if h.get(key) is not None]
     return sum(h[key] for h in win) / len(win) if win else None
 
 
@@ -917,7 +1021,7 @@ def backscore(cfg, entry):
     marine = fetch_marine(zone, start, d.isoformat())
     day_start = datetime(d.year, d.month, d.day, tzinfo=TZ)
     hours = score_crag(cfg["zones"], crag, models, marine, day_start)
-    win = [h for h in hours if entry["from"] <= int(h["t"][11:13]) < entry["to"]]
+    win = log_window(hours, entry)
     if not win:
         return None
     per, bper = {}, {}
@@ -1715,9 +1819,15 @@ def sea_text(height, wave_dir, period, aspect, inlet=False, sea_sheltered=False,
     return " ".join(parts)
 
 
+WATER_WORDS = [(0.02, "dry"), (0.1, "a trace"), (0.5, "damp")]  # film in mm up to which each word holds (f_wet's thresholds); "wet" beyond
+
+
 def water_words(film):
     """The water the model has on the rock, in words, on the scoring's own thresholds."""
-    return "dry" if film <= 0.02 else "a trace" if film <= 0.1 else "damp" if film <= 0.5 else "wet"
+    for top, word in WATER_WORDS:
+        if film <= top:
+            return word
+    return "wet"
 
 
 def rain_totals(h, now):
@@ -2618,6 +2728,109 @@ FORM_CSS = """
 .sent p{margin:var(--s-16) 0 0;max-width:56ch}
 .sent .acts{display:flex;flex-wrap:wrap;gap:var(--s-8);margin:18px 0 0}
 .sent .acts .btn{margin:0;min-height:48px}
+.sent .sh{margin:10px 0 0;font:600 18px/1.3 var(--font-body)}
+.sent .sf{margin:var(--s-4) 0 0;font-size:15px;max-width:60ch}
+.nojs p{margin:0 0 var(--s-6)}
+.nojs .nj1{font-weight:600}
+.nojs .btn{margin:var(--s-8) 0 var(--s-4);min-height:52px;padding:0 22px}
+.ovl{font:600 var(--t-small)/1.2 var(--font-display);letter-spacing:var(--overline-tracking);text-transform:uppercase;color:var(--muted)}
+.tile .fa{display:none;flex:none;margin-left:auto;font:500 var(--t-small)/1 var(--font-body);color:var(--muted)}
+.tile.first .fa{display:block}
+.tile.first .tb::after{margin-left:0}
+.tile.first .tb{outline:1px dashed var(--ink);outline-offset:-1px}
+#feel-changed{margin:var(--s-2) 0 0}
+.obs{margin:0 0 22px;display:flex;flex-direction:column;gap:var(--s-12);min-width:0}
+.obs-h{display:flex;flex-wrap:wrap;gap:var(--s-2) var(--s-12);align-items:baseline;justify-content:space-between}
+.obs-h h2{margin:0;font:600 var(--t-body)/1.2 var(--font-body)}
+.obs-h span{font-size:var(--t-meta);color:var(--muted)}
+.obs>.desc{margin:-8px 0 0}
+.obs>.err{margin:0}
+.orow{display:flex;flex-wrap:wrap;gap:var(--s-4) var(--s-12);align-items:center}
+.orow .ol{flex:1 1 190px;font:600 15px/1.25 var(--font-body)}
+.orow .oc{flex:1 1 330px;display:flex;gap:var(--s-4);min-width:0}
+.ochip{position:relative;flex:1 1 0;min-width:0;cursor:pointer}
+.ochip.long{flex:1.8 1 0}
+.ochip input{position:absolute;top:0;left:0;width:1px;height:1px;margin:0;opacity:0}
+.ochip span{display:flex;align-items:center;justify-content:center;height:100%;min-height:var(--tap);padding:var(--s-2) var(--s-8);border:1px solid var(--rule);border-radius:var(--r-m);background:var(--card);text-align:center;font:500 var(--t-meta)/1.15 var(--font-body);overflow-wrap:anywhere}
+.ochip.ns span{border-style:dashed;color:var(--muted)}
+.ochip input:checked+span{background:var(--inv-bg);border:1px solid var(--inv-bg);color:var(--inv-fg);font-weight:600}
+.ochip input:focus-visible+span{box-shadow:var(--focus-ring)}
+@media (hover:hover){.ochip:hover input:not(:checked)+span{background:var(--sunk)}}
+.obs.bad .ochip:not(.ns) span{border-color:var(--ink)}
+@media (max-width:599px){  /* phones: the label sits above its chips; rows packed closer so the step fits a 375 x 667 screen, tap targets kept at 44 px */
+.obs{gap:var(--s-8)}
+.obs>.desc{margin:-6px 0 var(--s-2)}
+.orow{row-gap:var(--s-2)}
+.orow .ol{line-height:1.15}
+.orow+.orow{margin-top:-2px}}
+.gv-hold{margin:0 0 22px;padding:14px var(--s-16);border:1px dashed var(--muted);border-radius:var(--r-l);display:flex;flex-direction:column;gap:var(--s-4);font-size:15px}
+.gv-hold .st{font-size:var(--t-meta);color:var(--muted)}
+.gv-hold[hidden],.gv[hidden]{display:none}
+.gv{margin:0 0 22px;padding:14px var(--s-16) var(--s-16);border:1px solid var(--rule);border-radius:var(--r-l);background:var(--card);display:flex;flex-direction:column;gap:14px;min-width:0}
+.gv h2{margin:0}
+.gv .msg{margin:-6px 0 0;padding:10px var(--s-12);border-radius:var(--r-m);background:var(--sunk);font-size:15px}
+.gv .vw{display:flex;flex-direction:column;gap:var(--s-8);margin-top:-6px}
+.strip{display:flex;gap:3px;max-width:460px}
+.strip>span{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:var(--s-2)}
+.strip b{display:flex;align-items:center;justify-content:center;height:36px;border-radius:5px;font:600 19px/1 var(--font-display);font-variant-numeric:tabular-nums}
+.strip small{text-align:center;font:500 var(--t-micro)/1 var(--font-display);color:var(--muted)}
+.gv .vl{margin:0;font:600 var(--t-lead)/1.3 var(--font-body)}
+.gv .src{margin:-4px 0 0;font-size:var(--t-small);color:var(--muted)}
+.gv .bl{margin:0;font:600 var(--t-h3)/1.25 var(--font-display)}
+.cmp{display:flex;flex-wrap:wrap;gap:var(--s-12);align-items:flex-start;margin-top:-4px}
+.bandbox{flex:0 1 170px;display:flex;flex-direction:column;gap:var(--s-8);padding:10px var(--s-12);border-radius:var(--r-m);background:var(--sunk)}
+.bandbox .ovl{font-size:var(--t-micro)}
+.bandbox .br{display:flex;align-items:center;gap:var(--s-8);font-size:15px}
+.bandbox .who{width:32px;font:600 var(--t-small)/1 var(--font-display);letter-spacing:var(--overline-tracking);text-transform:uppercase;color:var(--muted)}
+.bandbox .kc{min-width:36px;height:32px;font-size:15px;border-radius:5px}
+.bandbox .num{width:36px;height:32px;border-radius:5px;font-size:18px}
+.ftab-w{flex:1 1 300px;min-width:0}
+.ftab{width:100%;border-collapse:collapse;font-size:var(--t-meta);line-height:1.25}
+.ftab caption{text-align:left;padding:0 0 var(--s-6);font:600 15px/1.3 var(--font-body)}
+.ftab thead th{padding:var(--s-6);font:600 var(--t-micro)/1 var(--font-display);letter-spacing:var(--overline-tracking);text-transform:uppercase;color:var(--muted);text-align:left}
+.ftab thead th:first-child,.ftab tbody th{padding-left:var(--s-8)}
+.ftab thead th:last-child{width:30px}
+.ftab tbody tr{border-top:1px solid var(--rule)}
+.ftab tbody th{text-align:left;font-weight:400;padding:7px var(--s-6) 7px var(--s-8)}
+.ftab td{padding:7px var(--s-6)}
+.ftab td:last-child{padding:5px var(--s-8) 5px var(--s-4)}
+.ftab tr.d{background:var(--sunk);font-weight:600}
+.ftab tr.d th{font-weight:600}
+.mk{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:5px;border:1px solid var(--rule);color:var(--muted);font:700 15px/1 var(--font-body)}
+.mk.d{background:var(--inv-bg);border-color:var(--inv-bg);color:var(--inv-fg)}
+.fkey{display:flex;flex-wrap:wrap;gap:var(--s-2) var(--s-12);margin:var(--s-6) 0 0;font-size:var(--t-micro);color:var(--muted)}
+.mm{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:var(--s-4)}
+.mm li{display:flex;gap:var(--s-8);align-items:flex-start;font-size:15px}
+.mm .mk{flex:none;width:20px;height:20px;margin-top:1px;border-radius:var(--r-xs);font-size:13px}
+.timing{min-width:0;margin:0;padding:14px 0 0;border:0;border-top:1px solid var(--rule)}
+.timing legend{float:left;width:100%;padding:0;margin:0 0 var(--s-8);font:600 var(--t-h3)/1.25 var(--font-display)}
+.timing .rt span{background:var(--paper)}
+.rgrid{clear:both;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s-6)}
+.rt{position:relative;display:block;cursor:pointer}
+.rt input{position:absolute;top:0;left:0;width:1px;height:1px;margin:0;opacity:0}
+.rt span{display:flex;align-items:center;gap:10px;min-height:48px;height:100%;padding:var(--s-4) var(--s-12);border-radius:var(--r-m);background:var(--card);box-shadow:inset 0 0 0 1px var(--rule);font-size:15px;line-height:1.2}
+.rt span::before{content:"";flex:none;width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--ink)}
+.rt input:checked+span{box-shadow:inset 0 0 0 2px var(--ink);font-weight:600}
+.rt input:checked+span::before{background:radial-gradient(circle,var(--ink) 0 4.5px,transparent 5px)}
+.rt input:focus-visible+span{box-shadow:inset 0 0 0 1px var(--rule),var(--focus-ring)}
+.rt input:checked:focus-visible+span{box-shadow:inset 0 0 0 2px var(--ink),var(--focus-ring)}
+@media (hover:hover){.rt:hover input:not(:checked)+span{background:var(--sunk)}}
+.bhave{display:flex;flex-wrap:wrap;gap:var(--s-8) 14px;align-items:center;margin:0 0 var(--s-8);padding:10px var(--s-12);border-radius:var(--r-m);background:var(--sunk)}
+.bhave[hidden]{display:none}
+.btag{flex:none;display:inline-flex;align-items:center;gap:var(--s-4);height:26px;padding:0 9px;border-radius:5px;font:600 var(--t-small)/1 var(--font-body)}
+.btag.free{border:1px solid var(--rule);background:var(--card)}
+.btag.confirmed,.btag.placeholder{border:1.5px solid var(--ink)}
+.btag.restricted{background:var(--inv-bg);color:var(--inv-fg)}
+.btag.noinfo{border:1px dashed var(--muted)}
+.bhave .bt{flex:1 1 200px;font-size:var(--t-meta)}
+.bm{flex:none;display:flex;flex-direction:column;gap:var(--s-2)}
+.bm .mbar,.bm .mini{display:flex;gap:var(--s-2)}
+.bm .mbar i{width:14px;height:14px;border-radius:2px;box-shadow:inset 0 0 0 1px var(--rule)}
+.bm .mbar i.n{background:var(--ink);box-shadow:none}
+.bm .mbar i.p{background:repeating-linear-gradient(135deg,var(--ink) 0 2px,transparent 2px 4px);box-shadow:inset 0 0 0 1px var(--ink)}
+.bm .mbar i.now{box-shadow:inset 0 -3px 0 var(--ink),inset 0 0 0 1px var(--rule)}
+.bm .mbar i.n.now,.bm .mbar i.p.now{box-shadow:0 2px 0 var(--muted)}
+.bm .mini span{width:14px;text-align:center;font:500 10px/1 var(--font-display);color:var(--muted)}
 """
 
 FORMS_JS = r"""
@@ -2657,7 +2870,7 @@ var GripForms=(function(){  // the parts the three forms share: the crag and wal
 })();
 if(typeof document!=='undefined'){var GripUI=(function(){  // the page parts the three forms share: the combobox and the send, failed and sent states
   function $(id){return document.getElementById(id);}
-  function combo(L){  // wires the crag and wall box to the list L made by GripForms.walls; returns a getter for the chosen index
+  function combo(L,onPick){  // wires the crag and wall box to the list L made by GripForms.walls; returns a getter for the chosen index
     var W=L.W, input=$('wall'), list=$('wall-list'), box=input.parentNode, chosen=-1, shown=[], active=-1;
     function isOpen(){return !list.hidden;}
     function draw(){
@@ -2674,7 +2887,7 @@ if(typeof document!=='undefined'){var GripUI=(function(){  // the page parts the
     }
     function open(){draw();list.hidden=false;input.setAttribute('aria-expanded','true');}
     function close(){list.hidden=true;active=-1;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');}
-    function choose(wi){chosen=wi;input.value=W[wi][0];close();mark('wall','');}
+    function choose(wi){chosen=wi;input.value=W[wi][0];close();mark('wall','');if(onPick){onPick();}}
     input.addEventListener('input',function(){chosen=L.find(input.value);active=-1;open();});
     input.addEventListener('focus',function(){open();});
     input.addEventListener('click',function(){if(!isOpen()){open();}});
@@ -2702,9 +2915,12 @@ if(typeof document!=='undefined'){var GripUI=(function(){  // the page parts the
     if(err){err.textContent=msg;}
     if(box){box.classList.toggle('bad',!!msg);}
   }
-  function sent(rows){  // the form gives way to the sent card, which takes focus
-    var dl=$('done-sum');
+  function sent(rows,lead,next,link){  // the form gives way to the sent card, which takes focus; lead: lines under the heading, next: what happens next, link: [href, text]
+    var dl=$('done-sum'), box=$('done-lead');
     dl.innerHTML='';
+    if(box&&lead){box.innerHTML='';lead.forEach(function(t,i){if(!t){return;}var p=document.createElement('p');p.className=i?'sf':'sh';p.textContent=t;box.appendChild(p);});}
+    if(next&&$('done-next')){$('done-next').textContent=next;}
+    if(link&&$('done-alt')){$('done-alt').href=link[0];$('done-alt').textContent=link[1];}
     rows.forEach(function(r){  // [term, value] or [term, value, [band class, range]]
       var dt=document.createElement('dt'), dd=document.createElement('dd');
       dt.textContent=r[0];
@@ -2735,7 +2951,8 @@ if(typeof document!=='undefined'){var GripUI=(function(){  // the page parts the
       var body=o.payload(f);
       busy=true;send.textContent='Sending…';send.setAttribute('aria-disabled','true');lock.disabled=true;
       fetch(o.post,{method:'POST',mode:'no-cors',body:body}).then(function(){
-        sent(o.summary(f));
+        var s=o.summary(f);
+        if(Array.isArray(s)){sent(s);}else{sent(s.rows,s.lead,s.next,s.link);}
       }).catch(function(){
         busy=false;lock.disabled=false;send.textContent='Send';send.removeAttribute('aria-disabled');
         err.textContent='That did not go through. Check your signal and send again, or use the Google Form.';
@@ -2751,12 +2968,28 @@ if(typeof document!=='undefined'){var GripUI=(function(){  // the page parts the
 LOG_JS = r"""
 var GripLog=(function(){
   var L=GripForms.walls(__WALLS__);  // "Somewhere else on the coast" last
-  var WALLS=L.W;
+  var WALLS=L.W, ELSEWHERE=WALLS.length-1;
   var E=__ENTRIES__;
   var POST=__POST__;
-  var BANDS=__BANDS__;  // band name: [class, range], for the chip on the sent card
+  var BANDS=__BANDS__;  // [lowest score, name, css class, range], Prime to Soaked
+  var OBS=__OBS__;  // What did you see?: [key, question, short name, options before Not sure], in page order
+  var NS=__NOTSURE__;
+  var PROBLEMS=__PROBLEMS__;  // [observation, answer, the form's problems option], in the form's order
+  var TIMING=__TIMING__;  // the form's timing options: yes, stayed the same, changed the other way, not sure
+  var BIRDS=__BIRDS__, BIRD_OPTS=__BIRDOPTS__;  // per wall: [status, [nesting months]]; the form's bird options
+  var PAGES=__PAGES__;  // per wall: its crag page, '' for the form's last option
+  var WATER=__WATER__, WIND=__WIND__;  // [[mm up to which each word holds, word], ...] then "wet"; [light from, strong over] km/h
+  var WATER_ANSWER={'dry':'Dry','a trace':'Damp','damp':'Damp','wet':'Wet patches'};  // the crag pages' words as the observation's options
+  var STEPS={water:['Dry','Damp','Wet patches'],wind:['None','Light','Strong'],sun:['None','Some','Most of the session']};  // three-way answers, in order
+  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   var today=GripForms.today;
-  function validate(f, now){  // f: {wall: index or -1, date, from, until, feel, ...}; returns [[field, message], ...]
+  function hh(h){return ('0'+h).slice(-2)+':00';}
+  function bandOf(score){for(var i=0;i<BANDS.length;i++){if(score>=BANDS[i][0]){return BANDS[i];}}return BANDS[BANDS.length-1];}
+  function bandNamed(name){for(var i=0;i<BANDS.length;i++){if(BANDS[i][1]===name){return BANDS[i];}}return null;}
+  function rank(b){return BANDS.length-1-BANDS.indexOf(b);}  // Soaked 0 to Prime 4
+  function feelName(feel){return (feel||'').split(':')[0];}
+  function obsDone(obs){var n=0;OBS.forEach(function(q){if(obs&&obs[q[0]]){n++;}});return n;}
+  function validate(f, now){  // f: {wall: index or -1, date, from, until, feel, obs: {key: answer}, ...}; returns [[field, message], ...]
     var bad=[];
     if(!(f.wall>=0&&f.wall<WALLS.length)){bad.push(['wall','Pick a crag and wall from the list.']);}
     if(!/^\d{4}-\d{2}-\d{2}$/.test(f.date||'')){bad.push(['date','Enter the date.']);}
@@ -2766,44 +2999,312 @@ var GripLog=(function(){
     if(!t.test(f.until||'')){bad.push(['until','Enter when you came off the rock.']);}
     else if(t.test(f.from||'')&&f.until.slice(0,5)<=f.from.slice(0,5)){bad.push(['until','This must be later than the start time.']);}
     if(!f.feel){bad.push(['feel','Choose how the rock felt.']);}
+    if(obsDone(f.obs)<OBS.length){bad.push(['obs','Answer all seven. Not sure is fine.']);}
     return bad;
   }
-  function payload(f){  // the form-urlencoded body for the Google Form
-    var p=new URLSearchParams(), w=WALLS[f.wall], d=f.date.split('-'), a=f.from.split(':'), b=f.until.split(':');
+  function ready(f, now){  // Grip's view may be fetched and shown: a band, all seven observations, and the crag, date and hours (nothing else is wrong)
+    return !!f.feel&&obsDone(f.obs)===OBS.length&&!validate(f,now).length;
+  }
+  function span(from, until){  // the hours a log covers, as the build reads them back from the sheet: [first hour, hour after the last)
+    var a=parseInt(from.slice(0,2),10), b=parseInt(until.slice(0,2),10);
+    if(b<=a){b=a+1;}
+    return [a,b];
+  }
+  function hoursOf(snap, wall){  // one wall's hours from a day's snapshot, as objects keyed by the snapshot's columns; null if it has none
+    var rows=snap&&snap.walls&&snap.walls[wall];
+    if(!rows){return null;}
+    return rows.map(function(r){var o={};snap.cols.forEach(function(k,i){o[k]=r[i];});return o;});
+  }
+  function average(win){  // the scores as shown, averaged: tenths and the whole score, each rounded half up
+    var sum=0, n=win.length;
+    win.forEach(function(h){sum+=h.s;});
+    return {sum:sum, n:n, tenths:Math.floor((20*sum+n)/(2*n)), shown:Math.floor((2*sum+n)/(2*n))};
+  }
+  function waterWord(mm){for(var i=0;i<WATER.length;i++){if(mm<=WATER[i][0]){return WATER[i][1];}}return 'wet';}
+  function windWord(k){return k<WIND[0]?'None':k<=WIND[1]?'Light':'Strong';}
+  function gripSaw(win){  // Grip's answer to each observation over the hours, from its own factor terms
+    var n=win.length, o={};
+    function any(k,test){return win.some(function(h){return h[k]!=null&&test(h[k]);});}
+    var wettest=null;
+    win.forEach(function(h){if(h.water!=null&&(wettest===null||h.water>wettest)){wettest=h.water;}});
+    o.water=wettest===null?null:WATER_ANSWER[waterWord(wettest)];
+    o.seep=any('seep',function(v){return v===1;})?'Yes':'No';
+    o.sweat=(any('dew',function(v){return v<0;})||any('air',function(v){return v<0;}))?'Yes':'No';
+    o.haar=any('haar',function(v){return v===1;})?'Yes':'No';
+    o.spray=any('sea',function(v){return v<0;})?'Yes':'No';
+    var ws=win.map(function(h){return h.wind;}).filter(function(v){return v!=null;});
+    o.wind=null;
+    if(ws.length){  // the answer held by most of the hours; without a majority, the median hour's
+      var c={};
+      ws.forEach(function(v){var w=windWord(v);c[w]=(c[w]||0)+1;});
+      for(var w in c){if(2*c[w]>ws.length){o.wind=w;}}
+      if(!o.wind){var s=ws.slice().sort(function(a,b){return a-b;});o.wind=windWord(s[Math.floor((s.length-1)/2)]);}
+    }
+    var sun=win.filter(function(h){return h.sun===1;}).length;
+    o.sun=3*sun>=2*n?'Most of the session':sun?'Some':'None';
+    return o;
+  }
+  function verdict(k, you, grip){  // 'ns' not compared, 'same', 'near' (a three-way answer one step off: shown, not a mismatch), 'diff'
+    if(!you||you===NS||grip==null){return 'ns';}
+    if(you===grip){return 'same';}
+    var st=STEPS[k];
+    if(st&&Math.abs(st.indexOf(you)-st.indexOf(grip))===1){return 'near';}
+    return 'diff';
+  }
+  function timing(win){  // when Grip's scores move 2 or more over the hours: which way, and from about which hour (the first that has moved half the range)
+    var s=win.map(function(h){return h.s;});
+    var r=Math.max.apply(null,s)-Math.min.apply(null,s);
+    if(s.length<2||r<2){return null;}
+    for(var i=1;i<s.length;i++){if(2*Math.abs(s[i]-s[0])>=r){return {dir:s[i]>s[0]?'up':'down',hour:win[i].h};}}
+    return null;
+  }
+  function shape(win){  // the second half of the averaged line: "Greasy early, Grippy by 14:00"
+    var s=win.map(function(h){return h.s;}), names=s.map(function(x){return bandOf(x)[1];});
+    if(names.every(function(x){return x===names[0];})){return names[0]+' all session';}
+    if(!timing(win)){return 'steady all session';}
+    var last=names[names.length-1], i;
+    if(last!==names[0]){
+      for(i=names.length-1;i>0&&names[i-1]===last;i--){}
+      return names[0]+' early, '+last+' by '+hh(win[i].h);
+    }
+    var far=0;
+    for(i=1;i<s.length;i++){if(Math.abs(s[i]-s[0])>Math.abs(s[far]-s[0])){far=i;}}
+    return names[0]+' early and late, '+names[far]+' around '+hh(win[far].h);
+  }
+  var SUN_WORDS={'Most of the session':'most of the session','Some':'some of the time','None':'not at all'};
+  function lc(v){return (v||'').toLowerCase();}
+  function wetIn(v){return v==='Wet patches'?'wet in patches':lc(v);}
+  var SAY={  // each mismatch in a sentence, for the panel, and as a fragment for the sent card
+    water:[function(u,g){return 'Water on the rock: you found it '+wetIn(u)+', Grip expected it '+wetIn(g)+'.';},
+           function(u,g){return 'you found the rock '+wetIn(u)+' where Grip expected it '+wetIn(g);}],
+    seep:[function(u){return u==='Yes'?'Seepage: you saw it, Grip expected none.':'Seepage: you saw none, Grip expected some.';},
+          function(u){return u==='Yes'?'you saw seepage that Grip did not expect':'you saw no seepage where Grip expected some';}],
+    sweat:[function(u){return u==='Yes'?'Sweating or greasy: you felt it, Grip expected not.':'Sweating or greasy: you felt none, Grip expected it.';},
+           function(u){return u==='Yes'?'the rock sweated when Grip did not expect it':'the rock did not sweat when Grip expected it';}],
+    haar:[function(u){return u==='Yes'?'Haar or fog: you had it, Grip expected none.':'Haar or fog: you had none, Grip expected it.';},
+          function(u){return u==='Yes'?'you had haar that Grip did not expect':'you had no haar where Grip expected it';}],
+    wind:[function(u,g){return 'Wind on the wall: you found '+(u==='None'?'none':'it '+lc(u))+', Grip expected '+lc(g)+'.';},
+          function(u,g){return 'you found the wind '+(u==='None'?'still':lc(u))+' where Grip expected '+(g==='None'?'none':lc(g));}],
+    sun:[function(u,g){return 'Sun on the face: you had it '+SUN_WORDS[u]+', Grip expected '+SUN_WORDS[g]+'.';},
+         function(u,g){return 'the sun was on the face '+SUN_WORDS[u]+' where Grip expected '+SUN_WORDS[g];}],
+    spray:[function(u){return u==='Yes'?'Spray: it reached the routes, Grip expected none.':'Spray: none reached the routes, Grip expected some.';},
+           function(u){return u==='Yes'?'spray reached the routes when Grip did not expect it':'no spray reached the routes where Grip expected some';}]
+  };
+  function joinAnd(a){return a.length<2?a.join(''):a.slice(0,-1).join('; ')+(a.length>2?';':'')+' and '+a[a.length-1];}
+  function view(f, snap){  // Grip's view of a log: snap is the day's snapshot, null when there is none, 'error' when it could not be loaded
+    if(f.wall===ELSEWHERE){return {state:'nowall'};}
+    if(snap==='error'){return {state:'error'};}
+    var hrs=snap?hoursOf(snap,WALLS[f.wall][0]):null;
+    if(!hrs){return {state:'unscored'};}
+    var sp=span(f.from,f.until), win=hrs.filter(function(h){return h.h>=sp[0]&&h.h<sp[1];});
+    if(!win.length){return {state:'dark'};}
+    var a=average(win), gb=bandOf(a.shown), g=gripSaw(win), you=bandNamed(feelName(f.feel));
+    var rows=OBS.map(function(q){var u=(f.obs||{})[q[0]];return {k:q[0], short:q[2], you:u, grip:g[q[0]], v:verdict(q[0],u,g[q[0]])};});
+    var cmp=rows.filter(function(r){return r.v!=='ns';}), same=rows.filter(function(r){return r.v==='same';}), mm=rows.filter(function(r){return r.v==='diff';});
+    var cap=!cmp.length?'You answered Not sure to all seven, so there is nothing to compare.'
+      :same.length===cmp.length?(cmp.length===OBS.length?'You and Grip agreed on all '+OBS.length+'.':'You and Grip agreed on all '+cmp.length+' you answered.')
+      :'You and Grip agreed on '+same.length+' of '+cmp.length+'.';
+    return {state:'scored', run:snap.run, win:win, avg:a, grip:gb, you:you, diff:you?rank(gb)-rank(you):0, saw:g, rows:rows,
+      mismatch:mm.length>0, caption:cap, lines:mm.map(function(r){return SAY[r.k][0](r.you,r.grip);}),
+      frags:mm.map(function(r){return SAY[r.k][1](r.you,r.grip);}), timing:timing(win), shape:shape(win)};
+  }
+  function notesLabel(v){
+    if(!v||v.state!=='scored'){return 'Anything else about the day?';}
+    return v.diff!==0||v.mismatch?'Why do you think that was?':'Anything worth noting?';
+  }
+  function bandLine(v){
+    var g=v.grip[1]+', '+v.avg.shown;
+    return v.diff===0?'Grip agreed on the band.':v.diff>0?'You found it worse than Grip forecast ('+g+').':'You found it better than Grip forecast ('+g+').';
+  }
+  function timingQ(t){return 'Grip expected it to '+(t.dir==='up'?'improve':'get worse')+' from about '+hh(t.hour)+'. Did it?';}
+  function timingShown(t){return [TIMING[0],TIMING[1],t.dir==='up'?'It got worse':'It got better',TIMING[3]];}  // the options as the page words them
+  function shownLine(v){  // what the page showed, in one line for the sheet
+    if(!v||v.state==='unscored'){return 'not scored yet';}
+    if(v.state==='dark'){return 'no daylight hours';}
+    if(v.state==='nowall'){return 'no wall';}
+    if(v.state!=='scored'){return 'not loaded';}
+    var s=v.saw, t=v.avg.tenths;
+    return 'avg '+Math.floor(t/10)+'.'+(t%10)+' shown '+v.avg.shown+' '+v.grip[1]+'; '+v.win.map(function(h){return h.h+':'+h.s;}).join(' ')+
+      '; factors Grip: water '+(s.water||'unknown')+', seepage '+s.seep+', sweating '+s.sweat+', haar '+s.haar+', spray '+s.spray+
+      ', wind '+(s.wind||'unknown')+', sun '+s.sun+'; snapshot '+v.run;
+  }
+  function problems(obs){  // the problems column, filled from the observations only
+    return PROBLEMS.filter(function(p){return (obs||{})[p[0]]===p[1];}).map(function(p){return p[2];});
+  }
+  function payload(f, v){  // the form-urlencoded body for the Google Form. v: Grip's view as shown (null if never shown)
+    var p=new URLSearchParams(), w=WALLS[f.wall], d=f.date.split('-'), a=f.from.split(':'), b=f.until.split(':'), obs=f.obs||{};
     p.append(E.crag,w[1]);
     p.append(E.wall,w[2]);
     p.append(E.date+'_year',d[0]);p.append(E.date+'_month',d[1]);p.append(E.date+'_day',d[2]);
     p.append(E.from+'_hour',a[0]);p.append(E.from+'_minute',a[1]);
     p.append(E.until+'_hour',b[0]);p.append(E.until+'_minute',b[1]);
     p.append(E.feel,f.feel);
-    (f.problems||[]).forEach(function(x){p.append(E.problems,x);});
+    problems(obs).forEach(function(x){p.append(E.problems,x);});
     p.append(E.initials,(f.initials||'').trim());
     p.append(E.other,(f.other||'').trim());
     p.append(E.contact,(f.contact||'').trim());
+    ['seep','sweat','haar','spray','water','wind','sun'].forEach(function(k){if(obs[k]){p.append(E[k],obs[k]);}});
+    if(v&&v.state==='scored'&&v.timing&&f.timing>=0&&f.timing<TIMING.length){p.append(E.timing,TIMING[f.timing]);}
+    if(f.birds){p.append(E.birds,f.birds);}
+    p.append(E.shown,shownLine(v));
+    if(f.first&&f.first!==f.feel){p.append(E.first,feelName(f.first));}
     p.append('fvv','1');
     p.append('pageHistory','0');
     return p;
   }
-  function summary(f){  // the sent card's rows
-    var felt=f.feel.split(':')[0];
-    return [['Crag',WALLS[f.wall][0]],['When',GripForms.day(f.date)+', '+f.from.slice(0,5)+' to '+f.until.slice(0,5)],['Felt',felt,BANDS[felt]]];
+  function summary(f, v){  // the sent card: {lead: [headline, factor line], rows, next}
+    var you=bandNamed(feelName(f.feel)), scored=v&&v.state==='scored', rows, head, line;
+    rows=[['Crag',WALLS[f.wall][0]],['When',GripForms.day(f.date)+', '+f.from.slice(0,5)+' to '+f.until.slice(0,5)]];
+    var first=f.first&&f.first!==f.feel?' (first answer '+feelName(f.first)+')':'';
+    rows.push(['You felt',you[1]+first,[you[2],you[3]]]);
+    if(scored){
+      rows.push(['Grip forecast',v.grip[1]+', average for your hours',[v.grip[2],String(v.avg.shown)]]);
+      if(v.timing&&f.timing>=0){rows.push(['Timing',timingQ(v.timing).replace(' Did it?','')+' You said: '+timingShown(v.timing)[f.timing]]);}
+      var nb=Math.abs(v.diff);
+      head=v.diff===0?'You and Grip agreed on the band: '+you[1]+'.':'You found it '+(v.diff>0?'worse':'better')+' than Grip, by '+(nb===1?'one band':nb+' bands')+'.';
+      line=v.mismatch?v.caption.replace(/\.$/,'')+'; '+joinAnd(v.frags)+'.':v.caption;
+    }else if(v&&v.state==='unscored'){
+      rows.push(['Grip forecast','Not scored yet']);
+      head='Grip will score this day on its next run.';
+      line='You answered all '+OBS.length+' questions on what you saw. Grip will compare them with its forecast on its next run.';
+    }
+    if(f.birds){rows.push(['Birds',f.birds.replace("'",'\u2019')]);}
+    var page=PAGES[f.wall]?'the '+WALLS[f.wall][1]+' page':'the crag page';
+    var next=v&&v.state==='unscored'?'The comparison will appear under Logged days on '+page+' within the hour, and the day joins the calibration check after that.'
+      :'Grip checks its forecast against your day within a few hours. It then shows on the crag page and on the Method page.';
+    return {lead:[head||'',line||''], rows:rows, next:next, link:PAGES[f.wall]?[PAGES[f.wall],WALLS[f.wall][1]+' page']:null};
   }
-  return {WALLS:WALLS,list:L,POST:POST,filter:L.filter,find:L.find,today:today,validate:validate,payload:payload,summary:summary};
+  function birdsHave(wall, date){  // what Grip has on birds at the wall, for the month logged: {status, tag, text, months, now}
+    var b=BIRDS[wall]||['noinfo',[]], st=b[0], m=b[1], now=date?+date.split('-')[1]:0;
+    var span_=m.length?MONTHS[Math.min.apply(null,m)-1]+' to '+MONTHS[Math.max.apply(null,m)-1]:'';
+    var T={free:['Bird free','Grip has: bird free at this wall.'],
+      confirmed:['Nesting birds','Grip has: birds nesting, '+span_+', months confirmed.'],
+      placeholder:['Nesting birds',m.length?'Grip has: birds reported nesting, '+span_+', months not confirmed.':'Grip has: birds reported nesting, months not known.'],
+      restricted:['Restricted','Grip has: climbing restricted while birds nest'+(m.length?', '+span_:'')+'.'],
+      noinfo:['No information','Grip has no information on birds at this wall. Anything you saw helps.']}[st];
+    return {status:st, tag:T[0], text:T[1], months:m, now:now, said:m.length?'Nesting '+span_:''};
+  }
+  return {WALLS:WALLS,list:L,POST:POST,OBS:OBS,NS:NS,BANDS:BANDS,TIMING:TIMING,BIRD_OPTS:BIRD_OPTS,PAGES:PAGES,ELSEWHERE:ELSEWHERE,
+    filter:L.filter,find:L.find,today:today,validate:validate,ready:ready,obsDone:obsDone,span:span,hoursOf:hoursOf,average:average,waterWord:waterWord,
+    windWord:windWord,gripSaw:gripSaw,verdict:verdict,timing:timing,shape:shape,view:view,notesLabel:notesLabel,bandLine:bandLine,
+    timingQ:timingQ,timingShown:timingShown,shownLine:shownLine,problems:problems,payload:payload,summary:summary,birdsHave:birdsHave,
+    bandOf:bandOf,bandNamed:bandNamed,feelName:feelName,hh:hh};
 })();
 if(typeof document!=='undefined'){(function(){
   var G=GripLog, U=GripUI, $=U.$, form=$('gform');
-  var chosen=U.combo(G.list);
-  var dt=$('date');
+  var dt=$('date'), hold=$('gv-hold'), gv=$('gv'), bh=$('birds-have');
+  var snaps={}, revealed=false, first=null, timingAns=-1, lastView=null, drawn='';
+  function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function obs(){var o={};G.OBS.forEach(function(q){var x=form.querySelector('input[name="obs-'+q[0]+'"]:checked');if(x){o[q[0]]=x.value;}});return o;}
+  function values(){
+    var feel=form.querySelector('input[name=feel]:checked'), birds=form.querySelector('input[name=birds]:checked');
+    return {wall:chosen(), date:dt.value, from:$('from').value, until:$('until').value, feel:feel?feel.value:'', obs:obs(),
+      first:first, timing:timingAns, birds:birds?birds.value:'', initials:$('initials').value, other:$('other').value, contact:$('contact').value};
+  }
+  function load(date){  // the day's snapshot, fetched only once a band and all seven observations are in
+    if(Object.prototype.hasOwnProperty.call(snaps,date)){return;}
+    snaps[date]='loading';
+    fetch('history/'+date+'.json',{cache:'no-cache'}).then(function(r){
+      if(r.status===404){return null;}
+      if(!r.ok){throw new Error(r.status);}
+      return r.json();
+    }).then(function(j){snaps[date]=j;update();}).catch(function(){snaps[date]='error';update();});
+  }
+  function strip(v){
+    return '<div class="strip">'+v.win.map(function(h){var b=G.bandOf(h.s);
+      return '<span><b class="'+b[2]+'">'+h.s+'</b><small>'+('0'+h.h).slice(-2)+'</small></span>';}).join('')+'</div>';
+  }
+  var MARK={same:['=','Same','s'],near:['≈','One step apart','n'],diff:['≠','Differs','d'],ns:['–','Not compared','x']};
+  function table(v){
+    var h=['<div class="ftab-w"><table class="ftab"><caption>'+esc(v.caption)+'</caption><thead><tr><th scope="col">What</th><th scope="col">You</th>'+
+      '<th scope="col">Grip</th><th scope="col"><span class="vh">Match</span></th></tr></thead><tbody>'];
+    v.rows.forEach(function(r){var m=MARK[r.v];
+      h.push('<tr'+(r.v==='diff'?' class="d"':'')+'><th scope="row">'+esc(r.short)+'</th><td>'+esc(r.you)+'</td><td>'+esc(r.grip==null?'Not known':r.grip)+'</td>'+
+        '<td><span class="mk '+m[2]+'" role="img" aria-label="'+m[1]+'">'+m[0]+'</span></td></tr>');});
+    h.push('</tbody></table><p class="fkey"><span>≠ differs</span><span>≈ one step apart</span><span>= same</span><span>– not compared</span></p></div>');
+    return h.join('');
+  }
+  function bandBox(v){
+    return '<div class="bandbox"><span class="ovl">Band</span><span class="br"><span class="who">You</span><span class="kc '+v.you[2]+'">'+v.you[3]+'</span><b>'+v.you[1]+'</b></span>'+
+      '<span class="br"><span class="who">Grip</span><span class="num sz-m '+v.grip[2]+'">'+v.avg.shown+'</span><b>'+v.grip[1]+'</b></span></div>';
+  }
+  function timingBox(v){
+    var opts=G.timingShown(v.timing);
+    return '<fieldset class="timing"><legend>'+esc(G.timingQ(v.timing))+'</legend><div class="rgrid">'+opts.map(function(o,i){
+      return '<label class="rt"><input type="radio" name="timing" value="'+i+'"><span>'+esc(o)+'</span></label>';}).join('')+'</div></fieldset>';
+  }
+  function draw(v, f){
+    var range=/^\d{2}:\d{2}/.test(f.from)&&/^\d{2}:\d{2}/.test(f.until)?f.from.slice(0,5)+' to '+f.until.slice(0,5):'';
+    var h=['<h2 id="gv-h" class="ovl">Grip’s view'+(range?', '+range:'')+'</h2>'];
+    if(v.state==='loading'){h.push('<p class="msg">Loading Grip’s forecast…</p>');}
+    else if(v.state==='scored'){
+      h.push('<div class="vw">'+strip(v)+'<p class="vl">Over '+esc(range)+', Grip averaged '+v.grip[1]+', '+v.avg.shown+': '+esc(v.shape)+'.</p>'+
+        '<p class="src">Grip’s forecast as it stood that morning.</p></div>');
+      h.push('<p class="bl">'+esc(G.bandLine(v))+'</p><div class="cmp">'+bandBox(v)+table(v)+'</div>');
+      if(v.lines.length){h.push('<ul class="mm">'+v.lines.map(function(l){return '<li><span class="mk d" aria-hidden="true">≠</span><span>'+esc(l)+'</span></li>';}).join('')+'</ul>');}
+      if(v.timing){h.push(timingBox(v));}
+    }
+    else if(v.state==='unscored'){h.push('<p class="msg">Grip hasn’t scored this day yet. It will on its next run, within the hour, and the comparison will appear under Logged days here on the crag page.</p>');}
+    else if(v.state==='dark'){h.push('<p class="msg">Grip scores daylight hours only, and none of your hours were in daylight, so there is nothing to compare.</p>');}
+    else if(v.state==='nowall'){h.push('<p class="msg">Grip does not forecast this spot, so there is nothing to compare. Say where it was in the notes.</p>');}
+    else{h.push('<p class="msg">Grip’s forecast could not be loaded. Check your signal; your log sends without it.</p>');}
+    var html=h.join('');
+    if(html!==drawn){  // redrawn only when it changes, so focus stays put; the timing answer is kept across redraws
+      drawn=html;gv.innerHTML=html;
+      var t=gv.querySelector('input[name=timing][value="'+timingAns+'"]');
+      if(t){t.checked=true;}
+    }
+  }
+  function drawBirds(f){
+    if(!revealed||f.wall<0){bh.hidden=true;return;}
+    var b=G.birdsHave(f.wall,f.date), h=['<span class="btag '+b.status+'">'+(b.status==='noinfo'?'<i aria-hidden="true">?</i>':'')+esc(b.tag)+'</span><span class="bt">'+esc(b.text)+'</span>'];
+    if(b.months.length){
+      var lo=Math.min.apply(null,b.months), hi=Math.max.apply(null,b.months), cells=[], ini=[];
+      for(var m=1;m<=12;m++){cells.push('<i class="'+[m>=lo&&m<=hi?(b.status==='placeholder'?'p':'n'):'',m===b.now?'now':''].join(' ').trim()+'"></i>');ini.push('<span>'+'JFMAMJJASOND'[m-1]+'</span>');}
+      h.push('<span class="bm"><span class="mbar" role="img" aria-label="'+esc(b.said)+'">'+cells.join('')+'</span><span class="mini" aria-hidden="true">'+ini.join('')+'</span></span>');
+    }
+    bh.innerHTML=h.join('');bh.hidden=false;
+  }
+  function update(){
+    var f=values(), n=G.obsDone(f.obs), ready=G.ready(f);
+    $('obs-count').textContent=n+' of '+G.OBS.length;
+    if(ready&&!revealed){revealed=true;first=f.feel;}
+    var v=null;
+    if(revealed&&ready){
+      if(f.wall!==G.ELSEWHERE&&!Object.prototype.hasOwnProperty.call(snaps,f.date)){load(f.date);}
+      var snap=snaps[f.date];
+      v=snap==='loading'?{state:'loading'}:G.view(f,snap===undefined?null:snap);
+    }
+    lastView=v;
+    if(v){draw(v,f);gv.hidden=false;hold.hidden=true;}
+    else{
+      gv.hidden=true;hold.hidden=false;
+      var range=/^\d{2}:\d{2}/.test(f.from)&&/^\d{2}:\d{2}/.test(f.until)&&f.until>f.from?f.from.slice(0,5)+' to '+f.until.slice(0,5):'your hours';
+      $('gv-hold-text').textContent='Grip’s forecast for '+range+' appears here once you have chosen a band and answered what you saw. Your answers come first, so they stay your own.';
+      $('gv-hold-count').textContent=(f.feel?'Band chosen. ':'No band yet. ')+n+' of '+G.OBS.length+' answered.'+(f.feel&&n===G.OBS.length?' Add the crag, date and hours above to see it.':'');
+    }
+    $('other-label').firstChild.nodeValue=G.notesLabel(v)+' ';
+    var changed=revealed&&first&&f.feel&&first!==f.feel;
+    form.querySelectorAll('input[name=feel]').forEach(function(x){x.parentNode.classList.toggle('first',!!changed&&x.value===first);});
+    $('feel-changed').hidden=!changed;
+    if(changed){$('feel-changed').textContent='Changed from '+G.feelName(first)+' after seeing Grip’s view. Both answers are kept, and both are useful.';}
+    if(n===G.OBS.length){U.mark('obs','');}
+    drawBirds(f);
+  }
+  var chosen=U.combo(G.list,update);
   dt.max=G.today();
   var q=new URLSearchParams(location.search);
   if(/^\d{4}-\d{2}-\d{2}$/.test(q.get('date')||'')){dt.value=q.get('date');}
-  U.run({post:G.POST, fields:['wall','date','from','until','feel'], validate:function(f){return G.validate(f);}, payload:G.payload, summary:G.summary,
-    values:function(){
-      var feel=form.querySelector('input[name=feel]:checked');
-      return {wall:chosen(), date:dt.value, from:$('from').value, until:$('until').value,
-        feel:feel?feel.value:'', problems:U.ticked('problems'), initials:$('initials').value, other:$('other').value, contact:$('contact').value};
+  form.addEventListener('change',function(e){if(e.target.name==='timing'){timingAns=+e.target.value;}update();});
+  form.addEventListener('input',update);
+  update();
+  U.run({post:G.POST, fields:['wall','date','from','until','feel','obs'], validate:function(f){return G.validate(f);},
+    payload:function(f){return G.payload(f,lastView);}, summary:function(f){return G.summary(f,lastView);}, values:values,
+    first:function(x){
+      if(x==='feel'){return form.querySelector('input[name=feel]');}
+      if(x==='obs'){var o=values().obs;for(var i=0;i<G.OBS.length;i++){if(!o[G.OBS[i][0]]){return form.querySelector('input[name="obs-'+G.OBS[i][0]+'"]');}}}
+      return null;
     },
-    first:function(x){return x==='feel'?form.querySelector('input[name=feel]'):null;},
     before:function(f){$('wall').value=G.WALLS[f.wall][0];}});
 })();}
 """
@@ -2985,10 +3486,35 @@ def js(x):
     return json.dumps(x, ensure_ascii=False).replace("</", "<\\/")
 
 
+def bird_view(b):
+    """A wall's birds as the log page shows them, one of five statuses, with the nesting months:
+    free, confirmed, placeholder (months not confirmed), restricted, or noinfo (never the same as bird free)."""
+    st = bird_status(b)
+    months = sorted(b.get("months") or []) if b else []
+    if st == "clear":
+        return ["free", []]
+    if st == "unknown":
+        return ["noinfo", []]
+    if b.get("level") == "restricted":
+        return ["restricted", months]
+    return ["confirmed" if b.get("confirmed") and months else "placeholder", months]
+
+
 def log_script(cfg):
-    bands = {name: [css, rng] for _lo, name, _note, css, rng in BANDS}
-    return MATCH_JS + FORMS_JS + (LOG_JS.replace("__WALLS__", js(form_walls(cfg))).replace("__ENTRIES__", js(FORM_ENTRIES))
-                                  .replace("__POST__", js(FORM_POST)).replace("__BANDS__", js(bands)))
+    walls = form_walls(cfg)
+    by_label = {label(c): c for c in cfg["crags"]}
+    birds = [bird_view(by_label[w[0]].get("birds")) if w[0] in by_label else ["noinfo", []] for w in walls]
+    pages = [f"detail/{slug(by_label[w[0]]['name'])}.html" if w[0] in by_label else "" for w in walls]
+    subs = {"__WALLS__": walls, "__ENTRIES__": FORM_ENTRIES, "__POST__": FORM_POST,
+            "__BANDS__": [[lo, name, css, rng] for lo, name, _note, css, rng in BANDS],
+            "__OBS__": [[k, q, short, opts] for k, q, short, opts in LOG_OBS], "__NOTSURE__": NOT_SURE,
+            "__PROBLEMS__": [list(x) for x in OBS_PROBLEMS], "__TIMING__": TIMING_OPTIONS, "__BIRDS__": birds,
+            "__BIRDOPTS__": BIRD_ANSWERS, "__PAGES__": pages, "__WATER__": [list(x) for x in WATER_WORDS],
+            "__WIND__": [WIND_LIGHT, WIND_STRONG]}
+    out = LOG_JS
+    for k, v in subs.items():
+        out = out.replace(k, js(v))
+    return MATCH_JS + FORMS_JS + out
 
 
 def note_script(cfg):
@@ -3034,10 +3560,11 @@ def contact_field(lab):
             '<p class="below" id="contact-desc">Kept private. Never published.</p></div>')
 
 
-def form_page(key, title, h1, intro, fields, aside, sent, google, script):
+def form_page(key, title, h1, intro, fields, aside, sent, google, script, nojs=None):
     """The frame the three forms share: header with Contribute current, the Contribute nav, then the h1, intro and the
     form with Send and one Google Form link, beside an aside. Sent, the h1, intro and form give way to the sent card and
-    the aside stays. Without JavaScript the form gives way to the Google Form link. sent: (h1, what happens next, "send another" text)."""
+    the aside stays. Without JavaScript the form gives way to the Google Form link, or to nojs (HTML) when given.
+    sent: (h1, what happens next, "send another" text)."""
     nav = []
     for k, page, text in FORM_PAGES:
         href = feedback_link(key) if k == "feedback" and key != "feedback" else page
@@ -3050,59 +3577,85 @@ def form_page(key, title, h1, intro, fields, aside, sent, google, script):
         f"<style>{CSS}{FORM_CSS}</style></head><body>{header_bar(current='contribute')}<main>",
         f'<nav class="seg" aria-label="Contribute">{"".join(nav)}</nav>',
         f'<div class="fcols"><div class="fmain"><div id="page"><h1>{h1}</h1><p class="lead">{intro}</p>',
-        f'<noscript><style>.gform{{display:none}}</style><p class="nojs">This form needs JavaScript. <a href="{google}">Use the Google Form instead.</a></p></noscript>',
+        '<noscript><style>.gform{display:none}</style>' + (nojs or f'<p class="nojs">This form needs JavaScript. <a href="{google}">Use the Google Form instead.</a></p>') + '</noscript>',
         f'<form id="gform" class="gform" novalidate><fieldset class="lock" id="lock">{fields}</fieldset>',
         '<p class="err" id="form-err" role="alert"></p><div class="send"><button type="submit" class="btn" id="send">Send</button>',
         f'<p class="alt-link">Prefer the Google form? <a id="alt-google" href="{google}">Use it here</a>.</p></div></form></div>',
         f'<section class="sent" id="done" role="status" aria-labelledby="done-h" hidden><p class="ovl">Sent</p>'
-        f'<h1 id="done-h" tabindex="-1">{done_h}</h1><dl id="done-sum"></dl><p>{done_next}</p>'
+        f'<h1 id="done-h" tabindex="-1">{done_h}</h1><div id="done-lead"></div><dl id="done-sum"></dl><p id="done-next">{done_next}</p>'
         f'<p class="acts"><a class="btn" href="{dict((k, p) for k, p, _t in FORM_PAGES)[key]}">{again}</a>'
-        '<a class="btn alt" href="./">Back to the forecast</a></p></section></div>',
+        '<a class="btn alt" id="done-alt" href="./">Back to the forecast</a></p></section></div>',
         f'<aside class="aside" aria-label="About this form">{cards}</aside></div>',
         f"<script>{script}</script></main>{site_foot()}</body></html>"])
 
 
 def why_log(cal):
-    """The log page's first aside card, with the calibration tally when there is one."""
+    """The log page's Why log card, with the calibration tally when there is one."""
     tally = ""
     if cal and cal.get("n", 0) > 1:
         tally = f" {cal['n']} days logged so far; Grip landed in the felt band on {cal['bands_right']}."
-    return ("Why log", f"Grip’s weightings are a first estimate.{tally} More days, from more crags, is the only way it gets better.")
+    return ("Why log", f"Grip’s weightings are a first estimate.{tally} What you saw tells Grip which factor it got wrong.")
+
+
+def obs_rows():
+    """What did you see?: seven rows of one-tap chips, each ending in Not sure."""
+    out = ['<section class="obs" id="f-obs" aria-labelledby="obs-h" aria-describedby="obs-desc obs-err"><div class="obs-h"><h2 id="obs-h">What did you see?</h2>'
+           f'<span id="obs-count" aria-hidden="true">0 of {len(LOG_OBS)}</span></div>'
+           '<p class="desc" id="obs-desc">One tap each, across your session. Not sure is fine.</p>']
+    for k, q, _short, opts in LOG_OBS:
+        out.append(f'<div class="orow" role="radiogroup" aria-labelledby="obs-{k}-l"><span class="ol" id="obs-{k}-l">{escape(q)}</span><span class="oc">')
+        for i, o in enumerate(opts + [NOT_SURE]):
+            cls = "ochip" + (" long" if len(o) > 12 else "") + (" ns" if o == NOT_SURE else "")
+            out.append(f'<label class="{cls}"><input type="radio" name="obs-{k}" id="obs-{k}-{i}" value="{escape(o)}"><span>{escape(o)}</span></label>')
+        out.append("</span></div>")
+    out.append('<p class="err" id="obs-err"></p></section>')
+    return "".join(out)
 
 
 def render_log(cfg, cal=None):
-    """The log form: a searchable crag and wall box that submits into the Google Form, so the responses sheet is unchanged."""
+    """The log form. The climber says how the rock felt and what they saw; only then does the page fetch the day's forecast snapshot and
+    show Grip's view beside their answers. Submits into the Google Form, so the responses sheet keeps its columns."""
     w = [combo_field()]
     w.append('<div class="pair"><div class="field" id="f-date"><label for="date">Date</label><input id="date" type="date" required aria-describedby="date-err"><p class="err" id="date-err"></p></div>'
              '<div class="field" id="f-from"><label for="from">From</label><input id="from" type="time" step="60" required aria-describedby="from-err"><p class="err" id="from-err"></p></div>'
              '<div class="field" id="f-until"><label for="until">Until</label><input id="until" type="time" step="60" required aria-describedby="until-err"><p class="err" id="until-err"></p></div></div>')
     w.append('<fieldset class="field" id="f-feel" aria-describedby="feel-desc feel-err"><legend>How did the rock feel overall?</legend>'
-             '<p class="desc" id="feel-desc">Most of the rock, across your session. Not your best or worst route.</p>')
+             '<p class="desc" id="feel-desc">Most of the rock, across your session. Grip’s forecast appears once you have answered this and what you saw.</p>')
     ranges = {name: (css, rng) for _lo, name, _note, css, rng in BANDS}
     for i, v in enumerate(LOG_FEELS):  # one tile per band: its chip, then the option's own words, name and description
         name, desc = v.split(": ", 1)
         css, rng = ranges[name]
         w.append(f'<label class="tile"><input type="radio" name="feel" id="feel-{i}" value="{escape(v)}"><span class="tb">'
                  f'<span class="kc {css}" aria-hidden="true">{rng}</span><span><span class="fn">{escape(name)}<span class="vh">:</span></span> '
-                 f'<span class="fd">{escape(desc[:1].upper() + desc[1:])}</span></span></span></label>')
-    w.append('<p class="err" id="feel-err"></p></fieldset>')
-    w.append(f'<fieldset class="field"><legend>Anything that made it worse?{opt()}</legend><p class="desc">Tick any that apply.</p><div class="chips">')
-    for i, v in enumerate(LOG_PROBLEMS):
-        w.append(f'<label class="pchip"><input type="checkbox" name="problems" id="prob-{i}" value="{escape(v)}"><span>{escape(v)}</span></label>')
+                 f'<span class="fd">{escape(desc[:1].upper() + desc[1:])}</span></span><span class="fa">First answer</span></span></label>')
+    w.append('<p class="desc" id="feel-changed" role="status" hidden></p><p class="err" id="feel-err"></p></fieldset>')
+    w.append(obs_rows())
+    w.append('<div class="gv-hold" id="gv-hold"><span class="ovl">Grip’s view</span><span id="gv-hold-text">Grip’s forecast for your hours appears here once you have '
+             'chosen a band and answered what you saw. Your answers come first, so they stay your own.</span>'
+             f'<span class="st" id="gv-hold-count">No band yet. 0 of {len(LOG_OBS)} answered.</span></div>')
+    w.append('<section class="gv" id="gv" aria-labelledby="gv-h" aria-live="polite" hidden></section>')
+    w.append(f'<div class="field"><label for="other" id="other-label">Anything else about the day?{opt()}</label>'
+             '<p class="desc" id="other-desc">A patch much better or worse than the rest, worse near the sea, how it changed through the session.</p>'
+             '<textarea id="other" aria-describedby="other-desc"></textarea></div>')
+    w.append('<fieldset class="field" id="f-birds"><legend>Any nesting birds?</legend><div class="bhave" id="birds-have" hidden></div><div class="rgrid">')
+    for i, v in enumerate(BIRD_ANSWERS):
+        w.append(f'<label class="rt"><input type="radio" name="birds" id="birds-{i}" value="{escape(v)}"><span>{escape(v.replace(chr(39), "’"))}</span></label>')
     w.append("</div></fieldset>")
-    w.append(f'<div class="field"><label for="other">Anything else about the day?{opt()}</label>'
-             '<p class="desc" id="other-desc">For example: a route or patch much worse or better than the rest, wet to look at or just slick, worse near the sea, '
-             'how the wind felt on the wall, whether it changed through the session.</p><textarea id="other" aria-describedby="other-desc"></textarea></div>')
     w.append(f'<div class="row2">{initials_field()}{contact_field("Contact for a follow-up")}</div>')
-    aside = [why_log(cal),
-             ("One crag per visit", "Climbed two crags? Send one log for each. Score the crag as a whole, not your best route or your worst; "
-              "if a single route stood out, say so in the notes rather than in the score.")]
+    aside = [("Your answers first", "Grip’s forecast stays hidden until you have chosen a band and said what you saw, so your judgement is your own. "
+              "You can still change answers afterwards."),
+             why_log(cal),
+             ("One crag per visit", "Climbed two crags? Send one log for each. If a single route stood out, say so in the notes rather than in the score.")]
     sent = ("Thank you. Your day is logged.",
             "Grip checks its forecast against your day within a few hours. It then shows on the crag page and on the Method page.",
             "Log another day")
+    nojs = ('<div class="nojs"><p class="nj1">This form needs JavaScript.</p><p>It keeps Grip’s forecast hidden until you have said how the rock felt and '
+            'what you saw, and that takes a script. The Google Form asks the same questions, without the forecast.</p>'
+            f'<a class="btn" href="{FORM_URL}">Open the Google Form</a></div>')
     return form_page("log", "log a day on the rock", "Log a day on the rock",
-                     "How did the rock feel? Each day logged tests Grip against real rock. It takes about a minute and needs no account.",
-                     "".join(w), aside, sent, FORM_URL, log_script(cfg))
+                     "Say how the rock felt and what you saw, then see what Grip forecast for your hours. Each day logged tests Grip against real rock. "
+                     "About a minute, no account.",
+                     "".join(w), aside, sent, FORM_URL, log_script(cfg), nojs)
 
 
 def render_note(cfg):
@@ -3919,6 +4472,10 @@ def main():
         sys.exit(1)
     results, tides, now = build(cfg, models, marine)
     try:
+        save_snapshot(results, now)
+    except Exception as e:  # noqa: BLE001
+        log(f"Snapshot not saved: {e}")
+    try:
         cal = calibrate(cfg)
     except Exception as e:  # noqa: BLE001
         log(f"Calibration skipped: {e}")
@@ -3953,6 +4510,7 @@ def main():
         shutil.copyfile(os.path.join(FONTS_DIR, n), os.path.join(SITE_DIR, "assets", "fonts", n))
     with open(os.path.join(SITE_DIR, ".nojekyll"), "w") as f:
         f.write("")
+    log(f"Published {publish_history(SITE_DIR)} forecast snapshot(s) to site/history/")
     log(f"Wrote page ({len(html) // 1024} KB), models: {', '.join(models_ok)}")
 
     st = load_state()

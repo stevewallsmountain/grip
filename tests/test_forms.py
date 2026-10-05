@@ -103,7 +103,11 @@ class Pages(unittest.TestCase):
                 self.assertEqual(html.count(google), 2)  # under Send, and the no-JavaScript notice
                 self.assertEqual(html.count("Prefer the Google form? <a"), 1)
                 self.assertIn(f'Prefer the Google form? <a id="alt-google" href="{google}">Use it here</a>.', html)
-                self.assertIn(f'This form needs JavaScript. <a href="{google}">Use the Google Form instead.</a>', html)
+                if google == grip.FORM_URL:  # the log page says why it needs a script: it keeps Grip's forecast hidden until the answers are in
+                    self.assertIn(f'<p class="nj1">This form needs JavaScript.</p>', html)
+                    self.assertIn(f'<a class="btn" href="{google}">Open the Google Form</a>', html)
+                else:
+                    self.assertIn(f'This form needs JavaScript. <a href="{google}">Use the Google Form instead.</a>', html)
                 self.assertIn("<noscript><style>.gform{display:none}</style>", html)
                 self.assertIn(f'<h1 id="done-h" tabindex="-1">{sent}</h1>', html)
                 self.assertIn('role="status"', html)
@@ -135,10 +139,12 @@ class Pages(unittest.TestCase):
 @unittest.skipUnless(NODE, "needs Node to run the forms' JavaScript")
 class LogPayload(unittest.TestCase):
     def test_body_unchanged(self):
-        """The body main sent before the redesign, for the same inputs, byte for byte."""
-        f = ('{wall:0,date:"2026-10-04",from:"10:00",until:"12:30",feel:"Grippy: good friction",'
-             'problems:["Wet from rain","Seepage"],initials:"SW",other:"Fine",contact:""}')
-        body, = run_js(grip.log_script(CFG), "GripLog", [f"G.payload({f}).toString()"])
+        """The body main sent before the redesign, for the same inputs, byte for byte, once the new entries are set aside.
+        The problems now come from the observations: wet patches and seepage give the two ticked before."""
+        f = ('{wall:0,date:"2026-10-04",from:"10:00",until:"12:30",feel:"Grippy: good friction",obs:{water:"Wet patches",seep:"Yes",'
+             'sweat:"No",haar:"No",wind:"Light",sun:"Some",spray:"No"},initials:"SW",other:"Fine",contact:""}')
+        new = [v for k, v in grip.FORM_ENTRIES.items() if k not in ("crag", "wall", "date", "from", "until", "feel", "problems", "initials", "other", "contact")]
+        body, = run_js(grip.log_script(CFG), "GripLog", [f"new URLSearchParams([...G.payload({f},null).entries()].filter(function(e){{return {json.dumps(new)}.indexOf(e[0])<0;}})).toString()"])
         self.assertEqual(body, "entry.769015387=Bridge+of+One+Hair&entry.1131909785=East+Wall&entry.2085482145_year=2026"
                                "&entry.2085482145_month=10&entry.2085482145_day=04&entry.764556216_hour=10&entry.764556216_minute=00"
                                "&entry.1083400377_hour=12&entry.1083400377_minute=30&entry.1126435114=Grippy%3A+good+friction"
@@ -146,12 +152,13 @@ class LogPayload(unittest.TestCase):
                                "&entry.1160807926=&fvv=1&pageHistory=0")
 
     def test_summary(self):
-        rows, = run_js(grip.log_script(CFG), "GripLog", ['G.summary({wall:2,date:"2026-10-04",from:"11:00",until:"15:00",feel:"Grippy: good friction"})'])
-        self.assertEqual(rows, [["Crag", "Logie Head (Embankment One)"], ["When", "Sun 4 Oct, 11:00 to 15:00"], ["Felt", "Grippy", ["b4", "6 to 7"]]])
+        s, = run_js(grip.log_script(CFG), "GripLog", ['G.summary({wall:2,date:"2026-10-04",from:"11:00",until:"15:00",feel:"Grippy: good friction"},{state:"unscored"})'])
+        self.assertEqual(s["rows"], [["Crag", "Logie Head (Embankment One)"], ["When", "Sun 4 Oct, 11:00 to 15:00"], ["You felt", "Grippy", ["b4", "6 to 7"]],
+                                     ["Grip forecast", "Not scored yet"]])
 
     def test_required(self):
         bad, = run_js(grip.log_script(CFG), "GripLog", ['G.validate({wall:-1,date:"",from:"",until:"",feel:""},"2026-10-05").map(function(b){return b[0];})'])
-        self.assertEqual(bad, ["wall", "date", "from", "until", "feel"])
+        self.assertEqual(bad, ["wall", "date", "from", "until", "feel", "obs"])
 
 
 @unittest.skipUnless(NODE, "needs Node to run the forms' JavaScript")
