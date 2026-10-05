@@ -13,6 +13,7 @@ import math
 import os
 import random
 import re
+import shutil
 import statistics
 import sys
 import time
@@ -1105,7 +1106,46 @@ dialog td{padding:5px 0;border-bottom:1px solid var(--rule)}
 dialog td:last-child{text-align:right}
 dialog .chip{display:inline-block;min-width:2.2rem;text-align:center;padding:2px 6px;border-radius:3px;font-weight:600}
 dialog button{font:inherit;padding:6px 14px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);color:var(--ink);cursor:pointer}
+.bar{background:var(--paper);border-bottom:1px solid var(--rule)}
+.bar>div{max-width:1100px;margin:0 auto;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bar img{display:block;height:36px;width:auto}
+.bar .back{font-size:.95rem;white-space:nowrap}
+.bar.home{border-bottom:0}
+.bar.home>div{padding:20px 16px 0}
+.bar.home h1{margin:0;line-height:0}
+.bar.home img{height:64px}
+.bar.home+main{padding-top:10px}
 """
+
+# The logo pack (Claude Design G2): logo files go to site/assets/, favicons to the site root.
+# The header bar's background must stay exactly var(--paper): the logo's nails are drawn in that colour.
+ASSETS_DIR = os.path.join(HERE, "assets")
+LOGO_FILES = ["grip-logo-paper.svg", "grip-logo-dark.svg"]
+ICON_FILES = ["favicon.svg", "favicon-32.png", "apple-touch-icon-180.png"]
+
+
+def icon_links(root=""):
+    """The favicon links for a page's head; root is the path back to the site root ("../" from detail/)."""
+    return (f'<link rel="icon" href="{root}favicon.svg" type="image/svg+xml">'
+            f'<link rel="icon" href="{root}favicon-32.png" sizes="32x32">'
+            f'<link rel="apple-touch-icon" href="{root}apple-touch-icon-180.png">')
+
+
+def logo(root, height, alt):
+    """The logo, paper colours in light mode and dark colours in dark mode; the browser fetches only the one it shows."""
+    width = round(height * 85.8 / 34.8)
+    return (f'<picture><source srcset="{root}assets/grip-logo-dark.svg" media="(prefers-color-scheme: dark)">'
+            f'<img src="{root}assets/grip-logo-paper.svg" width="{width}" height="{height}" alt="{alt}"></picture>')
+
+
+def header_bar(root="", home=False):
+    """The slim bar at the top of every page. On the home page it carries the large logo as the page heading;
+    elsewhere a small logo linking home, and a text link back on the right."""
+    if home:
+        return f'<header class="bar home"><div><h1>{logo(root, 64, "Grip")}</h1></div></header>'
+    home_url = root or "./"
+    return (f'<header class="bar"><div><a href="{home_url}">{logo(root, 36, "Grip, back to the forecast")}</a>'
+            f'<a class="back" href="{home_url}">Back to the forecast</a></div></header>')
 
 COAST_CSS = """
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -1593,12 +1633,13 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
     w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
     w(f"<title>{escape(gname)}: Grip conditions</title>")
     w('<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet">')
-    w(f"<style>{CSS}{COAST_CSS}{DETAIL_CSS}</style></head><body><main>")
+    w(icon_links("../"))
+    w(f"<style>{CSS}{COAST_CSS}{DETAIL_CSS}</style></head><body>{header_bar('../')}<main>")
     c0 = walls[0]["crag"]
-    log_here = f' &middot; <a href="{escape(log_link(c0, today.isoformat(), "../"))}">Log a day here</a>' if not multi else ""
+    log_here = f'<a href="{escape(log_link(c0, today.isoformat(), "../"))}">Log a day here</a> &middot; ' if not multi else ""
     note = note_link(c0 if not multi else {"name": gname})
     w(f'<h1>{escape(gname)}</h1><p class="updated">Conditions at this crag: the score, why, how sure, and what shapes the rock. '
-      f'Updated {now.strftime("%a %-d %b, %H:%M")}. <a href="../">Back to the forecast</a>{log_here} &middot; '
+      f'Updated {now.strftime("%a %-d %b, %H:%M")}. {log_here}'
       f'<a href="{escape(note)}" target="_blank" rel="noopener">Send a crag note</a></p>')
     if multi:
         w('<p class="contents">' + f"{len(walls)} walls: " + " &middot; ".join(
@@ -1713,11 +1754,12 @@ def render_birds(cfg, now):
     w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
     w("<title>Grip: nesting birds by crag</title>")
     w('<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet">')
-    w(f"<style>{CSS}</style></head><body><main>")
+    w(icon_links())
+    w(f"<style>{CSS}</style></head><body>{header_bar()}<main>")
     w("<h1>Nesting birds by crag</h1>")
     w(f'<p class="updated">Status, months and source for every crag Grip covers. In season the forecast marks the crag but does not mark it down. '
       f'Most entries come from keyword matching on the SMC routes database and UKC, with the months a placeholder until someone confirms them. '
-      f'If you know better, <a href="{NOTES_URL}" target="_blank" rel="noopener">send a crag note</a>. Updated {now.strftime("%a %-d %b, %H:%M")}. <a href="./">Back to the forecast</a></p>')
+      f'If you know better, <a href="{NOTES_URL}" target="_blank" rel="noopener">send a crag note</a>. Updated {now.strftime("%a %-d %b, %H:%M")}.</p>')
     groups = []
     for c in cfg["crags"]:
         key = (c.get("section") or "", c["name"])
@@ -1957,7 +1999,8 @@ def render_log(cfg):
     w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
     w("<title>Grip: log a day on the rock</title>")
     w('<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet">')
-    w(f"<style>{CSS}{LOG_CSS}</style></head><body><main>")
+    w(icon_links())
+    w(f"<style>{CSS}{LOG_CSS}</style></head><body>{header_bar()}<main>")
     w("<h1>Log a day on the rock</h1>")
     w('<p class="updated">How did the rock actually feel? Your answers calibrate the Grip forecast. Anonymous, no account needed. One entry per crag per visit.</p>')
     w('<p class="updated">Score the crag as a whole: how most of the rock felt across your time on it. Not your best route or your worst. '
@@ -2129,8 +2172,8 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     w('<title>Grip forecast</title>')
     w('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
     w('<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet">')
-    w(f"<style>{CSS}{COAST_CSS}</style></head><body><main>")
-    w("<h1>Grip</h1>")
+    w(icon_links())
+    w(f"<style>{CSS}{COAST_CSS}</style></head><body>{header_bar(home=True)}<main>")
     w(f'<p class="updated">Dry-rock forecast for the sea cliffs of north-east Scotland. Updated {now.strftime("%a %-d %b, %H:%M")}. '
       f'Models: {escape(", ".join(models_ok)) or "none available"}.</p>')
     w(render_coast(results, now, cfg))
@@ -2393,6 +2436,11 @@ def main():
     for gname, walls in groups_of(results):
         with open(os.path.join(SITE_DIR, "detail", slug(gname) + ".html"), "w") as f:
             f.write(render_detail(gname, walls, tides, now, now.date(), cfg, view, here, logged, nxt))
+    os.makedirs(os.path.join(SITE_DIR, "assets"), exist_ok=True)
+    for n in LOGO_FILES:
+        shutil.copyfile(os.path.join(ASSETS_DIR, n), os.path.join(SITE_DIR, "assets", n))
+    for n in ICON_FILES:
+        shutil.copyfile(os.path.join(ASSETS_DIR, n), os.path.join(SITE_DIR, n))
     with open(os.path.join(SITE_DIR, ".nojekyll"), "w") as f:
         f.write("")
     log(f"Wrote page ({len(html) // 1024} KB), models: {', '.join(models_ok)}")
