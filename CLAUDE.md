@@ -31,6 +31,11 @@ Never run the workflow on any branch other than `main`: the page deploys from wh
 - Every change also needs a targeted test of the behaviour it changes, named in the brief: for example, recomputing the calibration summary from the committed `calibration.json`, or a live Open-Meteo request for a past date. Show its results with the diff before opening the PR.
 - This environment may run Python 3.11; the workflow runs 3.12. Write code that runs on both and avoid 3.12-only syntax. Test on 3.12 where it is available (`python3.12`) as well as the default interpreter.
 
+## Design
+
+- Changes to what people see follow the handbook's Design rules and the spec and tokens in `docs/design/`.
+- If a brief references the Claude Design project, read it for reference only (Steve runs `/design-consent` if this session has no access). Never copy Design project files into the repository; `docs/design/` changes only when a brief asks for it.
+
 ## Writing
 
 British English, no em dashes, in code, comments, the page, commit messages and reports.
