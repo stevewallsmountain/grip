@@ -1616,13 +1616,19 @@ def groups_of(results):
     return out
 
 
+BIRD_SEVERITY = {"restricted": 3, "affected": 2, "possible": 2, "partly": 1}  # which wall speaks for a crag on the grid
+
+
 def birds_in(walls, days):
-    """The bird note for a crag if any of the given dates falls in its nesting months, else None."""
+    """The bird entry for a crag if any of the given dates falls in a wall's nesting months, else None; with several walls
+    in season, the most severe (restricted, then nesting birds, then nesting on parts)."""
+    best = None
     for r in walls:
         b = r["crag"].get("birds")
-        if b and any(date.fromisoformat(d).month in set(b.get("months", [])) for d in days):
-            return b
-    return None
+        if b and b.get("level") in BIRD_SEVERITY and any(date.fromisoformat(d).month in set(b.get("months", [])) for d in days):
+            if best is None or BIRD_SEVERITY[b["level"]] > BIRD_SEVERITY[best["level"]]:
+                best = b
+    return best
 
 
 def best_wall(walls, day_iso):
@@ -1917,6 +1923,7 @@ TIDAL_MEANS = "Grip pulls the rock temperature harder towards the sea's, and cou
 # The crag pages leave them out (one sources line at the foot says where the facts come from); the data files keep them.
 SOURCE_TAG = re.compile(r"\s*\((?:SMC|UKC|UKClimbing|developers['’]? notes)\b[^()]*\)")
 STOCK_BIRD_NOTES = ("Birds reported nesting", "Free of nesting birds")  # say no more than the status itself
+CLEAR_NOTE = "No nesting birds reported"  # data/birds.json's plain bird-free note; the crag page says "None reported"
 
 
 def strip_sources(text):
@@ -1925,12 +1932,19 @@ def strip_sources(text):
 
 
 def bird_status(b):
-    """A wall's nesting-bird status: "nesting", "clear" (bird free) or "unknown" (no information). Unknown is never clear."""
+    """A wall's nesting-bird status: "nesting" (restricted, nesting birds or nesting on parts), "clear" (bird free) or "unknown"
+    (no information). Unknown is never clear."""
     if not b:
         return "unknown"
     if b.get("level") == "clear":
         return "clear"
-    return "nesting" if b.get("level") in ("affected", "restricted", "possible") else "unknown"
+    return "nesting" if b.get("level") in ("affected", "restricted", "possible", "partly") else "unknown"
+
+
+def months_said(b):
+    """"months not confirmed" while an entry's months are a placeholder, else "". Where confirmed months come from
+    (months_source) stays in the data for the record and is never shown."""
+    return "" if b.get("confirmed") else "months not confirmed"
 
 
 def birds_line(b):
@@ -1944,12 +1958,20 @@ def birds_line(b):
     if note.startswith(STOCK_BIRD_NOTES):
         note = ""
     if st == "clear":
-        return "None reported." + (f" {note}." if note else "")
+        rest = note[len(CLEAR_NOTE):] if note.startswith(CLEAR_NOTE) else None  # "No nesting birds reported ..." reads on from "None reported"
+        if rest is None:
+            return "None reported." + (f" {note}." if note else "")
+        rest = rest.strip()
+        if rest[:1] in (";", ","):
+            rest = rest[1:].strip()
+            return f"None reported. {rest[:1].upper() + rest[1:]}."
+        return "None reported" + (f" {rest}" if rest else "") + "."
     months = sorted(b.get("months") or [])
-    if months:
-        line = f"Reported nesting, {MONTHS[months[0]]} to {MONTHS[months[-1]]}" + ("" if b.get("confirmed") else ", months not confirmed") + "."
-    else:
-        line = "Reported nesting, months not known."
+    span = ", ".join(x for x in (f"{MONTHS[months[0]]} to {MONTHS[months[-1]]}", months_said(b)) if x) if months else "months not known"
+    if b.get("level") == "partly":
+        note = note[:1].lower() + note[1:] if not note[1:2].isupper() else note  # runs on after the colon
+        return f"Nesting on parts: {note or 'birds nest on some of the wall'}. {span[0].upper() + span[1:]}."
+    line = f"Reported nesting, {span}."
     if b.get("level") == "restricted":
         line += " Climbing is restricted while they nest."
     return line + (f" {note}." if note else "")
@@ -1990,7 +2012,7 @@ def wall_tags(c, days):
         tags.append("Sea-sheltered")
     tags.append(tide_tag(c))
     if birds_in_season(c.get("birds"), days):
-        tags.append("Birds nesting now")
+        tags.append("Nesting on parts now" if c["birds"].get("level") == "partly" else "Birds nesting now")
     return tags
 
 
@@ -2482,7 +2504,7 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
 
     for i, r in enumerate(walls):
         c = r["crag"]
-        tags = "".join(('<li class="in">' if t == "Birds nesting now" else "<li>") + escape(t) + "</li>" for t in wall_tags(c, days))
+        tags = "".join(('<li class="in">' if t in ("Birds nesting now", "Nesting on parts now") else "<li>") + escape(t) + "</li>" for t in wall_tags(c, days))
         blocks = "".join(score_block(r["daily"].get(d.isoformat()), "sz-m", lab) for d, lab in zip(days, labels))
         sub = escape(wall_sub(c))
         if multi:
@@ -2605,6 +2627,7 @@ BIRDS_CSS = """
 .tag i{font-style:normal}
 .t-res{background:var(--inv-bg);color:var(--inv-fg)}
 .t-nest{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.t-part{border-left:6px solid var(--ink);padding-left:7px;box-shadow:inset 0 0 0 1.5px var(--ink)}
 .t-pos{border:1.5px dotted var(--ink)}
 .t-free{background:var(--sunk);box-shadow:inset 0 0 0 1px var(--rule)}
 .t-unk{border:1px dashed var(--muted);background:var(--card)}
@@ -2622,7 +2645,6 @@ BIRDS_CSS = """
 .conf i{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font:700 11px/1 var(--font-body);font-style:normal}
 .conf i.yes{background:var(--ink)}
 .conf i.yes::before{content:"";width:4px;height:9px;margin-top:-2px;border:solid var(--paper);border-width:0 2px 2px 0;transform:rotate(45deg)}
-.conf i.no{box-shadow:inset 0 0 0 1.5px var(--ink)}
 .none-box{margin:22px 0 0;padding:var(--s-16);background:var(--card);border:1px solid var(--rule);border-radius:var(--r-l)}
 .none-box[hidden]{display:none}
 .none-box p{margin:0 0 var(--s-4)}
@@ -2676,19 +2698,19 @@ BIRDS_JS = r"""
 MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
 
-BIRD_TAG = {"restricted": ("t-res", "Restricted"), "affected": ("t-nest", "Nesting birds"), "clear": ("t-free", "Bird free"),
-            "possible": ("t-pos", "Possibly nesting")}  # status tags, ink only, each a different shape
-BIRD_FILTERS = [("all", "All"), ("restricted", "Restricted"), ("nesting", "Nesting birds"), ("clear", "Bird free"),
-                ("unknown", "No information")]  # the bird register's chips; Nesting birds also takes the possible entries
+BIRD_TAG = {"restricted": ("t-res", "Restricted"), "affected": ("t-nest", "Nesting birds"), "partly": ("t-part", "Nesting on parts"),
+            "clear": ("t-free", "Bird free"), "possible": ("t-pos", "Possibly nesting")}  # status tags, ink only, each a different shape
+BIRD_FILTERS = [("all", "All"), ("restricted", "Restricted"), ("nesting", "Nesting birds"), ("partly", "Nesting on parts"),
+                ("clear", "Bird free"), ("unknown", "No information")]  # the bird register's chips; Nesting birds also takes the possible entries
 BIRD_SOURCES = "Sources: the SMC routes database, UKClimbing and climbers’ reports, reworded by Grip."
 
 
 def bird_kind(b):
-    """The bird register's filter for one entry: restricted, nesting, possible, clear or unknown."""
+    """The bird register's filter for one entry: restricted, nesting, partly, possible, clear or unknown."""
     st = bird_status(b)
     if st != "nesting":
         return st
-    return "restricted" if b.get("level") == "restricted" else "possible" if b.get("level") == "possible" else "nesting"
+    return b["level"] if b.get("level") in ("restricted", "partly", "possible") else "nesting"
 
 
 def name_some(names, n=3, joiner="and"):
@@ -2786,6 +2808,14 @@ def unknown_text(names):
     return lead + f"Grip does not know whether birds nest at {name_some(names, 3, 'or')}."
 
 
+def confirmed_cell(b):
+    """The register's Confirmed column: "Yes" where the nesting months are documented (the guidebook, published notes or a
+    climber report), otherwise a dash. Never names a source."""
+    if bird_status(b) == "nesting" and b.get("confirmed") and b.get("months"):
+        return '<span class="conf"><i class="yes" aria-hidden="true"></i>Yes</span>'
+    return '<span class="conf"><span aria-hidden="true">–</span><span class="vh">No</span></span>'
+
+
 def bird_row(row, now):
     """One row of the register: crag (and walls), status tag, month bar, note and Confirmed; unknown rows say only that."""
     c0, b = row["walls"][0], row["b"]
@@ -2800,11 +2830,11 @@ def bird_row(row, now):
     if row["kind"] == "unknown":
         who = row["name"] + (f" ({row['sub']})" if row["sub"] else "")
         return (head + '<span class="bt"><span class="tag t-unk"><i aria-hidden="true">?</i>No information</span></span>'
-                f'<span class="bnote">Grip does not know whether birds nest at {escape(who)}.</span></li>')
+                f'<span class="bnote">Grip does not know whether birds nest at {escape(who)}.</span>'
+                f'<span class="bc"><span class="ovl">Confirmed</span>{confirmed_cell(b)}</span></li>')
     cls, said = BIRD_TAG.get(b.get("level"), BIRD_TAG["affected"])
     months = set(b.get("months") or [])
-    conf = ('<span class="conf"><i class="yes" aria-hidden="true"></i>Yes</span>' if b.get("confirmed")
-            else '<span class="conf"><i class="no" aria-hidden="true">?</i>No</span>')
+    conf = confirmed_cell(b)
     return (head + f'<span class="bt"><span class="tag {cls}">{said}</span></span>'
             f'<span class="bm">{month_bar(months, bool(b.get("confirmed") and months), now.month)}</span>'
             f'<span class="bnote">{escape(bird_note(b))}</span>'
@@ -2847,6 +2877,7 @@ def render_birds(cfg, now):
       '<span><span class="mbar" aria-hidden="true"><i class="p"></i></span>Nesting month, not confirmed</span>'
       '<span><span class="mbar" aria-hidden="true"><i></i></span>Clear</span>'
       '<span><span class="mbar" aria-hidden="true"><i class="now"></i></span>This month</span>'
+      '<span><span class="tag t-part">Nesting on parts</span> Some walls, routes or ledges only.</span>'
       f'<span>{unknown} Unknown. Not the same as bird free.</span></div>')
     for i, (sec, rs) in enumerate(sections):
         for r in rs:
@@ -3069,6 +3100,7 @@ FORM_CSS = """
 .btag{flex:none;display:inline-flex;align-items:center;gap:var(--s-4);height:26px;padding:0 9px;border-radius:5px;font:600 var(--t-small)/1 var(--font-body)}
 .btag.free{border:1px solid var(--rule);background:var(--card)}
 .btag.confirmed,.btag.placeholder{border:1.5px solid var(--ink)}
+.btag.partly{border:1.5px solid var(--ink);border-left-width:6px;padding-left:7px}
 .btag.restricted{background:var(--inv-bg);color:var(--inv-fg)}
 .btag.noinfo{border:1px dashed var(--muted)}
 .bhave .bt{flex:1 1 200px;font-size:var(--t-meta)}
@@ -3424,14 +3456,16 @@ var GripLog=(function(){
     return {lead:[head||'',line||''], rows:rows, next:next, link:PAGES[f.wall]?[PAGES[f.wall],WALLS[f.wall][1]+' page']:null};
   }
   function birdsHave(wall, date){  // what Grip has on birds at the wall, for the month logged: {status, tag, text, months, now}
-    var b=BIRDS[wall]||['noinfo',[]], st=b[0], m=b[1], now=date?+date.split('-')[1]:0;
+    var b=BIRDS[wall]||['noinfo',[]], st=b[0], m=b[1], conf=!!b[2], now=date?+date.split('-')[1]:0;
     var span_=m.length?MONTHS[Math.min.apply(null,m)-1]+' to '+MONTHS[Math.max.apply(null,m)-1]:'';
+    var from_=conf?'months confirmed':'months not confirmed';
     var T={free:['Bird free','Grip has: bird free at this wall.'],
-      confirmed:['Nesting birds','Grip has: birds nesting, '+span_+', months confirmed.'],
+      confirmed:['Nesting birds','Grip has: birds nesting, '+span_+', '+from_+'.'],
       placeholder:['Nesting birds',m.length?'Grip has: birds reported nesting, '+span_+', months not confirmed.':'Grip has: birds reported nesting, months not known.'],
+      partly:['Nesting on parts','Grip has: birds nesting on parts of this wall'+(m.length?', '+span_+', '+from_:'')+'.'],
       restricted:['Restricted','Grip has: climbing restricted while birds nest'+(m.length?', '+span_:'')+'.'],
       noinfo:['No information','Grip has no information on birds at this wall. Anything you saw helps.']}[st];
-    return {status:st, tag:T[0], text:T[1], months:m, now:now, said:m.length?'Nesting '+span_:''};
+    return {status:st, tag:T[0], text:T[1], months:m, conf:conf, now:now, said:m.length?'Nesting '+span_:''};
   }
   return {WALLS:WALLS,list:L,POST:POST,OBS:OBS,NS:NS,BANDS:BANDS,TIMING:TIMING,BIRD_OPTS:BIRD_OPTS,PAGES:PAGES,ELSEWHERE:ELSEWHERE,
     filter:L.filter,find:L.find,today:today,validate:validate,ready:ready,obsDone:obsDone,span:span,hoursOf:hoursOf,average:average,waterWord:waterWord,
@@ -3509,7 +3543,7 @@ if(typeof document!=='undefined'){(function(){
     var b=G.birdsHave(f.wall,f.date), h=['<span class="btag '+b.status+'">'+(b.status==='noinfo'?'<i aria-hidden="true">?</i>':'')+esc(b.tag)+'</span><span class="bt">'+esc(b.text)+'</span>'];
     if(b.months.length){
       var lo=Math.min.apply(null,b.months), hi=Math.max.apply(null,b.months), cells=[], ini=[];
-      for(var m=1;m<=12;m++){cells.push('<i class="'+[m>=lo&&m<=hi?(b.status==='placeholder'?'p':'n'):'',m===b.now?'now':''].join(' ').trim()+'"></i>');ini.push('<span>'+'JFMAMJJASOND'[m-1]+'</span>');}
+      for(var m=1;m<=12;m++){cells.push('<i class="'+[m>=lo&&m<=hi?(b.status==='placeholder'||((b.status==='partly'||b.status==='restricted')&&!b.conf)?'p':'n'):'',m===b.now?'now':''].join(' ').trim()+'"></i>');ini.push('<span>'+'JFMAMJJASOND'[m-1]+'</span>');}
       h.push('<span class="bm"><span class="mbar" role="img" aria-label="'+esc(b.said)+'">'+cells.join('')+'</span><span class="mini" aria-hidden="true">'+ini.join('')+'</span></span>');
     }
     bh.innerHTML=h.join('');bh.hidden=false;
@@ -3736,17 +3770,19 @@ def js(x):
 
 
 def bird_view(b):
-    """A wall's birds as the log page shows them, one of five statuses, with the nesting months:
-    free, confirmed, placeholder (months not confirmed), restricted, or noinfo (never the same as bird free)."""
+    """A wall's birds as the log page shows them, one of six statuses, with the nesting months: free, confirmed,
+    placeholder (months not confirmed), partly (nesting on parts), restricted, or noinfo (never the same as bird free).
+    Nesting statuses add a third item: whether the months are confirmed."""
     st = bird_status(b)
     months = sorted(b.get("months") or []) if b else []
     if st == "clear":
         return ["free", []]
     if st == "unknown":
         return ["noinfo", []]
-    if b.get("level") == "restricted":
-        return ["restricted", months]
-    return ["confirmed" if b.get("confirmed") and months else "placeholder", months]
+    conf = bool(b.get("confirmed") and months)
+    if b.get("level") in ("restricted", "partly"):
+        return [b["level"], months, conf]
+    return ["confirmed" if conf else "placeholder", months, conf]
 
 
 def log_script(cfg):
@@ -4528,7 +4564,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
             sub = grid_sub(walls)
             gb = birds_in(walls, all_days)
             if gb:
-                sub += ". Restricted: nesting birds" if gb["level"] == "restricted" else ". Nesting birds"
+                sub += {"restricted": ". Restricted: nesting birds", "partly": ". Nesting on parts"}.get(gb["level"], ". Nesting birds")
             find = " ".join([gname] + [wr["crag"]["wall"] for wr in walls if wr["crag"].get("wall")])  # what Find a crag matches against
             w(f'<tr data-find="{escape(find)}"><th class="crag"><a href="detail/{slug(gname)}.html">{escape(gname)}</a><small>{escape(sub)}</small></th>')
             for d in all_days:
@@ -4706,8 +4742,8 @@ def render_method(cal, now, models_ok):
     w('<footer class="foot"><p>Forecast data: <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0), from the Met Office '
       "(UK Met Office data, CC BY-SA 4.0), ECMWF and the Deutscher Wetterdienst (ICON). The actual-weather column is scored from the ERA5 "
       "reanalysis of the Copernicus Climate Change Service, also through Open-Meteo. "
-      "Crag details, aspects and tidal status from the <a href=\"https://routes.smc.org.uk/\">SMC routes database</a>, with local corrections; "
-      "nesting bird notes from the SMC database and UKC.</p>"
+      "Crag details, aspects and tidal status from published crag information, with local corrections; "
+      "nesting birds from published crag information, access notes and climbers' reports.</p>"
       "<p>Grip is independent and not affiliated with the SMC or UKClimbing.</p></footer>")
     w(f"</main>{site_foot()}</body></html>")
     return "".join(out)

@@ -22,7 +22,8 @@ import grip  # noqa: E402
 NODE = shutil.which("node")
 with open(os.path.join(os.path.dirname(grip.FORM_CRAGS_FILE), "..", "crags.json")) as f:
     CRAGS = json.load(f)
-LABELS = ["Logie Head (Tidal Zone)", "Logie Head (Star Zone)", "Souter Head (Aitken’s Pinnacle)", "South Cove (Kettle Walls)"]
+LABELS = ["Logie Head (Tidal Zone)", "Logie Head (Star Zone)", "Souter Head (Aitken’s Pinnacle)", "South Cove (Kettle Walls)",
+          "The Red Cliff", "Earnsheugh (Right Wall)", "The Graip"]
 CFG = {"zones": CRAGS["zones"], "crags": [c for c in CRAGS["crags"] if grip.label(c) in LABELS]}
 OLD_ENTRIES = {"crag": "entry.769015387", "wall": "entry.1131909785", "date": "entry.2085482145", "from": "entry.764556216",
                "until": "entry.1083400377", "feel": "entry.1126435114", "problems": "entry.525175392", "initials": "entry.1772081994",
@@ -124,23 +125,29 @@ class SnapshotFile(unittest.TestCase):
         cls.results, _tides, cls.now = grip.build(CFG, models, marine)
 
     def test_offline_build_writes_snapshot_and_history(self):
+        now = self.now.replace(hour=12, minute=17, second=30, microsecond=0)  # a fixed clock: after 07:00 the saved run stays nearer
         with tempfile.TemporaryDirectory() as tmp:
             folder, site = os.path.join(tmp, "history"), os.path.join(tmp, "site")
             with redirect_stderr(io.StringIO()):
-                path = grip.save_snapshot(self.results, self.now, folder)
-                again = grip.save_snapshot(self.results, self.now, folder)  # the same run is not nearer
-            self.assertEqual(os.path.basename(path), self.now.date().isoformat() + ".json")
+                path = grip.save_snapshot(self.results, now, folder)
+                again = grip.save_snapshot(self.results, now, folder)  # the same run is not nearer
+            self.assertEqual(os.path.basename(path), now.date().isoformat() + ".json")
             self.assertIsNone(again)
             with open(path) as f:
                 snap = json.load(f)
             self.assertEqual(snap["cols"], ["h", "s", "water", "seep", "dew", "air", "haar", "wind", "sun", "sea"])
-            self.assertEqual(snap["run"], self.now.strftime("%Y-%m-%d %H:%M"))
+            self.assertEqual(snap["run"], now.strftime("%Y-%m-%d %H:%M"))
             self.assertEqual(sorted(snap["walls"]), sorted(LABELS))
             for r in self.results:
                 day = grip.day_hours(r, self.now.date().isoformat())
                 rows = snap["walls"][grip.label(r["crag"])]
                 self.assertEqual([x[0] for x in rows], [grip.hour_of(h) for h in day])  # every daylight hour of the day
                 self.assertEqual([x[1] for x in rows], [grip.rnd(h["index"]) for h in day])  # the blended score as shown
+            with redirect_stderr(io.StringIO()):  # before 07:00 a later run is nearer, so it replaces the saved one
+                night = os.path.join(tmp, "night")
+                self.assertTrue(grip.save_snapshot(self.results, now.replace(hour=5, minute=10, second=0), night))
+                self.assertTrue(grip.save_snapshot(self.results, now.replace(hour=6, minute=20, second=0), night))
+                self.assertIsNone(grip.save_snapshot(self.results, now.replace(hour=5, minute=40, second=0), night))
             open(os.path.join(folder, "notes.txt"), "w").close()
             self.assertEqual(grip.publish_history(site, folder), 1)
             self.assertEqual(os.listdir(os.path.join(site, "history")), [os.path.basename(path)])
@@ -206,10 +213,13 @@ class Page(unittest.TestCase):
     def test_bird_view(self):
         self.assertEqual(grip.bird_view(None), ["noinfo", []])
         self.assertEqual(grip.bird_view({"level": "clear"}), ["free", []])
-        self.assertEqual(grip.bird_view({"level": "affected", "months": [7, 4, 5, 6]}), ["placeholder", [4, 5, 6, 7]])
-        self.assertEqual(grip.bird_view({"level": "affected", "months": [4, 5], "confirmed": True}), ["confirmed", [4, 5]])
-        self.assertEqual(grip.bird_view({"level": "restricted", "months": [4, 8]}), ["restricted", [4, 8]])
-        self.assertEqual(grip.bird_view({"level": "possible", "months": []}), ["placeholder", []])
+        self.assertEqual(grip.bird_view({"level": "affected", "months": [7, 4, 5, 6]}), ["placeholder", [4, 5, 6, 7], False])
+        self.assertEqual(grip.bird_view({"level": "affected", "months": [4, 5], "confirmed": True}), ["confirmed", [4, 5], True])
+        self.assertEqual(grip.bird_view({"level": "affected", "months": [4, 5], "confirmed": True, "months_source": "guidebook"}),
+                         ["confirmed", [4, 5], True])  # where the months come from is never shown
+        self.assertEqual(grip.bird_view({"level": "restricted", "months": [4, 8]}), ["restricted", [4, 8], False])
+        self.assertEqual(grip.bird_view({"level": "partly", "months": [4, 5, 6, 7]}), ["partly", [4, 5, 6, 7], False])
+        self.assertEqual(grip.bird_view({"level": "possible", "months": []}), ["placeholder", [], False])
 
 
 @unittest.skipUnless(NODE, "needs Node to run the log page's JavaScript")
@@ -453,12 +463,16 @@ class ViewAndPayload(unittest.TestCase):
 
     def test_birds_have(self):
         pre = self.PRE
-        got = run_js([f"G.birdsHave({wall_index(lab)},'2026-05-10')" for lab in ("Souter Head (Aitken’s Pinnacle)", "Logie Head (Tidal Zone)",
-                                                                                 "South Cove (Kettle Walls)")] + ["G.birdsHave(G.ELSEWHERE,'2026-05-10')"], pre)
+        got = run_js([f"G.birdsHave({wall_index(lab)},'2026-05-10')" for lab in (
+            "Souter Head (Aitken’s Pinnacle)", "Logie Head (Tidal Zone)", "South Cove (Kettle Walls)", "The Red Cliff",
+            "Earnsheugh (Right Wall)", "The Graip")] + ["G.birdsHave(G.ELSEWHERE,'2026-05-10')"], pre)
         self.assertEqual([(g["status"], g["tag"], g["text"]) for g in got], [
             ("free", "Bird free", "Grip has: bird free at this wall."),
-            ("placeholder", "Nesting birds", "Grip has: birds reported nesting, April to July, months not confirmed."),
+            ("partly", "Nesting on parts", "Grip has: birds nesting on parts of this wall, April to July, months not confirmed."),
             ("restricted", "Restricted", "Grip has: climbing restricted while birds nest, April to August."),
+            ("confirmed", "Nesting birds", "Grip has: birds nesting, April to August, months confirmed."),
+            ("partly", "Nesting on parts", "Grip has: birds nesting on parts of this wall, April to July, months not confirmed."),
+            ("partly", "Nesting on parts", "Grip has: birds nesting on parts of this wall, April to August, months confirmed."),
             ("noinfo", "No information", "Grip has no information on birds at this wall. Anything you saw helps.")])
         self.assertEqual(got[1]["now"], 5)
 

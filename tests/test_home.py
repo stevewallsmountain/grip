@@ -368,6 +368,8 @@ class Nav(unittest.TestCase):
                      "1 logged day scored so far", "Grip is independent and not affiliated with the SMC or UKClimbing.",
                      "Open-Meteo</a> (CC BY 4.0)"):
             self.assertIn(text, html)
+        rest = html.replace("<p>Grip is independent and not affiliated with the SMC or UKClimbing.</p>", "")
+        self.assertNotRegex(rest, r"\b(?:SMC|UKC|UKClimbing)\b")  # sources named only in the independence line
 
 
 class Intro(unittest.TestCase):

@@ -1,0 +1,2396 @@
+{
+ "_note": "Nesting birds, one entry per wall label, the only source tools/build_crags.py reads for birds. Built from the bird audit (grip-private, bird_audit/) with the October 2026 decisions; edit by hand from now on. level: restricted, affected, partly, clear or none (no information). months only from explicit sources; months_source: guidebook, access notes, climber or null (months not confirmed); for our records, never shown. note: Grip's own words, naming no source. source: where the status comes from (SMC, UKC, SMC and UKC, access notes, climber report); for our records, never shown. scope: wall (text names the wall), crag (crag text, the wall not specified) or area (text for the area around the crag).",
+ "walls": {
+  "Girdle Ness Point": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Black Dyke (Whisky Cliff)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Reported as largely free of nesting birds; not confirmed clear",
+   "source": "UKC",
+   "scope": "crag"
+  },
+  "Bridge of One Hair (North Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Bridge of One Hair (East Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Crabs’ Lair": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "North Doonies Yawn (North Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "North Doonies Yawn (South Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "South Doonies Yawn": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Dead McIvor Gulch": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Deceptive Wall": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Long Slough": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds nest on the Red Rocks wall, mostly on the routes right of Pedestal Corner",
+   "source": "SMC and UKC",
+   "scope": "wall"
+  },
+  "The Long Slough (Long Slough Pinnacle)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Long Slough (Long Slough Red Rocks)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Birds nest on the Red Rocks wall, mostly on the routes right of Pedestal Corner",
+   "source": "SMC and UKC",
+   "scope": "wall"
+  },
+  "The Inlets of the Red Rocks": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Inlets of the Red Rocks (Cave of the Red Rocks)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Inlets of the Red Rocks (Hidden Inlet)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Inlets of the Red Rocks (Diving Board)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Alan’s Cliff": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Altens Haven (Humpback – Landward Face)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Altens Haven (Humpback – Seaward Face)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Altens Haven (Humpback Gulch)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Altens Haven (Dry Covie)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Seal’s Hole": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Black Rock Gulch": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Black Rock Gulch (Red Slab)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Black Rock Gulch (Red Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Bass Inlet": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Burnbank’s Haven": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Souter Head (Aitken’s Pinnacle)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Souter Head (Grassy Pinnacle – South Wall)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Souter Head (Grassy Pinnacle – North Wall)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Souter Head (Grassy Pinnacle – East Wall)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Souter Head (Grassy Pinnacle – Girdle Traverse Wall)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Souter Head (Grassy Pinnacle – Pools)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Souter Head (Grassy Pinnacle – Milestone Inlet)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Souter Head (Rainbow Inlet – North Wall)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Souter Head (Rainbow Inlet – South Wall)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Souter Head (Jade Buttress Area – Overhanging Gully)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Red Cliff": {
+   "level": "affected",
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "months_source": "guidebook",
+   "note": "Gulls take over most holds in season; the mess is slow to clear and can stop climbing into winter",
+   "source": "SMC and UKC",
+   "scope": "wall"
+  },
+  "Bunstane Wall": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Black Cove": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Crowded with birds in summer",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Cove Harbour Crag": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "South Cove (Priest)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "South Cove (Kettle Walls)": {
+   "level": "restricted",
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "months_source": "guidebook",
+   "note": "An access notice for birds is listed, with no detail. Birds nest on the cliff in season",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "South Cove (Red Hole – Hospital Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Usually clear of birds, though nesting is reported elsewhere at South Cove",
+   "source": "SMC and UKC",
+   "scope": "wall"
+  },
+  "South Cove (Red Hole – Cave Walls)": {
+   "level": "restricted",
+   "months": [],
+   "months_source": null,
+   "note": "An access notice for birds is listed, with no detail. Kittiwakes nest on parts, mainly around Red Planet's red slabs; most left-hand routes stay clear",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "South Cove (Red Hole – Optimist’s Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Usually clear of birds, though nesting is reported elsewhere at South Cove",
+   "source": "SMC and UKC",
+   "scope": "wall"
+  },
+  "South Cove (Main Face)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "The stretch from The Slide to Insect Groove; routes right of Insect Groove are mostly clear. Nests can linger into autumn",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Colsea Yawn": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Bruin Cove": {
+   "level": "affected",
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "months_source": "guidebook",
+   "note": "Heavily nested in season; worth a visit in early spring, ahead of the birds",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Hareness": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Sickle Row": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Mincer Cliff": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "The odd fulmar in summer",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Clashrodney North (Rocky Crags)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Clashrodney North (Wild Hearted Son Cliff)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Clashrodney (Causeway Climbs)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Reported as largely free of nesting birds; not confirmed clear",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Clashrodney (Pink Slab)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Reported as largely free of nesting birds; not confirmed clear",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Clashrodney (Central Buttress)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Reported as largely free of nesting birds; not confirmed clear",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Clashrodney (Waterfall Climbs)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Reported as largely free of nesting birds; not confirmed clear",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Cairnrobin Point": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Blowup Nose (Red Roof)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Kittiwakes nest on the left side; routes right of New Horizons are clear",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Blowup Nose (Approach Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Some of the crag is nested, mainly the left side of the Red Roof",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Blowup Nose (Southern Inlet North Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Some of the crag is nested, mainly the left side of the Red Roof",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Blowup Nose (Southern Inlet South Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Some of the crag is nested, mainly the left side of the Red Roof",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Blowup Nose (Trap Dyke Inlet)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Some of the crag is nested, mainly the left side of the Red Roof",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Red Edge": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "area"
+  },
+  "Spike Wall": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "area"
+  },
+  "Kay Hole": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Findon Ness South (Grey Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Some of the cliff is nested, but not the routes themselves",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Findon Ness South (Recess Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Some of the cliff is nested, but not the routes themselves",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Findon Ness South (South Buttress)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Some of the cliff is nested, but not the routes themselves",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Findon Hole (Storm Wall)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Can be heavily nested",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Findon Hole (Doo Slab)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported; the neighbouring Storm Wall can be nested",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Findon Hole (Black Streak Wall)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported; the neighbouring Storm Wall can be nested",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Pow Kebbuck Cave (aka Sharmasheugh)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds about in summer; no nests reported on the climbing",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Pow Kebbuck Cave (aka Sharmasheugh) (Sun Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds about in summer; no nests reported on the climbing",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Findon Shore Crag": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "A few birds may nest here; most lines are unaffected",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Pow Kebbuck": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Birds present in summer",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Arnot Boo": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Earnsheugh": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "A seabird colony on the Left Wall; fulmars hold some Right Wall ledges",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Earnsheugh (Left Wall)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Kittiwakes, guillemots and razorbills nest here in large numbers",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Earnsheugh (Right Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Fulmars hold some ledges, notably at the foot of the Thug Wall pitches and in Deathcap's eyrie; Necromancer to Bat's Belfry is clear",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Earnsheugh (Far Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Pink Band Cliff": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Pink Band Cliff (Pink Slab)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Red Band Cliff": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC and UKC",
+   "scope": "wall"
+  },
+  "The Red Band Cliff (Rock Band Cliff)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported; the Red Band Cliff beside it is nested",
+   "source": "SMC and UKC",
+   "scope": "wall"
+  },
+  "Boglesheugh": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Kittiwakes cover the red band in season; other birds elsewhere on the cliff rarely cause trouble",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "The Fin": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Fin (Low Cave)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Fin (Main Fin)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Fin (Right Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Fin (Left Fin)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Orchestra Cave": {
+   "level": "affected",
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "months_source": "guidebook",
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "The Orchestra Cave (Left Wall)": {
+   "level": "affected",
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "months_source": "guidebook",
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "The Orchestra Cave (Right Wall)": {
+   "level": "affected",
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "months_source": "guidebook",
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "The Orchestra Cave (Back Wall)": {
+   "level": "affected",
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "months_source": "guidebook",
+   "note": "Avoid while birds are present; in quiet years the back wall routes can go",
+   "source": "UKC",
+   "scope": "wall"
+  },
+  "Little O Wall": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Some routes are out of bounds in the nesting season",
+   "source": "SMC and UKC",
+   "scope": "wall"
+  },
+  "Crazy Band Walls and The Shag’s Hole (Water Worn Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting hits Shag's Hole and the North Wall hardest; other walls less so",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Crazy Band Walls and The Shag’s Hole (Crazy Band Cliff)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting hits Shag's Hole and the North Wall hardest; other walls less so",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Crazy Band Walls and The Shag’s Hole (North Wall)": {
+   "level": "affected",
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "months_source": "guidebook",
+   "note": "Ledges busy with birds in season; dirty until storms clear them",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Crazy Band Walls and The Shag’s Hole (Shag’s Hole)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Shags roost under the roofs at the seaward end; nesting birds in season",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Peel Slough (East Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Peel Slough (North Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Peel Slough (Cave Slab)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Buzz Inlet": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Black Slough": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Knaps - The Gorilla’s Head": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Some nesting reported, towards the crag's north end",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Knaps - The Gorilla’s Head (Cave Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Some nesting reported, towards the crag's north end",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Knaps - The Gorilla’s Head (North Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Some nesting reported, towards the crag's north end",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Knaps - The Gorilla’s Head (Stack)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds nest on top of the stack in season",
+   "source": "SMC and UKC",
+   "scope": "wall"
+  },
+  "Berrymuir Head (Barrier Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Gulls favour the ramp at nesting time; the odd fulmar elsewhere",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Berrymuir Head (Central Wall)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Sources disagree: one says birds affect most routes in season, the other that the crag is mostly free of them",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Berrymuir Head (Gully Wall)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Sources disagree: one says birds affect most routes in season, the other that the crag is mostly free of them",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Berrymuir Head (Sea Nose)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Sources disagree: one says birds affect most routes in season, the other that the crag is mostly free of them",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Berrymuir Head (Nippet Rocks - The Flat Face)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Sources disagree: one says birds affect most routes in season, the other that the crag is mostly free of them",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Berrymuir Head (Nippet Rocks - Black Cave Wall)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Sources disagree: one says birds affect most routes in season, the other that the crag is mostly free of them",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Clashfarquhar Bay": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Clashfarquhar Bay (Clashfarquhar Bay Sport Crag)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "A few nests in season; the routes should still go",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "The Keel": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Coble Boards": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Floors Craig": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Few birds, bar the odd nesting gull",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Floors Craig (South Descent Climbs)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Few birds, bar the odd nesting gull",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Floors Craig (Seaward Face)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Few birds, bar the odd nesting gull",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Floors Craig (North Descent Climbs)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Few birds, bar the odd nesting gull",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Cranhill Crag": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Hundreds of gulls nest at the foot in summer and dive at climbers",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Craig Stirling (West Buttress)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Few nesting birds reported; not confirmed clear",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Craig Stirling (Cracked Actor Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Few nesting birds reported; not confirmed clear",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Craig Stirling (East Buttress)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Few nesting birds reported; not confirmed clear",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Rotter’s Rock": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": "Area text says clear, but a crag in the same area is nested",
+   "source": null,
+   "scope": null
+  },
+  "The Less Is More Buttress": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": "Area text says clear, but a crag in the same area is nested",
+   "source": null,
+   "scope": null
+  },
+  "Newtonhill North (Harbour Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Housemartins nest under the overhangs; seabirds are not reported as a problem",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Newtonhill North (Back Door Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Housemartins nest under the overhangs; seabirds are not reported as a problem",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Newtonhill North (Newtonhill Cave)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Housemartins nest under the overhangs; seabirds are not reported as a problem",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Sportlethen": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Dykes Cliff": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Dykes Cliff (Seven Dwarves)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Boltsheugh (Boltsheugh Upper)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Boltsheugh (Boltsheugh Lower North)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Boltsheugh (Boltsheugh Lower South)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Boltsheugh (Peedie Inlet)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Green Slough": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting affects only the central tower routes",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Murray Heugh (Eveready Slab)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds nest high on the cliff and on the right of the bay; most routes are unaffected",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Murray Heugh (Deep Water Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds nest high on the cliff and on the right of the bay; most routes are unaffected",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Murray Heugh (Main Face)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds nest high on the cliff and on the right of the bay; most routes are unaffected",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Brown Band Crag": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Johnsheugh": {
+   "level": "affected",
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "months_source": "access notes",
+   "note": "Fulmars and razorbills nest here; keep off while birds or eggs are about, above all on the Jaded headwall",
+   "source": "access notes",
+   "scope": "wall"
+  },
+  "Brown Crag": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds affect only the routes further right; the main wall itself is clear",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Yellow Crag (Back Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Yellow Crag (Sunshine Slabs)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Yellow Crag (Main Face)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Yellow Crag (East Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Drab Crag": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Arch Wall": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Waterfall Wall": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Doonie Point": {
+   "level": "restricted",
+   "months": [],
+   "months_source": null,
+   "note": "An access notice for birds is listed, with no detail. Gulls nest on some routes",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Tilly Tennent": {
+   "level": "restricted",
+   "months": [],
+   "months_source": null,
+   "note": "An access notice for birds is listed, with no detail. Birds nest through summer, though Wild is the Wind is unaffected",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Castle Wall": {
+   "level": "restricted",
+   "months": [],
+   "months_source": null,
+   "note": "An access notice for birds is listed, with no detail",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Castle Rock of Muchalls": {
+   "level": "restricted",
+   "months": [],
+   "months_source": null,
+   "note": "An access notice for birds is listed, with no detail",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Brown Jewel Stack": {
+   "level": "restricted",
+   "months": [],
+   "months_source": null,
+   "note": "An access notice for birds is listed, with no detail",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Downie Point": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Downie Point Stack": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Castle Haven": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Inverbervie - Darn Bay": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Crawton Bay": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Crab’s Wall": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Smuggler’s Cliff": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Some years birds take over a few ledges and it gets messy in season",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Graip": {
+   "level": "partly",
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "months_source": "guidebook",
+   "note": "Some nests on top and on some routes",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "The Blind Man": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "The top is usually crowded with gulls",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Study Head (Smiddy Wall)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Study Head (Silver Wall)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Study Head (Veshels)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Berry’s Loop Stack": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "area"
+  },
+  "Berry’s Loop Stack (Stack – South-East Face)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "area"
+  },
+  "Berry’s Loop Stack (Stack – South-West Face)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "area"
+  },
+  "Berry’s Loop Stack (Plinth)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "area"
+  },
+  "Parent Cliff": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Heavily nested in season, as are the cliffs around it",
+   "source": "SMC",
+   "scope": "area"
+  },
+  "Silkies Cliff": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Birds return in spring and leave mess; best before they arrive",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Carriage Crag (Wagon Wall)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Carriage Crag (Embankment Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Tangerine Point": {
+   "level": "restricted",
+   "months": [],
+   "months_source": null,
+   "note": "Most of the promontory is closed by nesting birds; the north-east corner has clean routes",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Poor Man of Harrol": {
+   "level": "restricted",
+   "months": [],
+   "months_source": null,
+   "note": "An access notice for birds is listed, with no detail",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Janet Walls": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Reported as largely free of nesting birds; not confirmed clear",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Slain’s Castle": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Fulmar Wall": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Sources disagree: one reports nesting birds, the other says the wall is almost free of them in season",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Fulmar Wall (Shadow Slab)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Sources disagree: one reports nesting birds, the other says the wall is almost free of them in season",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Fulmar Wall (Fluted Buttress)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Sources disagree: one reports nesting birds, the other says the wall is almost free of them in season",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Meikle Partans": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "UKC",
+   "scope": "crag"
+  },
+  "Meikle Partans (Crab’s Wall)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "UKC",
+   "scope": "crag"
+  },
+  "Flaky Buttress": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Tiptoe Slab": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Reported as largely free of nesting birds; not confirmed clear",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Harper’s Wall": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "A few birds in the nesting season",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "The Outpost": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "UKC",
+   "scope": "crag"
+  },
+  "Dunbuy Rock (Western Mass)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Dunbuy Rock (Eastern Mass)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Dunbuy Rock (Pirate’s Buttress)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Dunbuy Rock (Window Climbs)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Dunbuy Rock (Seafarer’s Wall)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Grey Mare Slabs": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Gulls nest where Airegin, Ostrichism and the routes beside them top out, and on the Aiguille's top; Groovin' High is clear",
+   "source": "access notes",
+   "scope": "wall"
+  },
+  "Grey Mare Slabs (Pocket Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Gulls nest where Airegin, Ostrichism and the routes beside them top out, and on the Aiguille's top; Groovin' High is clear",
+   "source": "access notes",
+   "scope": "wall"
+  },
+  "Grey Mare Slabs (Southern Rocks)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported on these walls",
+   "source": "access notes",
+   "scope": "wall"
+  },
+  "Grey Mare Slabs (Northern Rocks)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported on these walls",
+   "source": "access notes",
+   "scope": "wall"
+  },
+  "Lammylair": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Kittiwakes in summer; shags use the central cave",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Seals’ Caves": {
+   "level": "restricted",
+   "months": [],
+   "months_source": null,
+   "note": "Birds keep climbers out in the nesting season; good early in the year",
+   "source": "SMC and UKC",
+   "scope": "wall"
+  },
+  "Arthur Fowlie": {
+   "level": "restricted",
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "months_source": "guidebook",
+   "note": "Auks and gulls take over most routes in season; nests usually need clearing afterwards",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "The Bullers O’Buchan": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "The pillar's south wall is packed with kittiwakes in season; fewer on the other routes",
+   "source": "SMC and UKC",
+   "scope": "wall"
+  },
+  "Rob’s Butt": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Heavily nested in season",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Walrus Ridge": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds on the seaward side",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Perdonlie Inlet": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Heavily nested; debris can stay all year in this sheltered spot",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Hellgate Cliff": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Kittiwakes take over in summer, though the chimneys are mostly clear; nests wash off quickly afterwards",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Alligator Ridge": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds affect some faces more than others",
+   "source": "UKC",
+   "scope": "wall"
+  },
+  "Alligator Ridge (South Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Reported as largely free of nesting birds; not confirmed clear",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Alligator Ridge (North Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Reported as largely free of nesting birds; not confirmed clear",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Alligator Ridge (Crockadillo Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds affect some faces more than others",
+   "source": "UKC",
+   "scope": "wall"
+  },
+  "Red Wall Quarry": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "UKC",
+   "scope": "crag"
+  },
+  "Red Wall Quarry (Back Wall)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "UKC",
+   "scope": "crag"
+  },
+  "Red Wall Quarry (Bridal Slab)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "UKC",
+   "scope": "crag"
+  },
+  "The Red Wall": {
+   "level": "affected",
+   "months": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "months_source": "access notes",
+   "note": "Seabirds crowd the cliff from around mid-March into late summer; routes starting at the foot stay dirty until storms wash them",
+   "source": "access notes",
+   "scope": "wall"
+  },
+  "The Plateau South Wall": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Nests on some climbs; most are free of them",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Plateau South Wall (Monkey)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Nests on some climbs; most are free of them",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Plateau South Wall (Munich Buttress)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Nests on some climbs; most are free of them",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Plateau South Wall (Bloody Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Nests on some climbs; most are free of them",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Plateau South Wall (Plateau North Face)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Nests on some climbs; most are free of them",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Hawk’s Nest": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Routes badly nested",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Quarries": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Quarries (Inland Wall of Scimitar Ridge)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Quarries (Morrison’s Slabs)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Seaward Wall of Scimitar Ridge": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Seaward Wall of Scimitar Ridge (South Face)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting reported at this crag; the walls aren't specified",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Yoag’s Island": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Yoag’s Cliff": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "A big guano ledge in the centre",
+   "source": "UKC",
+   "scope": "crag"
+  },
+  "Borehole Wall": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Little Red Tower": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Red Tower Area": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds affect the easier routes; many harder ones are clear",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "North Glash Quarry": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "The Round Tower": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Kittiwake nests spoil most climbs in summer",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "The Warlord Cliff": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds crowd the platform at the foot in season, not the routes",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Hare Craig": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Long Haven Craig": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Buchan Walls": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Birded in season and dirty for a while after; kittiwakes and cormorants nest low on the left",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Meackie Point (Point Wall)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Whispering Slabs": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Saviours Wall": {
+   "level": "affected",
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "months_source": "guidebook",
+   "note": "Kittiwakes nest here in season",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Hidden Inlet": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Reported as largely free of nesting birds; not confirmed clear",
+   "source": "UKC",
+   "scope": "crag"
+  },
+  "Cock’s Caim": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "The South Face is heavily nested",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Cock’s Caim (North Face)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Cock’s Caim (South Face)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Heavily nested in season",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Playstation Buttress": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Hidden Treasure Wall": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Robie Gow’s Prison": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Souter’s Hole – Chimney Inlet": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Promontory Wall": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Rownies Sclate": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Corbie’s Hole": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Buchanness Wall": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Meikle Dumeath": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Portnockie - Muckle Cleary": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Portnockie - Muckle Cleary (Big Roof Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Portnockie - Muckle Cleary (Other Steep Wall)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Bow Fiddle Rock (Whale’s Mouth – Landward End)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Bow Fiddle Rock (Whale’s Mouth – Seaward End)": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "St. Douane’s Den": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Horse’s Head": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Tronach Head Stacks": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Green Castle": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Two or so nests on the routes and kittiwake debris below; a gull may nest on top",
+   "source": "UKC",
+   "scope": "crag"
+  },
+  "Green Castle (Map Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "The wall stays clean; a gull may nest on the crag top",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Green Castle (Go Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Kittiwake debris below and a couple of nests on routes",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Logie Head (Embankment One)": {
+   "level": "clear",
+   "months": [],
+   "months_source": null,
+   "note": "No nesting birds reported on this wall by a local climber",
+   "source": "climber report",
+   "scope": "wall"
+  },
+  "Logie Head (Embankment Two)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Logie Head (Tidal Zone)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Logie Head (Gully Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Logie Head (Star Zone)": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Nesting birds in season, reported by a local climber",
+   "source": "climber report",
+   "scope": "wall"
+  },
+  "Logie Head (West Face)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Logie Head (Path Wall)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Logie Head (Pinnacle)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Logie Head (South Buttress)": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Birds trouble the seaward crest over the Star Zone; elsewhere they seldom do",
+   "source": "SMC and UKC",
+   "scope": "crag"
+  },
+  "Crathie Point": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Crathie Point East": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "West Head Area": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Redhythe Point Eastern Area": {
+   "level": "restricted",
+   "months": [],
+   "months_source": null,
+   "note": "An access notice for birds is listed, with no detail. Birds nest on the middle pinnacle in summer",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Portsoy, The Needle": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Skedam Cliff": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Tarlair Crags": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "The odd fulmar below the wall",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Mull Cleave": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Gulls on the summit area in season",
+   "source": "SMC",
+   "scope": "crag"
+  },
+  "Head of Garness": {
+   "level": "affected",
+   "months": [],
+   "months_source": null,
+   "note": "Badly birded in season, especially the west-facing overhangs",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "Quarryhead": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Quarryhead Sea-Stacks": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  },
+  "Murcurry": {
+   "level": "partly",
+   "months": [],
+   "months_source": null,
+   "note": "Gulls nest on the big ledge above the left side",
+   "source": "SMC",
+   "scope": "wall"
+  },
+  "East of Quarryhead": {
+   "level": "none",
+   "months": [],
+   "months_source": null,
+   "note": null,
+   "source": null,
+   "scope": null
+  }
+ }
+}
