@@ -1039,82 +1039,168 @@ def calibrate(cfg, limit=5):
 
 
 # ---------------------------------------------------------------- page
-CSS = """
-:root{--paper:#eef1f2;--ink:#1d2b34;--muted:#5b6b75;--rule:#c9d1d5;--card:#f8fafa;
---b1:#b3261e;--b2:#ee8a3a;--b3:#f2cd4f;--b4:#8fc66b;--b5:#2e8b3e;--b1t:#fff;--b2t:#1d2b34;--b3t:#1d2b34;--b4t:#1d2b34;--b5t:#fff}
-@media (prefers-color-scheme:dark){:root{--paper:#141d23;--ink:#e3e8ea;--muted:#93a3ad;--rule:#2c3a43;--card:#1b262d}}
-*{box-sizing:border-box}
+# The design tokens are grip-tokens.css from the Claude Design redesign (Appendix B), light and dark, with its comments left out.
+# The five band colours are data: nothing but score blocks, key chips and the log form's feel tiles may use them.
+# The brand pink and teal are defined for completeness but belong to the logo image only; nothing here uses them.
+TOKENS_CSS = """
+:root{color-scheme:light dark;
+--paper:#eef1f2;--card:#f8fafa;--sunk:#e4e9eb;--ink:#1d2b34;--muted:#5b6b75;--rule:#c9d1d5;--past:#dbe1e4;--past-ink:#4f5e67;
+--inv-bg:var(--ink);--inv-fg:var(--paper);--scrim:rgb(20 29 35 / .5);
+--shadow-overlay:0 2px 4px rgb(29 43 52 / .08),0 12px 32px rgb(29 43 52 / .16);
+--soaked:#b3261e;--on-soaked:#ffffff;--greasy:#ee8a3a;--on-greasy:#1d2b34;--climbable:#f2cd4f;--on-climbable:#1d2b34;
+--grippy:#8fc66b;--on-grippy:#1d2b34;--prime:#2e8b3e;--on-prime:#ffffff;
+--stripe-on-dark-text:repeating-linear-gradient(135deg,rgb(255 255 255 / .45) 0 4px,transparent 4px 10px);
+--stripe-on-light-text:repeating-linear-gradient(135deg,rgb(0 0 0 / .22) 0 4px,transparent 4px 10px);
+--brand-thrift:#c2457e;--brand-sea:#2a9d8f;
+--font-body:"Barlow",system-ui,sans-serif;--font-display:"Barlow Condensed","Barlow",sans-serif;
+--t-micro:0.75rem;--t-small:0.8125rem;--t-meta:0.875rem;--t-body:1rem;--t-lead:1.0625rem;--t-h3:1.25rem;--t-h2:1.5rem;--t-wall:1.75rem;--t-h1:2.25rem;
+--lh-tight:1.1;--lh-body:1.45;--overline-tracking:0.06em;
+--score-xl:56px;--score-xl-num:2.125rem;--score-l:44px;--score-l-num:1.3125rem;--score-m:36px;--score-m-num:1.1875rem;
+--score-s:28px;--score-s-num:1rem;--score-xs:24px;--score-xs-num:0.875rem;
+--s-2:2px;--s-3:3px;--s-4:4px;--s-6:6px;--s-8:8px;--s-12:12px;--s-16:16px;--s-20:20px;--s-24:24px;--s-32:32px;--s-48:48px;
+--page-pad:16px;--page-max:1200px;
+--r-xs:4px;--r-s:6px;--r-m:8px;--r-l:10px;--r-xl:16px;--r-pill:999px;
+--bw:1px;--bw-strong:2px;
+--focus-ring:0 0 0 2px var(--paper),0 0 0 4px var(--ink);
+--now-ring:0 0 0 2px var(--card),0 0 0 4px var(--ink);
+--tap:44px}
+@media (prefers-color-scheme:dark){:root{
+--paper:#141d23;--card:#1b262d;--sunk:#10181d;--ink:#e3e8ea;--muted:#93a3ad;--rule:#2c3a43;--past:#26333c;--past-ink:#9aa9b2;
+--scrim:rgb(0 0 0 / .6);--shadow-overlay:0 12px 40px rgb(0 0 0 / .55);--brand-thrift:#ec8bb6;--brand-sea:#7dd3c4}}
+"""
+
+CSS = TOKENS_CSS + """
+*,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "Barlow",system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
-h1{font:600 2.1rem/1.1 "Barlow Condensed","Barlow",system-ui,sans-serif;margin:0 0 4px;letter-spacing:.01em}
-h2{font:600 1.35rem/1.2 "Barlow Condensed","Barlow",system-ui,sans-serif;margin:36px 0 10px}
-.updated{color:var(--muted);margin:0 0 22px}
-a{color:inherit}
-.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:0 0 26px}
-.scale div{padding:8px 10px;border-radius:4px}
-.scale b{display:block;font:600 1.3rem/1.1 "Barlow Condensed",system-ui,sans-serif}
-.scale span{display:block;font-size:.82rem;line-height:1.3}
-@media (max-width:560px){.scale{grid-template-columns:1fr}.scale div{display:grid;grid-template-columns:6.2rem 1fr;align-items:center;gap:10px;padding:6px 10px}.scale b{font-size:1.15rem;white-space:nowrap}}
-.num{font:600 1.7rem/1 "Barlow Condensed",system-ui,sans-serif;text-align:center;padding:8px 0;border-radius:4px}
-.sub{color:var(--muted);font-size:.9rem}
-.b1{background:var(--b1);color:var(--b1t)}.b2{background:var(--b2);color:var(--b2t)}.b3{background:var(--b3);color:var(--b3t)}
-.b4{background:var(--b4);color:var(--b4t)}.b5{background:var(--b5);color:var(--b5t)}
-.wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--rule);border-radius:4px;background:var(--card)}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 var(--t-body)/var(--lh-body) var(--font-body)}
+main{max-width:var(--page-max);margin:0 auto;padding:var(--s-24) var(--page-pad) var(--s-48)}
+h1{font:600 var(--t-h1)/var(--lh-tight) var(--font-display);margin:0 0 var(--s-8)}
+h2{font:600 var(--t-h2)/var(--lh-tight) var(--font-display);margin:var(--s-32) 0 var(--s-8)}
+h3{font:600 var(--t-h3)/var(--lh-tight) var(--font-display);margin:var(--s-24) 0 var(--s-8)}
+b,strong{font-weight:600}
+.updated{color:var(--muted);font-size:var(--t-meta);margin:0 0 var(--s-24);max-width:72ch}
+.hint{color:var(--muted);font-size:var(--t-meta);margin:calc(-1 * var(--s-4)) 0 var(--s-12);max-width:72ch}
+.sub{color:var(--muted);font-size:var(--t-meta)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+a{color:inherit;text-decoration-thickness:1px;text-underline-offset:3px}
+:focus-visible{outline:2px solid transparent;outline-offset:2px;box-shadow:var(--focus-ring)}
+a:focus-visible{border-radius:2px}
+@media (hover:hover){a:hover{text-decoration-thickness:2px}}
+.b1{background-color:var(--soaked);color:var(--on-soaked)}.b2{background-color:var(--greasy);color:var(--on-greasy)}
+.b3{background-color:var(--climbable);color:var(--on-climbable)}.b4{background-color:var(--grippy);color:var(--on-grippy)}
+.b5{background-color:var(--prime);color:var(--on-prime)}
+.unsure.b2,.unsure.b3,.unsure.b4{background-image:var(--stripe-on-dark-text)}
+.unsure.b1,.unsure.b5{background-image:var(--stripe-on-light-text)}
+.risk{position:relative}
+.risk::after{content:"";position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:currentColor}
+.num,.chip{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex:none;font-family:var(--font-display);font-weight:600;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sz-xl{width:var(--score-xl);height:var(--score-xl);font-size:var(--score-xl-num);border-radius:var(--r-m)}
+.sz-xl.risk::after{top:5px;right:5px;width:8px;height:8px}
+.sz-l{width:var(--score-l);height:var(--score-l);font-size:var(--score-l-num);border-radius:var(--r-s)}
+.sz-m{width:var(--score-m);height:var(--score-m);font-size:var(--score-m-num);border-radius:var(--r-s)}
+.sz-s,.chip{width:var(--score-s);height:var(--score-s);font-size:var(--score-s-num);border-radius:var(--r-xs)}
+.sz-xs{width:var(--score-xs);height:var(--score-xs);font-size:var(--score-xs-num);border-radius:var(--r-xs)}
+.kc{display:inline-flex;align-items:center;justify-content:center;flex:none;min-width:34px;height:22px;padding:0 var(--s-4);border-radius:var(--r-xs);font:600 var(--t-small)/1 var(--font-display);font-style:normal;white-space:nowrap}
+.wrap{position:relative;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--rule);border-radius:var(--r-l);background:var(--card)}
+.method .wrap:has(>.cal),.wrap:has(>.diff){width:fit-content;max-width:100%}
 table{border-collapse:collapse;width:100%}
-.grid th,.grid td{padding:0;text-align:center;font-size:.85rem;white-space:nowrap}
-.grid thead th{padding:6px 4px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--rule)}
-.grid th.crag{position:sticky;left:0;background:var(--card);text-align:left;padding:6px 10px;font-weight:600;min-width:12rem;border-right:1px solid var(--rule);z-index:1}
-.grid th.crag small{display:block;font-weight:400;color:var(--muted)}
-@media (max-width:640px){.grid th.crag{min-width:7.5rem;max-width:8.5rem;white-space:normal;font-size:.8rem;padding:4px 6px}.grid td div,.grid td button{min-width:2.1rem;padding:5px 0}}
-.grid tr.zone th{text-align:left;padding:10px 10px 4px;font:600 .95rem "Barlow Condensed",system-ui,sans-serif;color:var(--muted);position:sticky;left:0;background:var(--card)}
-.grid td div,.grid td button{margin:2px;min-width:2.6rem;padding:6px 0;border-radius:3px;font-weight:600;position:relative}
-.grid td button{border:0;font:inherit;font-weight:600;cursor:pointer;width:calc(100% - 4px)}
-.grid td .unsure{background-image:repeating-linear-gradient(135deg,transparent 0 5px,rgba(255,255,255,.28) 5px 8px)}
-.grid td .risk::after,.key i.risk::after{content:"";position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:#1d2b34;opacity:.7}
-.key i.risk::after{top:2px;right:2px;width:5px;height:5px}
-.grid td div.none{color:var(--muted);font-weight:400}
-.hint{color:var(--muted);font-size:.9rem;margin:-4px 0 10px}
-.btn{display:inline-block;padding:7px 14px;border-radius:4px;background:var(--ink);color:var(--paper);text-decoration:none;font-weight:600;margin-right:10px}
-.btn:hover{opacity:.9}
-.cal{width:auto;font-size:.85rem}
-.cal td,.cal th{padding:3px 10px;border-bottom:1px solid var(--rule);text-align:left}
-.key{display:flex;flex-wrap:wrap;gap:8px 16px;margin:10px 0 0;font-size:.85rem;color:var(--muted)}
-.key span{display:inline-flex;align-items:center;gap:6px}
-.key i{display:inline-block;width:14px;height:14px;border-radius:2px;position:relative}
-details{border-top:1px solid var(--rule);padding:6px 0}
-summary{cursor:pointer;font-weight:600;padding:6px 0}
-summary small{font-weight:400;color:var(--muted)}
-summary:focus-visible,a:focus-visible,button:focus-visible{outline:2px solid var(--b5);outline-offset:2px}
-.hours{font-size:.82rem}
-.hours th,.hours td{padding:4px 8px;text-align:right;border-bottom:1px solid var(--rule);white-space:nowrap}
-.hours th:first-child,.hours td:first-child{text-align:left}
-.hours thead th{color:var(--muted);font-weight:600}
-.hours td.s{font-weight:700}
-.hours tr.dayrow td{text-align:left;font:600 .95rem "Barlow Condensed",system-ui,sans-serif;padding-top:12px;border-bottom:none}
-.method{max-width:70ch;color:var(--muted);font-size:.92rem}
-.method table{width:auto;font-size:.85rem;margin:8px 0}
-.method td,.method th{border:1px solid var(--rule);padding:3px 8px;text-align:left;vertical-align:top}
-.method h3{font:600 1.1rem "Barlow Condensed",system-ui,sans-serif;margin:18px 0 6px}
-.method li{margin:0 0 4px}
-dialog{border:1px solid var(--rule);border-radius:6px;background:var(--card);color:var(--ink);width:min(24rem,92vw);padding:16px 18px;max-height:85vh;overflow:auto}
-dialog::backdrop{background:rgba(0,0,0,.4)}
-dialog h3{font:600 1.2rem "Barlow Condensed",system-ui,sans-serif;margin:0 0 2px}
-dialog p{margin:0 0 10px;color:var(--muted);font-size:.9rem}
-dialog table{width:100%;margin:0 0 12px}
-dialog td{padding:5px 0;border-bottom:1px solid var(--rule)}
-dialog td:last-child{text-align:right}
-dialog .chip{display:inline-block;min-width:2.2rem;text-align:center;padding:2px 6px;border-radius:3px;font-weight:600}
-dialog button{font:inherit;padding:6px 14px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);color:var(--ink);cursor:pointer}
+.scale{display:flex;flex-wrap:wrap;gap:var(--s-6) 14px;margin:14px 0 var(--s-24);font-size:var(--t-small);line-height:1.2;color:var(--ink);max-width:52rem}
+.scale div{display:inline-flex;align-items:center;gap:var(--s-6)}
+.gridbox{position:relative}
+.gridbox::after{content:"";position:absolute;top:1px;right:1px;bottom:1px;width:28px;border-radius:0 var(--r-l) var(--r-l) 0;background:linear-gradient(to right,transparent,var(--card));pointer-events:none;transition:opacity .12s}
+.gridbox.end::after{opacity:0}
+.grid{font-variant-numeric:tabular-nums;border-collapse:separate;border-spacing:0;min-width:460px}
+.grid th,.grid td{padding:0;text-align:center;white-space:nowrap}
+.grid td{padding:var(--s-2) 1px}
+.grid tbody tr:not(.zone)>*{border-top:1px solid var(--rule)}
+.grid thead th{padding:var(--s-8) 1px;min-width:46px;font:600 var(--t-meta)/1.1 var(--font-display);color:var(--muted);border-bottom:1px solid var(--rule)}
+.grid thead th span{display:block}.grid thead th span+span{font-weight:500}
+.grid thead th.today{color:var(--ink)}
+.grid th.crag{position:sticky;left:0;z-index:2;background:var(--card);text-align:left;padding:3px 10px;width:260px;min-width:260px;max-width:260px;white-space:normal;line-height:1.2;box-shadow:1px 0 0 var(--rule)}
+.grid thead th.crag{padding:var(--s-8) 10px;font:600 var(--t-small)/1 var(--font-display);letter-spacing:var(--overline-tracking);text-transform:uppercase;color:var(--muted)}
+.grid th.crag a{display:block;font-size:15px;font-weight:600;line-height:1.15;text-decoration:none}
+@media (hover:hover){.grid th.crag a:hover{text-decoration:underline}}
+.grid th.crag a:focus-visible{text-decoration:underline}
+.grid th.crag small{display:block;font-weight:400;font-size:var(--t-micro);color:var(--muted)}
+@media (max-width:599px){.grid th.crag{width:132px;min-width:132px;max-width:132px}}
+.grid tr.zone th{text-align:left;padding:14px 0 var(--s-6);background:var(--card)}
+.grid tr.zone th span{position:sticky;left:10px;display:inline-block;margin-left:10px;font:600 15px/1.2 var(--font-display);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.grid tbody tr:last-child td{padding-bottom:var(--s-6)}
+.grid td button,.grid td div{display:flex;align-items:center;justify-content:center;width:var(--score-l);height:var(--score-l);margin:0 auto;border-radius:var(--r-s);position:relative;font:600 var(--score-l-num)/1 var(--font-display)}
+.grid td button{border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.grid td div.none{color:var(--muted);font-weight:500}
+.grid td .risk::after{width:7px;height:7px}
+.grid td button:focus-visible,.grid td button.sel{z-index:1}
+.grid td button.sel{box-shadow:var(--now-ring)}
+@media (hover:hover){.grid td button:hover{z-index:1;box-shadow:0 0 0 2px var(--card),0 0 0 4px color-mix(in srgb,var(--ink) 50%,transparent)}
+.grid td button.sel:hover{box-shadow:var(--now-ring)}.grid td button:focus-visible{box-shadow:var(--focus-ring)}}
+.key{display:flex;flex-wrap:wrap;gap:var(--s-6) 14px;margin:var(--s-12) 0 0;font-size:var(--t-small);color:var(--muted)}
+.key span{display:inline-flex;align-items:center;gap:var(--s-6)}
+.smp{display:inline-block;position:relative;flex:none;width:22px;height:22px;border-radius:var(--r-xs);background-color:var(--sunk);box-shadow:inset 0 0 0 1px var(--rule);color:var(--ink)}
+.smp.unsure{background-image:repeating-linear-gradient(135deg,var(--muted) 0 2px,transparent 2px 6px)}
+.smp.risk::after{top:3px;right:3px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap);padding:var(--s-8) var(--s-16);border:0;border-radius:var(--r-m);background:var(--inv-bg);color:var(--inv-fg);font:600 var(--t-body)/1.2 var(--font-body);text-decoration:none;text-align:center;cursor:pointer;margin-right:10px}
+.btn.alt{background:var(--card);color:var(--ink);font-weight:500;box-shadow:inset 0 0 0 1px var(--rule)}
+.btn.alt:focus-visible{box-shadow:inset 0 0 0 1px var(--rule),var(--focus-ring)}
+.btn:active{transform:translateY(1px)}
+@media (hover:hover){.btn:hover{opacity:.9}.btn.alt:hover{opacity:1;background:var(--sunk)}}
+.cal{width:auto;font-size:var(--t-meta);font-variant-numeric:tabular-nums}
+.cal td,.cal th{padding:var(--s-6) var(--s-12);border-bottom:1px solid var(--rule);text-align:left;vertical-align:middle}
+.cal th{font:600 var(--t-meta)/1.2 var(--font-body)}
+.cal tr:first-child th{font:600 var(--t-micro)/1.1 var(--font-display);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.method{max-width:72ch;color:var(--muted);font-size:var(--t-meta)}
+.method p{margin:0 0 var(--s-12)}
+.method table{width:auto;font-size:var(--t-small);margin:var(--s-8) 0 var(--s-16)}
+.method td,.method th{border:1px solid var(--rule);padding:var(--s-6) var(--s-8);text-align:left;vertical-align:top}
+.method th{color:var(--ink)}
+.method .wrap table{margin:0}
+.method h3{font:600 var(--t-h3) var(--font-display);margin:var(--s-24) 0 var(--s-8);color:var(--ink)}
+.method li{margin:0 0 var(--s-4)}
+dialog{border:1px solid var(--rule);border-radius:12px;background:var(--card);color:var(--ink);width:min(480px,calc(100vw - 32px));max-width:none;max-height:85vh;overflow:auto;padding:var(--s-20) var(--s-20) var(--s-16);box-shadow:var(--shadow-overlay)}
+dialog[open]{animation:grip-fade .12s ease-out}
+dialog::backdrop{background:var(--scrim)}
+@keyframes grip-fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){dialog[open]{animation:none}}
+@media (max-width:599px){dialog{width:100%;margin:auto 0 0;border-radius:var(--r-xl) var(--r-xl) 0 0;border-bottom:0;padding:var(--s-8) var(--s-16) calc(var(--s-16) + env(safe-area-inset-bottom))}
+dialog form::before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:var(--rule);margin:0 auto var(--s-6)}}
+dialog h3{font:600 1.625rem/1.05 var(--font-display);margin:0 0 var(--s-4)}
+@media (min-width:600px){dialog h3{font-size:var(--t-wall)}}
+dialog p{margin:0 0 var(--s-12);color:var(--muted);font-size:var(--t-meta)}
+dialog .dh{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s-12)}
+dialog .dh h3{margin:var(--s-8) 0 0}
+dialog .dh button{flex:none}
+dialog .ds{display:flex;align-items:center;gap:var(--s-12);margin:var(--s-12) 0 0}
+dialog .ds p{margin:0}
+dialog .ovl{margin:0 0 var(--s-4);font:600 var(--t-small)/1.2 var(--font-display);letter-spacing:var(--overline-tracking);text-transform:uppercase;color:var(--muted)}
+dialog .dm{margin:var(--s-12) 0 0;padding:10px var(--s-12);border-radius:var(--r-m);background:var(--sunk)}
+#d-models{display:flex;flex-wrap:wrap;gap:var(--s-8)}
+#d-models>div{flex:1 1 0;min-width:6.5rem;display:flex;align-items:center;gap:var(--s-8);font-size:var(--t-meta);color:var(--ink)}
+#d-wallbox{margin:14px 0 0}
+#d-walls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s-6) var(--s-12)}
+@media (min-width:600px){#d-walls{grid-template-columns:repeat(3,minmax(0,1fr))}}
+#d-walls>div{display:flex;align-items:flex-start;gap:var(--s-8);min-height:30px;font-size:var(--t-meta);line-height:1.25;color:var(--ink)}
+#d-walls small{display:block;margin-top:var(--s-2);font-size:var(--t-micro);color:var(--muted)}
+dialog p.blend{margin:14px 0 var(--s-12)}
+dialog p.acts{display:flex;flex-wrap:wrap;gap:var(--s-8);margin:0 0 var(--s-8);font-size:0}
+dialog p.acts a{flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;border-radius:var(--r-m);font:500 var(--t-body)/1.2 var(--font-body);color:var(--ink);text-decoration:none;box-shadow:inset 0 0 0 1px var(--rule)}
+dialog p.acts a#d-detail{background:var(--inv-bg);color:var(--inv-fg);font-weight:600;box-shadow:none}
+dialog p.acts a:focus-visible{box-shadow:inset 0 0 0 1px var(--rule),var(--focus-ring)}
+dialog p.acts a#d-detail:focus-visible{box-shadow:var(--focus-ring)}
+@media (min-width:600px){dialog p.acts a{flex:0 1 auto;min-height:var(--tap)}}
+@media (hover:hover){dialog p.acts a:hover{background:var(--sunk)}dialog p.acts a#d-detail:hover{background:var(--inv-bg);opacity:.9}}
+dialog button{display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap);min-width:var(--tap);font:500 var(--t-body)/1.2 var(--font-body);padding:0 var(--s-16);border:0;border-radius:var(--r-m);background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--rule);cursor:pointer}
+dialog button:focus-visible{box-shadow:inset 0 0 0 1px var(--rule),var(--focus-ring)}
+@media (hover:hover){dialog button:hover{background:var(--sunk)}}
 .bar{background:var(--paper);border-bottom:1px solid var(--rule)}
-.bar>div{max-width:1100px;margin:0 auto;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bar>div{padding:var(--s-6) max(12px,calc((100% - var(--page-max)) / 2 + var(--page-pad)));min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:var(--s-12)}
 .bar img{display:block;height:36px;width:auto}
-.bar .back{font-size:.95rem;white-space:nowrap}
+.bar a{display:inline-flex;align-items:center;min-height:var(--tap)}
+.bar .back{font-size:var(--t-meta);font-weight:500;white-space:nowrap}
 .bar.home{border-bottom:0}
-.bar.home>div{padding:20px 16px 0}
+.bar.home>div{padding:var(--s-20) max(var(--page-pad),calc((100% - var(--page-max)) / 2 + var(--page-pad))) 0}
 .bar.home h1{margin:0;line-height:0}
 .bar.home img{height:64px}
-.bar.home+main{padding-top:10px}
+.bar.home+main{padding-top:var(--s-12)}
 """
 
 # The logo pack (Claude Design G2): logo files go to site/assets/, favicons to the site root.
@@ -1122,6 +1208,22 @@ dialog button{font:inherit;padding:6px 14px;border:1px solid var(--rule);border-
 ASSETS_DIR = os.path.join(HERE, "assets")
 LOGO_FILES = ["grip-logo-paper.svg", "grip-logo-dark.svg"]
 ICON_FILES = ["favicon.svg", "favicon-32.png", "apple-touch-icon-180.png"]
+# Self-hosted Barlow and Barlow Condensed, latin subset, from the @fontsource npm packages 5.3.0 (SIL Open Font Licence;
+# the licence files sit beside them). The build copies assets/fonts/ to site/assets/fonts/.
+FONTS_DIR = os.path.join(ASSETS_DIR, "fonts")
+FONT_FACES = [("Barlow", 400, "barlow-latin-400-normal.woff2"), ("Barlow", 500, "barlow-latin-500-normal.woff2"),
+              ("Barlow", 600, "barlow-latin-600-normal.woff2"), ("Barlow Condensed", 500, "barlow-condensed-latin-500-normal.woff2"),
+              ("Barlow Condensed", 600, "barlow-condensed-latin-600-normal.woff2")]
+FONT_PRELOAD = ["barlow-latin-400-normal.woff2", "barlow-condensed-latin-600-normal.woff2"]  # the body text and the scores
+
+
+def fonts(root=""):
+    """The font links for a page's head: a preload for the two faces every page shows first, and the @font-face rules.
+    root is the path back to the site root ("../" from detail/)."""
+    pre = "".join(f'<link rel="preload" href="{root}assets/fonts/{f}" as="font" type="font/woff2" crossorigin>' for f in FONT_PRELOAD)
+    faces = "".join(f'@font-face{{font-family:"{fam}";font-style:normal;font-weight:{wt};font-display:swap;'
+                    f'src:url({root}assets/fonts/{f}) format("woff2")}}' for fam, wt, f in FONT_FACES)
+    return f"{pre}<style>{faces}</style>"
 
 
 def icon_links(root=""):
@@ -1148,41 +1250,55 @@ def header_bar(root="", home=False):
             f'<a class="back" href="{home_url}">Back to the forecast</a></div></header>')
 
 COAST_CSS = """
-.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .coast{max-width:52rem}
-.coast h2{margin:6px 0 2px}
-.coast h2 small{font:400 1rem "Barlow",system-ui,sans-serif;color:var(--muted)}
-.srow{display:grid;grid-template-columns:12rem minmax(0,1fr);gap:2px 10px;align-items:center;margin:0 0 4px}
-.srow .zn{font-size:.88rem;font-weight:600;line-height:1.2}
-.strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px}
-.strip span{display:block;height:1.7rem;line-height:1.7rem;text-align:center;border-radius:3px;font:600 .9rem/1.7rem "Barlow Condensed",system-ui,sans-serif}
-.strip.hrs span{height:auto;font:400 .72rem/1.3 "Barlow",system-ui,sans-serif;color:var(--muted)}
-.strip span.past{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--rule)}
-.strip .now{box-shadow:inset 0 0 0 2px var(--ink),inset 0 0 0 3px var(--paper)}
-@media (max-width:640px){.srow{grid-template-columns:minmax(0,1fr);margin:0 0 8px}.srow.head{margin:0 0 2px}}
-.find{margin:18px 0 26px;max-width:40rem}
-.find label{display:block;font-weight:600;margin:0 0 4px}
-.find input{display:block;width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--rule);border-radius:4px;background:var(--card);color:var(--ink)}
-.find .hint{margin:6px 0 0}
-.find .note{font-weight:600;margin:8px 0 0}
+.coast h2{margin:var(--s-8) 0 var(--s-4)}
+.coast h2 small{font:400 var(--t-body) var(--font-body);color:var(--muted)}
+.srow{display:grid;grid-template-columns:170px minmax(0,1fr);gap:var(--s-2) var(--s-12);align-items:center;margin:0 0 var(--s-6)}
+.srow .zn{font-size:15px;font-weight:500;line-height:1.2}
+.strip{display:flex;gap:var(--s-3)}
+.strip span{display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0;height:var(--score-m);border-radius:5px;font:600 var(--score-m-num)/1 var(--font-display);font-variant-numeric:tabular-nums;position:relative}
+.coast .strip span{height:30px;border-radius:var(--r-xs);font-size:15px}
+.strip.hrs span{height:auto;font:500 var(--t-micro)/1.3 var(--font-display);color:var(--muted)}
+.coast .strip.hrs span{height:auto;font-size:var(--t-micro)}
+.strip span:empty{border:1px dashed var(--rule)}
+.strip span.past{background:var(--past);color:var(--past-ink)}
+.strip span.now{box-shadow:var(--now-ring);z-index:1}
+.coast .strip span.now{box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--ink)}
+.today .strip.hrs{margin:0 0 var(--s-4)}
+.today .strip{margin:var(--s-6) 0 var(--s-2)}
+@media (max-width:599px){.srow{grid-template-columns:minmax(0,1fr);margin:0 0 var(--s-8)}.srow.head{margin:0 0 var(--s-2)}}
+.find{margin:var(--s-16) 0 var(--s-24);max-width:40rem}
+.find label{display:block;font-size:15px;font-weight:600;margin:0 0 var(--s-4)}
+.find input{display:block;width:100%;height:48px;font:inherit;font-size:16px;padding:0 14px;border:1px solid var(--rule);border-radius:var(--r-m);background:var(--card);color:var(--ink)}
+.find input:focus{outline:2px solid transparent;border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink),var(--focus-ring)}
+.find .hint{margin:var(--s-6) 0 0}
+.find .note{font-weight:600;margin:var(--s-8) 0 0}
 .find .note:empty{display:none}
 .grid tr[hidden]{display:none}
-.forms{list-style:none;margin:0 0 10px;padding:0;max-width:52rem}
-.forms li{display:grid;grid-template-columns:12rem minmax(0,1fr);gap:4px 14px;align-items:center;padding:8px 0;border-top:1px solid var(--rule);color:var(--muted);font-size:.92rem}
-.forms .btn{margin:0;text-align:center}
-.btn.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
-@media (max-width:560px){.forms li{grid-template-columns:minmax(0,1fr)}.forms .btn{justify-self:start}}
-.popw{max-width:46rem}
-.pop th,.pop td{padding:7px 10px;border-bottom:1px solid var(--rule);text-align:left;vertical-align:middle}
-.pop thead th{color:var(--muted);font-weight:600;font-size:.9rem}
-.pop thead th small{font-weight:400}
-.pop tbody th a{font-weight:600}
-.pc .num{display:inline-block;min-width:2.3rem;font-size:1.25rem;padding:4px 6px;margin:0 8px 0 0;vertical-align:middle}
-.pc .pw{display:inline-block;vertical-align:middle;font-size:.9rem;line-height:1.35}
-.pc .w{white-space:nowrap}
-.pc small{display:block;color:var(--muted);font-size:.8rem}
-@media (max-width:560px){.pop th,.pop td{padding:6px 5px}.pop tbody th{font-size:.88rem}.pc .num{display:block;margin:0 0 3px}.pc .pw{font-size:.8rem}
-.pc .w,.pc .h{display:block}.pc .dot{display:none}.pop thead th small{display:block}}
+.forms{list-style:none;margin:0 0 var(--s-12);padding:0;max-width:52rem}
+.forms li{display:grid;grid-template-columns:13rem minmax(0,1fr);gap:var(--s-8) var(--s-16);align-items:center;padding:var(--s-12) 0;border-top:1px solid var(--rule);color:var(--muted);font-size:var(--t-meta)}
+.forms .btn{margin:0}
+@media (max-width:599px){.forms li{grid-template-columns:minmax(0,1fr)}.forms .btn{justify-self:start}}
+.popw{max-width:40rem}
+.pop,.pop thead,.pop tbody{display:block}
+.pop tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s-6) var(--s-12);padding:10px var(--s-12);border-bottom:1px solid var(--rule)}
+.pop tbody tr:last-child{border-bottom:0}
+.pop th,.pop td{display:block;padding:0;text-align:left;min-width:0}
+.pop thead tr{padding:var(--s-8) var(--s-12)}
+.pop thead th{font:600 var(--t-small)/1.2 var(--font-display);text-transform:uppercase;letter-spacing:var(--overline-tracking);color:var(--muted)}
+.pop thead th small{font:inherit}
+.pop thead th:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pop tbody th{grid-column:1 / -1}
+.pop tbody th a{font-weight:600;line-height:1.2;text-decoration:none}
+@media (hover:hover){.pop tbody th a:hover{text-decoration:underline}}
+.pop tbody th a:focus-visible{text-decoration:underline}
+.pop td.pc{display:flex;align-items:center;gap:var(--s-8)}
+.pc .num{width:var(--score-l);height:var(--score-l);font-size:var(--score-l-num);border-radius:var(--r-s)}
+.pc .pw{display:block;min-width:0;font-size:var(--t-small);line-height:1.3;font-variant-numeric:tabular-nums}
+.pc .w{display:block;font-weight:600}
+.pc .h{display:block;color:var(--muted)}
+.pc .dot{display:none}
+.pc small{display:block;color:var(--muted);font-size:var(--t-small)}
 """
 
 MATCH_JS = r"""
@@ -1219,6 +1335,17 @@ FIND_JS = r"""
   }
   box.addEventListener('input',draw);
   draw();  // a value restored on going back to the page
+})();
+"""
+
+FADE_JS = r"""
+(function(){  // the seven-day grid's right-hand fade shows the box scrolls; it goes once the box is scrolled to the end
+  var box=document.querySelector('.gridbox'), sc=box&&box.querySelector('.wrap');
+  if(!sc){return;}
+  function draw(){box.classList.toggle('end',sc.scrollLeft+sc.clientWidth>=sc.scrollWidth-2);}
+  sc.addEventListener('scroll',draw,{passive:true});
+  window.addEventListener('resize',draw);
+  draw();
 })();
 """
 
@@ -1545,8 +1672,8 @@ def week_html(r, today):
         v = r["daily"][d]
         name, _note, css = band(v["index"])
         dd = date.fromisoformat(d)
-        cells.append(f'<div class="{css}" role="listitem" aria-label="{dd.strftime("%A %-d %B")}: {fmt(v["index"])}, {name}, best {v["start"]} to {v["end"]}, '
-                     f'{v["usable"]} of {v["hours"]} daylight hours climbable"><span class="dn">{dd.strftime("%a")} {dd.day}</span><b>{fmt(v["index"])}</b>'
+        cells.append(f'<div role="listitem" aria-label="{dd.strftime("%A %-d %B")}: {fmt(v["index"])}, {name}, best {v["start"]} to {v["end"]}, '
+                     f'{v["usable"]} of {v["hours"]} daylight hours climbable"><span class="dn">{dd.strftime("%a")} {dd.day}</span><b class="num sz-m {css}">{fmt(v["index"])}</b>'
                      f'<span>{v["start"]}</span><span>{v["end"]}</span><span>{v["usable"]} h</span></div>')
     return '<div class="week" role="list">' + "".join(cells) + "</div>"
 
@@ -1591,32 +1718,54 @@ def hours_table(r, tides, today):
                f'sun {fpt(f["sun"])}, sea {fpt(f["sea"])}, wet {fpt(f["wet"])}, seep {fpt(f["seep"])}')
         if x["note"]:
             brk += f' ({x["note"]})'
-        mods = ", ".join(f"{lab[:3]} {s:.0f}" for lab, s in hr["models"])
-        w(f'<tr><td>{hr["t"][11:16]}</td><td class="s"><span class="num {css}" style="font-size:.85rem;padding:2px 6px">{fmt(hr["index"])}</span></td>'
+        mods = '<span class="vh">, </span>'.join(f'<span class="mb">{escape(lab[:3])} <span class="num sz-xs {band(round(s))[2]}">{s:.0f}</span></span>'
+                                                  for lab, s in hr["models"])  # coloured by the number shown
+        w(f'<tr><td>{hr["t"][11:16]}</td><td class="s"><span class="num sz-m {css}">{fmt(hr["index"])}</span></td>'
           f'<td>{pct(hr["wet"])}</td><td>{rh}</td><td>{margin}</td><td>{wind}</td><td>{escape(x["sun"])}</td><td>{sea}</td>'
-          f'<td>{escape(brk)}</td><td>{escape(mods)}</td></tr>')
+          f'<td class="bd">{escape(brk)}</td><td>{mods}</td></tr>')
     w("</tbody></table></div>")
     return "".join(out)
 
 
 DETAIL_CSS = """
-.contents{margin:-10px 0 18px;font-size:.92rem}
-.wall{border-top:2px solid var(--rule);margin:26px 0 0;padding:4px 0 0}
-.wall>h2{margin:10px 0 2px}
-.wall>h2 small,.sec h2 small{font:400 .9rem "Barlow",system-ui,sans-serif;color:var(--muted)}
-.sec h3{font:600 1.1rem "Barlow Condensed",system-ui,sans-serif;margin:20px 0 6px}
-.sec p{margin:0 0 8px}
-.today p{margin:6px 0 0;font-size:.95rem}
+@media (min-width:900px){main>h1{font-size:2.5rem}}
+.contents{margin:calc(-1 * var(--s-8)) 0 var(--s-24);font-size:var(--t-meta);color:var(--muted);max-width:72ch}
+.contents a{color:var(--ink)}
+.wall{background:var(--card);border:1px solid var(--rule);border-radius:var(--r-l);margin:var(--s-24) 0 0;padding:var(--s-4) var(--s-16) var(--s-20)}
+.wall>h2{margin:var(--s-12) 0 var(--s-4);font-size:var(--t-wall)}
+.wall>h2 small,.sec h2 small{font:400 var(--t-meta) var(--font-body);color:var(--muted)}
+.sec h3{font:600 var(--t-h3) var(--font-display);margin:var(--s-24) 0 var(--s-8)}
+.sec .ov{font:600 var(--t-small)/1.2 var(--font-display);text-transform:uppercase;letter-spacing:var(--overline-tracking);color:var(--muted);margin:var(--s-24) 0 var(--s-8)}
+.sec .ov small{font:500 var(--t-small)/1.2 var(--font-display);color:var(--muted)}
+.sec .ov.sep{margin-top:14px;padding-top:var(--s-12);border-top:1px solid var(--rule)}
+.sec p{margin:0 0 var(--s-8);max-width:72ch}
+.today{max-width:52rem}
+.today .dayline{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--s-2) 10px;margin:var(--s-24) 0 0}
+.today .dayline .ov{margin:0}
+.today .line{margin:0;font-size:var(--t-lead);font-weight:600;line-height:1.25}
 .shapes{margin:0;padding:0;list-style:none;max-width:46rem}
-.shapes li{padding:6px 0;border-top:1px solid var(--rule);font-size:.95rem}
-.shapes b{display:block;font-weight:600}
-.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;max-width:34rem}
-.week div{border-radius:4px;padding:5px 1px;text-align:center;font-size:.72rem;line-height:1.3;min-width:0}
+.shapes li{display:grid;grid-template-columns:6.5rem minmax(0,1fr);gap:var(--s-2) 14px;padding:var(--s-2) 0;font-size:var(--t-meta)}
+.shapes b{font-weight:600}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--s-3);max-width:34rem}
+.week div{text-align:center;font-size:var(--t-micro);line-height:1.3;min-width:0;color:var(--muted);font-variant-numeric:tabular-nums}
 .week span{display:block}
-.week .dn{font-weight:600}
-.week b{display:block;font:600 1.45rem/1.1 "Barlow Condensed",system-ui,sans-serif}
-.diff td,.diff th{padding:3px 10px;border-bottom:1px solid var(--rule);text-align:left;white-space:nowrap}
-.foot{color:var(--muted);font-size:.92rem;margin-top:30px}
+.week .dn{font:600 var(--t-small)/1.3 var(--font-display);color:var(--ink)}
+.week span:nth-of-type(2),.week span:nth-of-type(3){color:var(--ink)}
+.week b{display:flex;margin:var(--s-3) auto}
+.hours{font-size:var(--t-meta);font-variant-numeric:tabular-nums}
+.hours th,.hours td{height:40px;padding:var(--s-4) var(--s-6);text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap}
+.hours th:first-child,.hours td:first-child{position:sticky;left:0;padding:var(--s-4) 10px;background:var(--card);box-shadow:1px 0 0 var(--rule)}
+.hours td:first-child{font:600 15px/1 var(--font-display)}
+.hours thead th{font:600 var(--t-micro)/1.1 var(--font-display);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.hours td.bd{color:var(--muted);text-align:left}
+.hours .mb{display:inline-flex;align-items:center;gap:var(--s-3);margin-right:var(--s-6);color:var(--muted);font-size:var(--t-small)}
+.hours tr.dayrow td{position:static;box-shadow:none;height:auto;font:600 15px/1.2 var(--font-display);padding:var(--s-16) var(--s-12) var(--s-6);background:var(--sunk)}
+.diff{font-variant-numeric:tabular-nums}
+.diff td,.diff th{padding:var(--s-6) var(--s-12);border-bottom:1px solid var(--rule);text-align:left;white-space:nowrap}
+.diff th{font:500 var(--t-small)/1.2 var(--font-display);text-transform:uppercase;letter-spacing:var(--overline-tracking);color:var(--muted)}
+.cal td small{color:var(--muted)}
+.sec .cal{width:100%;min-width:420px}
+.foot{color:var(--muted);font-size:var(--t-small);margin-top:var(--s-32);padding-top:var(--s-12);border-top:1px solid var(--rule)}
 """
 
 
@@ -1632,7 +1781,7 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
     w = out.append
     w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
     w(f"<title>{escape(gname)}: Grip conditions</title>")
-    w('<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet">')
+    w(fonts("../"))
     w(icon_links("../"))
     w(f"<style>{CSS}{COAST_CSS}{DETAIL_CSS}</style></head><body>{header_bar('../')}<main>")
     c0 = walls[0]["crag"]
@@ -1656,22 +1805,22 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
             w('<section class="sec">')
         hs = day_hours(r, di)
         vals = {hour_of(hr): hr["index"] for hr in hs}
-        w(f'<{hx}>{"Tomorrow" if tomorrow else "Today"} <small>{day.strftime("%a %-d %b")}</small></{hx}>')
-        w(f'<div class="today" data-wall="{escape(label(c))}">' + (hours_head(cols) + strip_html(cols, vals, now_hour) if cols else "")
-          + f'<p class="line">{escape(plain_line(hs, now_hour, tomorrow))}</p></div>')
+        w(f'<div class="today" data-wall="{escape(label(c))}"><div class="dayline"><{hx} class="ov">{"Tomorrow" if tomorrow else "Today"} '
+          f'<small>{day.strftime("%a %-d %b")}</small></{hx}><p class="line">{escape(plain_line(hs, now_hour, tomorrow))}</p></div>'
+          + (strip_html(cols, vals, now_hour) + hours_head(cols) if cols else "") + "</div>")
         nhs = day_hours(r, nday.isoformat())
         nvals = {hour_of(hr): hr["index"] for hr in nhs}
-        w(f'<{hx}>{"Day after" if tomorrow else "Tomorrow"} <small>{nday.strftime("%a %-d %b")}</small></{hx}>')
-        w(f'<div class="today next" data-day="{nday.isoformat()}">' + (hours_head(ncols) + strip_html(ncols, nvals, -1) if ncols else "")
-          + f'<p class="line">{escape(plain_line(nhs, None, True))}</p></div>')
-        w(f"<{hx}>Why</{hx}><p>{escape(why_text(hs, now_hour, tomorrow))}</p>"
+        w(f'<div class="today next" data-day="{nday.isoformat()}"><div class="dayline"><{hx} class="ov">{"Day after" if tomorrow else "Tomorrow"} '
+          f'<small>{nday.strftime("%a %-d %b")}</small></{hx}><p class="line">{escape(plain_line(nhs, None, True))}</p></div>'
+          + (strip_html(ncols, nvals, -1) + hours_head(ncols) if ncols else "") + "</div>")
+        w(f'<{hx} class="ov sep">Why</{hx}><p>{escape(why_text(hs, now_hour, tomorrow))}</p>'
           '<p class="hint">From the hourly factor points (the first model\'s figures, as in the breakdown column below). Only factors worth 2 points or more either way are named.</p>')
-        w(f'<{hx}>What shapes this {"wall" if multi else "crag"}</{hx}><ul class="shapes">')
+        w(f'<{hx} class="ov">What shapes this {"wall" if multi else "crag"}</{hx}><ul class="shapes">')
         for head, text in shapes_items(c, zone, tides, day, tomorrow):
             w(f"<li><b>{escape(head)}</b>{escape(text)}</li>")
         w("</ul>")
         zn = here.get(c["zone"], {})
-        w(f"<{hx}>Recent weather and the rock</{hx}>")
+        w(f'<{hx} class="ov">Recent weather and the rock</{hx}>')
         rain = zn.get("rain")
         if rain:
             lab, r24, r72 = rain
@@ -1684,7 +1833,7 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
             w(f"<p>Water on the rock now: {water_words(film)} ({film:.2f} mm, {escape(lab)} figures).</p>")
         else:
             w("<p>Water on the rock now: not available.</p>")
-        w(f"<{hx}>Sea</{hx}>")
+        w(f'<{hx} class="ov">Sea</{hx}>')
         sea = zn.get("sea")
         if sea and sea["h"] is not None:
             mx = f", up to {sea['max']:.1f} m today" if sea.get("max") is not None else ""
@@ -1692,7 +1841,7 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
               f"{escape(sea_text(sea['h'], sea['dir'], sea['period'], c.get('aspect'), bool(c.get('inlet')), bool(c.get('sea_sheltered')), bool(c.get('tidal'))))}</p>")
         else:
             w("<p>No sea forecast available.</p>")
-        w(f'<{hx}>Next seven days</{hx}><p class="hint">Each day: score, best window (start and end), climbable hours.</p>{week_html(r, today)}')
+        w(f'<{hx} class="ov">Next seven days</{hx}><p class="hint">Each day: score, best window (start and end), climbable hours.</p>{week_html(r, today)}')
         w("</section>")
 
     w('<section class="sec"><h2>How sure</h2><p class="hint">Hours today and tomorrow where the three models\' scores differ by 3 or more.</p>')
@@ -1731,7 +1880,7 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
         def chip(x):
             if x is None:
                 return "-"
-            return f'<span class="num {band(x)[2]}" style="font-size:.85rem;padding:2px 6px">{fmt(x)}</span>'
+            return f'<span class="num sz-s {band(x)[2]}">{fmt(x)}</span>'
         w('<div class="wrap"><table class="cal"><tr><th>Date</th><th>Wall</th><th>Felt</th><th>Grip</th><th>Actual weather</th></tr>')
         for v, c in mine:
             n = f' <small>({v["n_logs"]} logs)</small>' if v.get("n_logs", 1) > 1 else ""
@@ -1744,7 +1893,63 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
     return "".join(out)
 
 
+BIRDS_CSS = """
+.updated{color:var(--ink);font-size:var(--t-body);max-width:64ch}
+.legend{display:flex;flex-wrap:wrap;gap:var(--s-6) 18px;margin:0 0 var(--s-16);font-size:var(--t-small);color:var(--muted);max-width:60rem}
+.legend>span{display:inline-flex;align-items:center;gap:var(--s-6)}
+.birds{font-size:var(--t-meta)}
+.birds td,.birds th{padding:var(--s-8) var(--s-12);border-bottom:1px solid var(--rule);text-align:left;vertical-align:middle}
+.birds tr:first-child th{font:500 var(--t-small)/1.2 var(--font-display);text-transform:uppercase;letter-spacing:var(--overline-tracking);color:var(--muted)}
+.birds tr.zone th{padding:var(--s-20) var(--s-12) var(--s-6);font:600 15px/1.2 var(--font-display);text-transform:uppercase;letter-spacing:var(--overline-tracking);color:var(--muted)}
+.birds td:first-child{font-size:var(--t-body);font-weight:600;line-height:1.2;min-width:10rem}
+.birds td:first-child small{display:block;font-weight:400;color:var(--muted);font-size:var(--t-small)}
+.birds td.note{min-width:16rem;max-width:28rem}
+.birds tr.unk td{background:var(--sunk)}
+.tag{display:inline-flex;align-items:center;gap:var(--s-4);min-height:26px;padding:var(--s-2) 9px;border-radius:5px;font-size:var(--t-small);font-weight:600;line-height:1.2;white-space:nowrap;color:var(--ink)}
+.tag i{font-style:normal}
+.t-res{background:var(--inv-bg);color:var(--inv-fg)}
+.t-nest{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.t-pos{border:1.5px dotted var(--ink)}
+.t-free{background:var(--sunk);box-shadow:inset 0 0 0 1px var(--rule);font-weight:500}
+.t-unk{border:1px dashed var(--muted);background:var(--card)}
+.mcell{display:inline-block;vertical-align:middle}
+.mbar,.mini{display:grid;grid-template-columns:repeat(12,14px);gap:2px}
+.mbar i{display:block;position:relative;height:14px;border-radius:2px;box-shadow:inset 0 0 0 1px var(--rule)}
+.mbar i.n{background:var(--ink);box-shadow:none}
+.mbar i.p{background:repeating-linear-gradient(135deg,var(--ink) 0 1.5px,transparent 1.5px 4.5px);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.mbar i.now{box-shadow:inset 0 -3px 0 var(--ink),inset 0 0 0 1px var(--rule)}
+.mbar i.p.now{box-shadow:inset 0 -3px 0 var(--ink),inset 0 0 0 1.5px var(--ink)}
+.mbar i.n.now{box-shadow:inset 0 -3px 0 var(--paper)}
+.mini{margin:var(--s-2) 0 0;font:500 10px/1 var(--font-display);color:var(--muted);text-align:center}
+.mt{display:block;margin:var(--s-4) 0 0;font-size:var(--t-small);color:var(--muted)}
+.legend .mbar{display:inline-grid;grid-template-columns:14px}
+.conf{display:inline-flex;align-items:center;gap:var(--s-6);font-size:15px;font-weight:600}
+.conf i{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font:700 11px/1 var(--font-body);font-style:normal}
+.conf i.yes{background:var(--ink)}
+.conf i.yes::before{content:"";width:4px;height:9px;margin-top:-2px;border:solid var(--paper);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.conf i.no{box-shadow:inset 0 0 0 1.5px var(--ink)}
+"""
+
+
 MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+
+
+BIRD_TAG = {"restricted": "t-res", "affected": "t-nest", "clear": "t-free", "possible": "t-pos"}  # status tags, ink only, each a different shape
+
+
+def month_bar(months, confirmed, this_month):
+    """Twelve squares, January to December: nesting months solid ink once confirmed, hatched while they are a placeholder,
+    the rest outlined; this month underlined. Then the initials and the months as text."""
+    kind = "n" if confirmed else "p"
+
+    def cell(m):
+        cls = " ".join(x for x in (kind if m in months else "", "now" if m == this_month else "") if x)
+        return f'<i class="{cls}"></i>' if cls else "<i></i>"
+    cells = "".join(cell(m) for m in range(1, 13))
+    said = f"Nesting {MONTHS[min(months)]} to {MONTHS[max(months)]}" + ("" if confirmed else ", months not confirmed")
+    return (f'<span class="mcell"><span class="mbar" role="img" aria-label="{said}">{cells}</span>'
+            '<span class="mini" aria-hidden="true">' + "".join(f"<span>{MONTHS[m][0]}</span>" for m in range(1, 13)) + "</span>"
+            f'<span class="mt">{MONTHS[min(months)][:3]} to {MONTHS[max(months)][:3]}</span></span>')
 
 
 def render_birds(cfg, now):
@@ -1753,9 +1958,9 @@ def render_birds(cfg, now):
     w = out.append
     w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
     w("<title>Grip: nesting birds by crag</title>")
-    w('<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet">')
+    w(fonts())
     w(icon_links())
-    w(f"<style>{CSS}</style></head><body>{header_bar()}<main>")
+    w(f"<style>{CSS}{BIRDS_CSS}</style></head><body>{header_bar()}<main>")
     w("<h1>Nesting birds by crag</h1>")
     w(f'<p class="updated">Status, months and source for every crag Grip covers. In season the forecast marks the crag but does not mark it down. '
       f'Most entries come from keyword matching on the SMC routes database and UKC, with the months a placeholder until someone confirms them. '
@@ -1767,7 +1972,13 @@ def render_birds(cfg, now):
             groups.append((key, []))
         groups[-1][1].append(c)
     cur_sec = None
-    w('<div class="wrap"><table class="cal"><tr><th>Crag</th><th>Status</th><th>Months</th><th>Note</th><th>Confirmed</th></tr>')
+    unknown = '<span class="tag t-unk"><i aria-hidden="true">?</i>No information</span>'
+    w('<div class="legend" role="note" aria-label="Key"><span><span class="mbar" aria-hidden="true"><i class="n"></i></span>Nesting month, confirmed</span>'
+      '<span><span class="mbar" aria-hidden="true"><i class="p"></i></span>Nesting month, a placeholder until someone confirms it</span>'
+      '<span><span class="mbar" aria-hidden="true"><i></i></span>Other months</span>'
+      '<span><span class="mbar" aria-hidden="true"><i class="now"></i></span>This month</span>'
+      f'<span>{unknown} Unknown. Not the same as bird free.</span></div>')
+    w('<div class="wrap"><table class="birds"><tr><th>Crag</th><th>Status</th><th>Months</th><th>Note</th><th>Confirmed</th></tr>')
     for (sec, name), walls in groups:
         if sec != cur_sec:
             w(f'<tr class="zone"><th colspan="5">{escape(sec)}</th></tr>')
@@ -1784,44 +1995,68 @@ def render_birds(cfg, now):
         for c, b in rows:
             wall = f' <small>{escape(c["wall"])}</small>' if c.get("wall") and len(rows) > 1 else ""
             if not b:
-                w(f'<tr><td>{escape(c["name"])}{wall}</td><td>No information</td><td>-</td><td></td><td>-</td></tr>')
+                w(f'<tr class="unk"><td>{escape(c["name"])}{wall}</td><td>{unknown}</td><td>-</td><td class="note"></td><td>-</td></tr>')
                 continue
             months = b.get("months") or []
-            span = f"{MONTHS[min(months)][:3]} to {MONTHS[max(months)][:3]}" if months else "-"
+            span = month_bar(set(months), b.get("confirmed"), now.month) if months else "-"
             level = {"restricted": "Restricted", "affected": "Nesting birds", "clear": "Bird free", "possible": "Possible"}.get(b.get("level"), b.get("level", ""))
-            conf = "Yes" if b.get("confirmed") else "No"
-            w(f'<tr><td>{escape(c["name"])}{wall}</td><td>{escape(level)}</td><td>{span}</td><td>{escape(b.get("note", ""))}</td><td>{conf}</td></tr>')
+            tag = f'<span class="tag {BIRD_TAG.get(b.get("level"), "t-nest")}">{escape(level)}</span>'
+            conf = ('<span class="conf"><i class="yes" aria-hidden="true"></i>Yes</span>' if b.get("confirmed")
+                    else '<span class="conf"><i class="no" aria-hidden="true">?</i>No</span>')
+            w(f'<tr><td>{escape(c["name"])}{wall}</td><td>{tag}</td><td>{span}</td><td class="note">{escape(b.get("note", ""))}</td><td>{conf}</td></tr>')
     w("</table></div></main></body></html>")
     return "".join(out)
 
 
 LOG_CSS = """
-:root{--err:#b3261e}
-@media (prefers-color-scheme:dark){:root{--err:#ff8a80}}
-.logform{max-width:38rem}
-.field{margin:0 0 22px;padding:0;border:0;min-width:0}
-.field>label,.field legend{display:block;font-weight:600;margin:0 0 4px;padding:0}
-.desc{color:var(--muted);font-size:.9rem;margin:0 0 6px}
-.req{color:var(--err)}
-.logform input[type=text],.logform input[type=date],.logform input[type=time],.logform textarea{display:block;width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--rule);border-radius:4px;background:var(--card);color:var(--ink)}
-.logform input[type=date],.logform input[type=time]{max-width:12rem;min-height:2.75rem}
-.logform textarea{min-height:6rem;resize:vertical}
-.pair{display:flex;flex-wrap:wrap;gap:0 24px}
+.logform{max-width:680px}
+.field{margin:0 0 var(--s-24);padding:0;border:0;min-width:0}
+.field>label,.field legend{display:block;font-weight:600;margin:0 0 var(--s-4);padding:0}
+.desc{color:var(--muted);font-size:var(--t-meta);margin:0 0 var(--s-8)}
+.req{color:var(--ink)}
+.logform input[type=text],.logform input[type=date],.logform input[type=time],.logform textarea{display:block;width:100%;min-height:48px;font:inherit;font-size:16px;padding:var(--s-8) var(--s-12);border:1px solid var(--rule);border-radius:var(--r-m);background:var(--card);color:var(--ink)}
+.updated{color:var(--ink);font-size:var(--t-body);max-width:56ch}
+.logform textarea{min-height:96px;resize:vertical}
+.logform input:focus,.logform input:focus-within,.logform textarea:focus{outline:2px solid transparent;border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink),var(--focus-ring)}
+.pair{display:flex;flex-wrap:wrap;gap:0 var(--s-12)}
+.pair .field{flex:1 1 90px}
+.pair #f-date{flex-basis:150px}
 .combo{position:relative}
-.combo ul{position:absolute;left:0;right:0;top:100%;z-index:5;margin:2px 0 0;padding:0;list-style:none;max-height:min(20rem,45vh);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--card);border:1px solid var(--rule);border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
-.combo li{padding:10px;cursor:pointer;border-bottom:1px solid var(--rule)}
+.combo ul{position:absolute;left:0;right:0;top:100%;z-index:5;margin:var(--s-4) 0 0;padding:0;list-style:none;max-height:min(20rem,45vh);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--card);border:1px solid var(--rule);border-radius:var(--r-m);box-shadow:var(--shadow-overlay)}
+.combo li{display:flex;align-items:center;min-height:var(--tap);padding:var(--s-8) var(--s-12);cursor:pointer;border-bottom:1px solid var(--rule)}
 .combo li:last-child{border-bottom:0}
-@media (hover:hover){.combo li:hover{background:var(--rule)}}
-.combo li[aria-selected=true]{background:var(--ink);color:var(--paper)}
+@media (hover:hover){.combo li:hover{background:var(--sunk)}}
+.combo li[aria-selected=true]{background:var(--inv-bg);color:var(--inv-fg)}
 .combo li.none{cursor:default;color:var(--muted)}
-.field .opt{display:flex;gap:12px;align-items:flex-start;margin:0;padding:5px 0;font-weight:400;cursor:pointer}
-.field .opt input{flex:none;width:1.15rem;height:1.15rem;margin:.18rem 0 0;accent-color:var(--ink)}
-.err{color:var(--err);font-size:.9rem;margin:4px 0 0}
+.field>label.tile{display:block;position:relative;margin:0 0 var(--s-6);font-weight:400;cursor:pointer}
+.tile input,.pchip input{position:absolute;top:0;left:0;width:1px;height:1px;margin:0;opacity:0}
+.tile .tb{display:flex;align-items:center;gap:var(--s-12);min-height:52px;padding:var(--s-4) var(--s-12) var(--s-4) var(--s-4);background:var(--card);border-radius:var(--r-m);box-shadow:inset 0 0 0 1px var(--rule)}
+.tile .tb::after{content:"";flex:none;margin-left:auto;width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--ink)}
+.tile .kc{min-width:var(--score-l);height:var(--score-l);font-size:15px;border-radius:var(--r-s)}
+.tile .fn{display:block;font-size:var(--t-lead);font-weight:600;line-height:1.2}
+.tile .fd{display:block;color:var(--muted);font-size:var(--t-meta);line-height:1.3}
+.tile input:checked+.tb{box-shadow:inset 0 0 0 2px var(--ink)}
+.tile input:checked+.tb::after{box-shadow:inset 0 0 0 2px var(--ink);background:radial-gradient(circle,var(--ink) 0 5px,transparent 5.5px)}
+.tile input:focus-visible+.tb{box-shadow:inset 0 0 0 1px var(--rule),var(--focus-ring)}
+.tile input:checked:focus-visible+.tb{box-shadow:inset 0 0 0 2px var(--ink),var(--focus-ring)}
+@media (hover:hover){.tile:hover .tb{background:var(--sunk)}}
+.chips{display:flex;flex-wrap:wrap;gap:var(--s-8)}
+.pchip{position:relative;display:inline-block;cursor:pointer}
+.pchip span{position:relative;display:inline-flex;align-items:center;gap:var(--s-8);min-height:var(--tap);padding:var(--s-6) 14px var(--s-6) 10px;border-radius:var(--r-pill);background:var(--card);box-shadow:inset 0 0 0 1px var(--rule);font-size:15px;line-height:1.2}
+.pchip span::before{content:"";flex:none;width:18px;height:18px;border:2px solid currentColor;border-radius:var(--r-xs)}
+.pchip input:checked+span{background:var(--inv-bg);color:var(--inv-fg);box-shadow:inset 0 0 0 1px var(--ink)}
+.pchip input:checked+span::after{content:"";position:absolute;left:17px;top:50%;width:5px;height:10px;margin-top:-7px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.pchip input:focus-visible+span{box-shadow:inset 0 0 0 1px var(--rule),var(--focus-ring)}
+.pchip input:checked:focus-visible+span{box-shadow:inset 0 0 0 1px var(--ink),var(--focus-ring)}
+@media (hover:hover){.pchip:hover input:not(:checked)+span{background:var(--sunk)}}
+.err{color:var(--ink);font-size:var(--t-meta);font-weight:600;margin:var(--s-6) 0 0}
 .err:empty{display:none}
-.bad input[type=text],.bad input[type=date],.bad input[type=time]{border-color:var(--err)}
-button.btn{border:0;font:inherit;font-weight:600;cursor:pointer;padding:10px 22px}
-button.btn:disabled{opacity:.6;cursor:default}
-.foot{color:var(--muted);font-size:.92rem;margin-top:30px}
+.bad input[type=text],.bad input[type=date],.bad input[type=time]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.bad .tb{box-shadow:inset 0 0 0 1px var(--ink)}
+button.btn{min-height:52px;width:100%;max-width:320px;margin:0;font-size:18px}
+button.btn:disabled{background:var(--past);color:var(--past-ink);cursor:default;opacity:1}
+#done h2{margin-top:var(--s-24)}
+.foot{color:var(--muted);font-size:var(--t-meta);margin-top:var(--s-32)}
 """
 
 LOG_JS = r"""
@@ -1998,7 +2233,7 @@ def render_log(cfg):
     w = out.append
     w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
     w("<title>Grip: log a day on the rock</title>")
-    w('<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet">')
+    w(fonts())
     w(icon_links())
     w(f"<style>{CSS}{LOG_CSS}</style></head><body>{header_bar()}<main>")
     w("<h1>Log a day on the rock</h1>")
@@ -2012,18 +2247,23 @@ def render_log(cfg):
       '<div class="combo"><input id="wall" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="wall-list" '
       'aria-describedby="wall-desc wall-err" aria-required="true" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">'
       '<ul id="wall-list" role="listbox" aria-labelledby="wall-label" hidden></ul></div><p class="err" id="wall-err"></p></div>')
-    w(f'<div class="field" id="f-date"><label for="date">Date{req}</label><input id="date" type="date" required aria-describedby="date-err"><p class="err" id="date-err"></p></div>')
-    w(f'<div class="pair"><div class="field" id="f-from"><label for="from">On the rock from{req}</label><input id="from" type="time" step="60" required aria-describedby="from-err"><p class="err" id="from-err"></p></div>'
+    w(f'<div class="pair"><div class="field" id="f-date"><label for="date">Date{req}</label><input id="date" type="date" required aria-describedby="date-err"><p class="err" id="date-err"></p></div>'
+      f'<div class="field" id="f-from"><label for="from">On the rock from{req}</label><input id="from" type="time" step="60" required aria-describedby="from-err"><p class="err" id="from-err"></p></div>'
       f'<div class="field" id="f-until"><label for="until">On the rock until{req}</label><input id="until" type="time" step="60" required aria-describedby="until-err"><p class="err" id="until-err"></p></div></div>')
     w(f'<fieldset class="field" id="f-feel" aria-describedby="feel-desc feel-err"><legend>How did the rock feel overall?{req}</legend>'
       '<p class="desc" id="feel-desc">The crag as a whole, across your session. Not the best or worst route.</p>')
-    for i, v in enumerate(LOG_FEELS):
-        w(f'<label class="opt"><input type="radio" name="feel" id="feel-{i}" value="{escape(v)}">{escape(v)}</label>')
+    ranges = {name: (css, rng) for _lo, name, _note, css, rng in BANDS}
+    for i, v in enumerate(LOG_FEELS):  # one tile per band: its chip, then the option's own words, name and description
+        name, desc = v.split(": ", 1)
+        css, rng = ranges[name]
+        w(f'<label class="tile"><input type="radio" name="feel" id="feel-{i}" value="{escape(v)}"><span class="tb">'
+          f'<span class="kc {css}" aria-hidden="true">{rng}</span><span><span class="fn">{escape(name)}<span class="vh">:</span></span> '
+          f'<span class="fd">{escape(desc)}</span></span></span></label>')
     w('<p class="err" id="feel-err"></p></fieldset>')
-    w('<fieldset class="field"><legend>If it was poor, what was the problem? Tick any that apply.</legend>')
+    w('<fieldset class="field"><legend>If it was poor, what was the problem? Tick any that apply.</legend><div class="chips">')
     for i, v in enumerate(LOG_PROBLEMS):
-        w(f'<label class="opt"><input type="checkbox" name="problems" id="prob-{i}" value="{escape(v)}">{escape(v)}</label>')
-    w("</fieldset>")
+        w(f'<label class="pchip"><input type="checkbox" name="problems" id="prob-{i}" value="{escape(v)}"><span>{escape(v)}</span></label>')
+    w("</div></fieldset>")
     w('<div class="field"><label for="initials">Initials</label><input id="initials" type="text" autocomplete="off"></div>')
     w('<div class="field"><label for="other">Anything else about the day?</label>'
       '<p class="desc" id="other-desc">For example: a route or patch much worse or better than the rest, wet to look at or just slick, worse near the sea, '
@@ -2107,10 +2347,10 @@ def popular_cell(r, d, day_iso, tides):
     """One day of the popular crags table: the best wall's score in its band colour, best window and climbable hours,
     and low water when that wall is tidal."""
     if not d:
-        return '<td class="pc"><span class="sub">No daylight hours left</span></td>'
+        return '<td class="pc" role="cell"><span class="sub">No daylight hours left</span></td>'
     name, _note, css = band(d["index"])
     lw = tides.get(r["crag"]["zone"], {}).get(day_iso, []) if r["crag"].get("tidal") else []
-    return (f'<td class="pc"><span class="num {css}">{fmt(d["index"])}</span><span class="vh"> {name},</span>'
+    return (f'<td class="pc" role="cell"><span class="num {css}">{fmt(d["index"])}</span><span class="vh"> {name},</span>'
             f'<span class="pw"><span class="w"><span class="vh">best </span>{d["start"]} to {d["end"]}</span>'
             f'<span class="h"><span class="dot"> &middot; </span>{d["usable"]} h<span class="vh"> climbable</span></span>'
             + (f'<small>Low water {", ".join(lw)}</small>' if lw else "") + "</span></td>")
@@ -2130,10 +2370,11 @@ def render_popular(results, tides, now, cfg):
     if not rows:
         w('<p class="sub">No popular crags listed.</p></section>')
         return "".join(out)
-    w('<div class="wrap popw"><table class="pop"><thead><tr><th scope="col">Crag</th>'
-      + "".join(f'<th scope="col">{t} <small>{d.strftime("%a %-d %b")}</small></th>' for t, d in zip(titles, days)) + "</tr></thead><tbody>")
+    w('<div class="wrap popw"><table class="pop" role="table"><thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Crag</th>'
+      + "".join(f'<th scope="col" role="columnheader">{t} <small>{d.strftime("%a %-d %b")}</small></th>' for t, d in zip(titles, days))
+      + '</tr></thead><tbody role="rowgroup">')  # the rows are laid out as a grid, so the table roles are stated outright
     for n, _walls, cells in rows:
-        w(f'<tr><th scope="row"><a href="detail/{slug(n)}.html">{escape(n)}</a></th>'
+        w(f'<tr role="row"><th scope="row" role="rowheader"><a href="detail/{slug(n)}.html">{escape(n)}</a></th>'
           + "".join(popular_cell(r, d, dd.isoformat(), tides) for (r, d), dd in zip(cells, days)) + "</tr>")
     w("</tbody></table></div></section>")
     return "".join(out)
@@ -2170,8 +2411,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8">')
     w('<meta name="viewport" content="width=device-width, initial-scale=1">')
     w('<title>Grip forecast</title>')
-    w('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
-    w('<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet">')
+    w(fonts())
     w(icon_links())
     w(f"<style>{CSS}{COAST_CSS}</style></head><body>{header_bar(home=True)}<main>")
     w(f'<p class="updated">Dry-rock forecast for the sea cliffs of north-east Scotland. Updated {now.strftime("%a %-d %b, %H:%M")}. '
@@ -2179,8 +2419,9 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     w(render_coast(results, now, cfg))
     w('<div class="scale" aria-label="Grip scale">')
     for lo, name, note, css, rng in reversed(BANDS):
-        w(f'<div class="{css}"><b>{rng}</b><span>{name}: {note}</span></div>')
-    w("</div>")
+        w(f'<div><b class="kc {css}">{rng}</b><span>{name}: {note}</span></div>')
+    w('<div><i class="smp risk" aria-hidden="true"></i><span>Wet-rock risk</span></div>'
+      '<div><i class="smp unsure" aria-hidden="true"></i><span>Models disagree</span></div></div>')
     w('<ul class="forms">'
       '<li><a class="btn" href="log.html">Log a day on the rock</a>'
       "<span>Climbed on the coast? Say how the rock felt. It takes a minute, it is anonymous, and it is how Grip gets checked against reality.</span></li>"
@@ -2197,10 +2438,11 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       '<p class="hint" id="find-hint">Type the start of any word in a crag or wall name to filter the grid below.</p>'
       '<p class="note" id="find-note"></p><p class="vh" id="find-count" aria-live="polite"></p></div>')
     w('<p class="hint">Crags with several walls show their best wall. Tap a crag name for its hour-by-hour page; tap any score for the other walls, what each weather model gives it, climbable hours and wet-rock risk.</p>')
-    w('<div class="wrap"><table class="grid" id="grid" aria-labelledby="week-h"><thead><tr><th class="crag">Crag</th>')
+    w('<div class="gridbox"><div class="wrap"><table class="grid" id="grid" aria-labelledby="week-h"><thead><tr><th class="crag">Crag</th>')
     for d in all_days:
         dd = date.fromisoformat(d)
-        w(f"<th>{dd.strftime('%a')}<br>{dd.day}</th>")
+        today_col = ' class="today"' if dd == today else ""
+        w(f"<th{today_col}><span>{dd.strftime('%a')}</span><span>{dd.day}</span></th>")
     w("</tr></thead><tbody>")
     sections = []
     for n, walls in groups:
@@ -2209,7 +2451,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
             sections.append(sec)
     for sec in sections:
         zgroups = [(n, walls) for n, walls in groups if (walls[0]["crag"].get("section") or zones[walls[0]["crag"]["zone"]]["name"]) == sec]
-        w(f'<tr class="zone"><th colspan="{len(all_days) + 1}">{escape(sec)}</th></tr>')
+        w(f'<tr class="zone"><th colspan="{len(all_days) + 1}"><span>{escape(sec)}</span></th></tr>')
         for gname, walls in zgroups:
             c0 = walls[0]["crag"]
             if len(walls) == 1:
@@ -2220,7 +2462,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
             if gb:
                 sub += ". Restricted: nesting birds" if gb["level"] == "restricted" else ". Nesting birds"
             find = " ".join([gname] + [wr["crag"]["wall"] for wr in walls if wr["crag"].get("wall")])  # what Find a crag matches against
-            w(f'<tr data-find="{escape(find)}"><th class="crag"><a href="detail/{slug(gname)}.html" style="text-decoration:none">{escape(gname)}</a><small>{escape(sub)}</small></th>')
+            w(f'<tr data-find="{escape(find)}"><th class="crag"><a href="detail/{slug(gname)}.html">{escape(gname)}</a><small>{escape(sub)}</small></th>')
             for d in all_days:
                 r, v = best_wall(walls, d)
                 if not v:
@@ -2245,12 +2487,12 @@ def render(results, tides, now, cfg, models_ok, cal=None):
                   f'data-birds="{escape(gb["note"]) if gb else ""}" '
                   f'aria-label="{escape(label(c))}, {dd}: {fmt(v["index"])}, {name}">{fmt(v["index"])}</button></td>')
             w("</tr>")
-    w("</tbody></table></div>")
+    w("</tbody></table></div></div>")
     w('<div class="key">')
     for lo, name, note, css, rng in BANDS:
-        w(f'<span><i class="{css}"></i>{rng} {name}: {note}</span>')
-    w('<span><i class="b3 unsure" style="background-image:repeating-linear-gradient(135deg,transparent 0 5px,rgba(0,0,0,.25) 5px 8px)"></i>Striped: models differ by more than 2, or only one model</span>')
-    w('<span><i class="b4 risk"></i>Dot: at least one model in three has the rock wet, foggy or raining in the best window</span>')
+        w(f'<span><i class="kc {css}">{rng}</i> {name}: {note}</span>')
+    w('<span><i class="smp unsure" aria-hidden="true"></i>Striped: models differ by more than 2, or only one model</span>')
+    w('<span><i class="smp risk" aria-hidden="true"></i>Dot: at least one model in three has the rock wet, foggy or raining in the best window</span>')
     w("</div>")
 
 
@@ -2275,7 +2517,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
             if x is None:
                 return "-"
             name, note, css = band(x)
-            return f'<span class="chip {css}" style="display:inline-block;min-width:2.2rem;text-align:center;padding:1px 6px;border-radius:3px;font-weight:600">{fmt(x)}</span>'
+            return f'<span class="chip {css}">{fmt(x)}</span>'
 
         w('<div class="wrap"><table class="cal"><tr><th>Date</th><th>Crag</th><th>Felt</th><th>Grip</th>' + "".join(f"<th>{lab}</th>" for _m, lab, _d, _w in MODELS) + "<th>Actual weather</th></tr>")
         for v in cal["rows"]:
@@ -2322,39 +2564,53 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       "The weightings are a first estimate and are being checked against real days; expect them to change.</p>")
     w('<p>Forecast data: <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0), including UK Met Office data (CC BY-SA 4.0). '
       "Crag details, aspects and tidal status from the <a href=\"https://routes.smc.org.uk/\">SMC routes database</a>, with local corrections; nesting bird notes from the SMC database and UKC.</p></div>")
-    w('<dialog id="detail"><form method="dialog"><h3 id="d-title"></h3><p id="d-sub"></p><table id="d-models"></table>'
-      '<p>The blend weights the Met Office 2.5 (1 beyond two days), ECMWF 1 and ICON 1. The Met Office weight was raised early on, when it led the other models on the first logged days; on the current count its lead is narrow, so the weights will be reviewed as more days are logged.</p>'
+    w('<dialog id="detail" aria-labelledby="d-title"><form method="dialog"><div class="dh"><h3 id="d-title"></h3><button>Close</button></div>'
+      '<div class="ds"><span id="d-score"></span><div><p class="ovl">Blended</p><p id="d-sub"></p></div></div>'
+      '<div class="dm"><p class="ovl" id="d-mhead" hidden></p><div id="d-models"></div></div>'
+      '<div id="d-wallbox" hidden><p class="ovl">Walls</p><div id="d-walls"></div></div>'
+      '<p class="blend">The blend weights the Met Office 2.5 (1 beyond two days), ECMWF 1 and ICON 1. The Met Office weight was raised early on, when it led the other models on the first logged days; on the current count its lead is narrow, so the weights will be reviewed as more days are logged.</p>'
       '<p id="d-birds" style="display:none;color:var(--ink)"></p>'
-      '<p><a id="d-detail" href="#">Hour by hour for this crag</a></p>'
-      '<p><a id="d-log" href="#">Log how it actually was</a> &middot; <a id="d-note" href="#" target="_blank" rel="noopener">Send a crag note</a></p><button>Close</button></form></dialog>')
-    w(f"<script>{MATCH_JS}{FIND_JS}</script>")
+      '<p class="acts"><a id="d-detail" href="#">Hour by hour for this crag</a></p>'
+      '<p class="acts"><a id="d-log" href="#">Log how it actually was</a> &middot; <a id="d-note" href="#" target="_blank" rel="noopener">Send a crag note</a></p></form></dialog>')
+    w(f"<script>{MATCH_JS}{FIND_JS}{FADE_JS}</script>")
     w("""<script>
 (function(){
-  var dlg=document.getElementById('detail');
+  var dlg=document.getElementById('detail'), sel=null;
   function band(s){s=Math.round(s);return s>=8?'b5':s>=6?'b4':s>=4?'b3':s>=2?'b2':'b1';}
-  function chip(s){return '<span class="chip '+band(s)+'">'+Math.round(s)+'</span>';}
+  function item(s,name,more){  // a score block and its name, with an optional detail line under the name
+    var el=document.createElement('div'), c=document.createElement('span'), t=document.createElement('span');
+    c.className='chip '+band(s);c.textContent=Math.round(s);
+    t.textContent=name;
+    if(more){var m=document.createElement('small');m.textContent=more;t.appendChild(m);}
+    el.appendChild(c);el.appendChild(t);return el;
+  }
   document.querySelectorAll('button.cell').forEach(function(b){
     b.addEventListener('click',function(){
       document.getElementById('d-title').textContent=b.dataset.crag;
       var who=b.dataset.wall?(' on '+b.dataset.wall):'';
       document.getElementById('d-sub').textContent=b.dataset.day+', best window '+b.dataset.win+who+'. Climbable hours: '+b.dataset.usable+'. Wet-rock risk: '+b.dataset.wet+'.'+(b.dataset.drying?(' '+b.dataset.drying+'.'):'');
-      var rows='';
+      var s=parseFloat(b.dataset.score), sc=document.getElementById('d-score');
+      sc.className='num sz-xl '+band(s)+(b.classList.contains('unsure')?' unsure':'')+(b.classList.contains('risk')?' risk':'');
+      sc.textContent=Math.round(s);
+      var mh=document.getElementById('d-mhead'), ms=document.getElementById('d-models'), wb=document.getElementById('d-wallbox'), ws=document.getElementById('d-walls');
+      mh.textContent='Models'+who;mh.hidden=!b.dataset.walls;
+      ms.textContent='';
+      b.dataset.models.split('|').forEach(function(m){var p=m.split('~');ms.appendChild(item(parseFloat(p[1]),p[0]));});
+      ws.textContent='';wb.hidden=!b.dataset.walls;
       if(b.dataset.walls){
-        rows+='<tr><td colspan="2" style="text-align:left"><strong>Walls</strong></td></tr>';
-        b.dataset.walls.split('|').forEach(function(m){var p=m.split('~');rows+='<tr><td>'+p[0]+'<br><small>'+p[2]+', '+p[3]+' climbable, wet risk '+p[4]+'</small></td><td>'+chip(parseFloat(p[1]))+'</td></tr>';});
-        rows+='<tr><td colspan="2" style="text-align:left"><strong>Models'+who+'</strong></td></tr>';
+        b.dataset.walls.split('|').forEach(function(m){var p=m.split('~');ws.appendChild(item(parseFloat(p[1]),p[0],p[2]+', '+p[3]+' climbable, wet risk '+p[4]));});
       }
-      rows+='<tr><td>'+(b.dataset.walls?'Blended':'<strong>Blended</strong>')+'</td><td>'+chip(parseFloat(b.dataset.score))+'</td></tr>';
-      b.dataset.models.split('|').forEach(function(m){var p=m.split('~');rows+='<tr><td>'+p[0]+'</td><td>'+chip(parseFloat(p[1]))+'</td></tr>';});
-      document.getElementById('d-models').innerHTML=rows;
       document.getElementById('d-log').href=b.dataset.log;
       document.getElementById('d-note').href=b.dataset.note;
       document.getElementById('d-detail').href=b.dataset.detail;
       var bp=document.getElementById('d-birds'); if(b.dataset.birds){bp.textContent='Birds: '+b.dataset.birds; bp.style.display='block';} else {bp.style.display='none';}
+      if(sel){sel.classList.remove('sel');}
+      sel=b;b.classList.add('sel');
       if(dlg.showModal){dlg.showModal();}else{dlg.setAttribute('open','');}
     });
   });
   dlg.addEventListener('click',function(e){if(e.target===dlg){dlg.close();}});
+  dlg.addEventListener('close',function(){if(sel){sel.classList.remove('sel');sel=null;}});
 })();
 </script>""")
     w("</main></body></html>")
@@ -2441,6 +2697,9 @@ def main():
         shutil.copyfile(os.path.join(ASSETS_DIR, n), os.path.join(SITE_DIR, "assets", n))
     for n in ICON_FILES:
         shutil.copyfile(os.path.join(ASSETS_DIR, n), os.path.join(SITE_DIR, n))
+    os.makedirs(os.path.join(SITE_DIR, "assets", "fonts"), exist_ok=True)
+    for n in sorted(os.listdir(FONTS_DIR)):
+        shutil.copyfile(os.path.join(FONTS_DIR, n), os.path.join(SITE_DIR, "assets", "fonts", n))
     with open(os.path.join(SITE_DIR, ".nojekyll"), "w") as f:
         f.write("")
     log(f"Wrote page ({len(html) // 1024} KB), models: {', '.join(models_ok)}")
