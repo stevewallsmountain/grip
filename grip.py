@@ -920,14 +920,15 @@ def calibrate(cfg, limit=5):
     pending = [e for e in entries if f'{MODEL_VERSION}|{e["crag"]}|{e["date"]}|{e["from"]}|{e["to"]}|{e["feel"]}' not in cache]
     if not scored:
         return {"n": 0, "pending": len(pending), "rows": []}
-    errs = [band_miss(v["grip"], v["feel"]) for v in scored]
-    bands_right = sum(1 for e in errs if e == 0)
-    within = sum(1 for err in errs if abs(err) <= 1)
+    errs = [band_miss(v["grip"], v["feel"]) for v in scored]  # unrounded: typical miss and average error
+    shown = [band_miss(rnd(v["grip"]), v["feel"]) for v in scored]  # as displayed: in band and within a point
+    bands_right = sum(1 for e in shown if e == 0)
+    within = sum(1 for e in shown if abs(e) <= 1)
     by_model = {}
     for lab, getter in [(lab, (lambda v, lab=lab: v.get("models", {}).get(lab))) for _m, lab, _d, _w in MODELS] + [("Actual weather", lambda v: v.get("era"))]:
         ms = [band_miss(getter(v), v["feel"]) for v in scored if getter(v) is not None]
         if ms:
-            by_model[lab] = {"n": len(ms), "right": sum(1 for x in ms if x == 0), "bias": sum(ms) / len(ms), "mae": sum(abs(x) for x in ms) / len(ms)}
+            by_model[lab] = {"n": len(ms), "right": sum(1 for v in scored if getter(v) is not None and band_miss(rnd(getter(v)), v["feel"]) == 0), "bias": sum(ms) / len(ms), "mae": sum(abs(x) for x in ms) / len(ms)}
     rows = sorted(scored, key=lambda v: v["date"], reverse=True)[:40]
     return {"n": len(scored), "pending": len(pending), "bias": sum(errs) / len(errs),
             "mae": sum(abs(e) for e in errs) / len(errs), "bands_right": bands_right, "within": within,
@@ -1290,8 +1291,8 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     else:
         w(f"<p>{cal['n']} logged day{'s' if cal['n'] != 1 else ''} scored so far"
           f"{', ' + str(cal['pending']) + ' waiting' if cal['pending'] else ''}. "
-          f"Grip landed in the felt band {cal['bands_right']} time{'s' if cal['bands_right'] != 1 else ''}, and within a point of it {cal['within']} time{'s' if cal['within'] != 1 else ''}. "
-          f"Misses are measured from the edge of the band, since the form records a band rather than a number: "
+          f"Taking the score as shown, Grip landed in the felt band {cal['bands_right']} time{'s' if cal['bands_right'] != 1 else ''}, and within a point of it {cal['within']} time{'s' if cal['within'] != 1 else ''}. "
+          f"Misses are measured on the unrounded score from the edge of the band, since the form records a band rather than a number: "
           f"typical miss {cal['mae']:.1f}" + (f", on average {abs(cal['bias']):.1f} {'above' if cal['bias'] > 0 else 'below'} the felt band" if abs(cal['bias']) >= 0.05 else "") + ".</p>")
         if cal.get("by_model"):
             parts = [f'{lab} in the band {m["right"]} of {m["n"]}, typical miss {m["mae"]:.1f}' + (f' ({"above" if m["bias"] > 0 else "below"} by {abs(m["bias"]):.1f})' if abs(m["bias"]) >= 0.05 else "")
