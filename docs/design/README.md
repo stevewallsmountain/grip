@@ -1,0 +1,1 @@
+Grip's agreed design rules and spec, from the Claude Design project at https://claude.ai/design/p/08c4bbc5-23ac-4a22-b705-2cafffc32d38. This folder is the agreed version; the Design project holds the mock-ups and proposals.
