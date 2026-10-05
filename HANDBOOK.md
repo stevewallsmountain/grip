@@ -66,7 +66,7 @@ Committing from a chat: the Claude in Chrome extension edits files through GitHu
 
 ## Where calibration stands, 4 October 2026
 
-Twelve logged days from three people, all now scored by the build. On the displayed (rounded) scores: in band 6 of 12, within a point 10 of 12, average error 0.1 above the felt band, correlation with the logged bands r = 0.47, with crag-overall readings about 0.55. The page's own figures use unrounded scores: in band 4 of 12, within a point 7 of 12, typical miss 0.8. Met Office in band 6 of 12 against 3 of 12 for ECMWF and ICON, hence its weight.
+Twelve logged days from three people, all now scored by the build. In band and within a point count the score as shown on the page; typical miss and average error use the unrounded score. In band 6 of 12, within a point 10 of 12, typical miss 0.8, average error 0.1 above the felt band; correlation with the logged bands r = 0.47, with crag-overall readings about 0.55. In band by model: Met Office 6 of 12, ECMWF 5, ICON 5, actual weather 5; typical miss 0.8 for the Met Office against 1.0 for ECMWF and ICON. The Met Office lead is narrow on this count, so the 2.5/1/1 weights are due a fresh look at the next review.
 
 Known misses with no mechanism yet: Brown Band Crag on a calm, grey, humid morning (felt Crisp, model Usable); Souter Head south wall in July, warm air over a cold sea in an inlet (felt Greasy, model Crisp, ERA5 also Crisp).
 
