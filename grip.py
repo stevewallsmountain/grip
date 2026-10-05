@@ -50,9 +50,17 @@ PAST_DAYS = 3
 
 # Logging form (Google Form, anonymous) and its published response sheet
 FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSems6Y-X4CypSu96Vt8DuGh4yH1bWv05wjYPxsN8fnhKPMWBA/viewform"
-FORM_CRAG = "entry.769015387"
-FORM_WALL = "entry.1131909785"
-FORM_DATE = "entry.2085482145"
+FORM_POST = "https://docs.google.com/forms/d/e/1FAIpQLSems6Y-X4CypSu96Vt8DuGh4yH1bWv05wjYPxsN8fnhKPMWBA/formResponse"
+FORM_ENTRIES = {"crag": "entry.769015387", "wall": "entry.1131909785", "date": "entry.2085482145",
+                "from": "entry.764556216", "until": "entry.1083400377", "feel": "entry.1126435114",
+                "problems": "entry.525175392", "initials": "entry.1772081994", "other": "entry.960162223",
+                "contact": "entry.1160807926"}  # the page log form submits into the Google Form by these IDs
+FORM_CRAGS_FILE = os.path.join(HERE, "data", "form_crags.json")  # the Google Form's crag options, in order
+FORM_ELSEWHERE = "Somewhere else on the coast"
+LOG_FEELS = ["Soaked: wet rock", "Greasy: damp and slippery, training at best", "Usable: climbable with care",
+             "Crisp: good friction", "Prime: as dry as this coast gets"]  # exact option strings on the Google Form
+LOG_PROBLEMS = ["Wet from rain", "Greasy or sweating", "Seepage", "Haar or fog", "Spray from the sea",
+                "Still wet from the night before", "Fine until the sun left the face"]
 NOTES_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9yiBWbQ27h_CLWvUP52EbOWPg/viewform"
 NOTES_CRAG = "entry.1230562053"
 NOTES_WALL = "entry.763167181"
@@ -1054,9 +1062,9 @@ def best_wall(walls, day_iso):
     return best
 
 
-def log_link(c, day_iso):
-    q = f"{FORM_URL}?usp=pp_url&{FORM_CRAG}={urllib.parse.quote(c['name'])}&{FORM_DATE}={day_iso}"
-    return q + (f"&{FORM_WALL}={urllib.parse.quote(c['wall'])}" if c.get("wall") else "")
+def log_link(c, day_iso, root=""):
+    """The page log form, filled with this wall and date. root is the path back to the site root ("../" from detail/)."""
+    return f"{root}log.html?" + urllib.parse.urlencode({"wall": label(c), "date": day_iso}, quote_via=urllib.parse.quote)
 
 
 def note_link(c):
@@ -1078,11 +1086,12 @@ def render_detail(gname, walls, tides, now, today):
     w(f"<style>{CSS}</style></head><body><main>")
     r0, t0 = best_wall(walls, today.isoformat())
     summ = f"today {fmt(t0['index'])}, best {t0['start']} to {t0['end']}" + (f" on {r0['crag'].get('wall') or 'the main face'}" if len(walls) > 1 else "") if t0 else "no hours left today"
-    w(f"<h1>{escape(gname)}</h1><p class=\"updated\">Hour by hour, next three days. {escape(summ[0].upper() + summ[1:])}. Scores are the blend of the models; the breakdown columns show the Met Office figures. Updated {now.strftime('%a %-d %b, %H:%M')}. <a href=\"../\">Back to the forecast</a></p>")
+    log_here = f' &middot; <a href="{escape(log_link(walls[0]["crag"], today.isoformat(), "../"))}">Log a day here</a>' if len(walls) == 1 else ""
+    w(f"<h1>{escape(gname)}</h1><p class=\"updated\">Hour by hour, next three days. {escape(summ[0].upper() + summ[1:])}. Scores are the blend of the models; the breakdown columns show the Met Office figures. Updated {now.strftime('%a %-d %b, %H:%M')}. <a href=\"../\">Back to the forecast</a>{log_here}</p>")
     for r in walls:
         c = r["crag"]
         if len(walls) > 1:
-            w(f'<h3 style="font:600 1.05rem \'Barlow Condensed\',system-ui,sans-serif;margin:12px 0 4px">{escape(c.get("wall") or "Main face")} <small style="font-weight:400;color:var(--muted)">{escape(c.get("aspect") or "aspect unknown")}</small></h3>')
+            w(f'<h3 style="font:600 1.05rem \'Barlow Condensed\',system-ui,sans-serif;margin:12px 0 4px">{escape(c.get("wall") or "Main face")} <small style="font-weight:400;color:var(--muted)">{escape(c.get("aspect") or "aspect unknown")} &middot; <a href="{escape(log_link(c, today.isoformat(), "../"))}">Log a day on this wall</a></small></h3>')
         w('<div class="wrap"><table class="hours"><thead><tr><th>Time</th><th>Grip</th><th>Wet risk</th><th>Humidity</th>'
           '<th>Rock vs dew point</th><th>Wind</th><th>Sun</th><th>Sea</th><th>Breakdown (points)</th><th>Models</th></tr></thead><tbody>')
         last_day = None
@@ -1166,6 +1175,249 @@ def render_birds(cfg, now):
     return "".join(out)
 
 
+LOG_CSS = """
+:root{--err:#b3261e}
+@media (prefers-color-scheme:dark){:root{--err:#ff8a80}}
+.logform{max-width:38rem}
+.field{margin:0 0 22px;padding:0;border:0;min-width:0}
+.field>label,.field legend{display:block;font-weight:600;margin:0 0 4px;padding:0}
+.desc{color:var(--muted);font-size:.9rem;margin:0 0 6px}
+.req{color:var(--err)}
+.logform input[type=text],.logform input[type=date],.logform input[type=time],.logform textarea{display:block;width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--rule);border-radius:4px;background:var(--card);color:var(--ink)}
+.logform input[type=date],.logform input[type=time]{max-width:12rem;min-height:2.75rem}
+.logform textarea{min-height:6rem;resize:vertical}
+.pair{display:flex;flex-wrap:wrap;gap:0 24px}
+.combo{position:relative}
+.combo ul{position:absolute;left:0;right:0;top:100%;z-index:5;margin:2px 0 0;padding:0;list-style:none;max-height:min(20rem,45vh);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--card);border:1px solid var(--rule);border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.combo li{padding:10px;cursor:pointer;border-bottom:1px solid var(--rule)}
+.combo li:last-child{border-bottom:0}
+@media (hover:hover){.combo li:hover{background:var(--rule)}}
+.combo li[aria-selected=true]{background:var(--ink);color:var(--paper)}
+.combo li.none{cursor:default;color:var(--muted)}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:5px 0;font-weight:400;cursor:pointer}
+.opt input{flex:none;width:1.15rem;height:1.15rem;margin:.18rem 0 0;accent-color:var(--ink)}
+.err{color:var(--err);font-size:.9rem;margin:4px 0 0}
+.err:empty{display:none}
+.bad input[type=text],.bad input[type=date],.bad input[type=time]{border-color:var(--err)}
+button.btn{border:0;font:inherit;font-weight:600;cursor:pointer;padding:10px 22px}
+button.btn:disabled{opacity:.6;cursor:default}
+.foot{color:var(--muted);font-size:.92rem;margin-top:30px}
+"""
+
+LOG_JS = r"""
+var GripLog=(function(){
+  var WALLS=__WALLS__;  // [label shown, crag sent to the form, wall sent to the form], coast order, "Somewhere else" last
+  var E=__ENTRIES__;
+  var POST=__POST__;
+  function norm(s){
+    return String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+      .replace(/['`\u2018\u2019\u02bc\u00b4]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+  }
+  var KEYS=WALLS.map(function(w){return ' '+norm(w[0]);});
+  function filter(q){  // indices of the walls whose label has every typed word at the start of one of its words; "Somewhere else" always last
+    var words=norm(q).split(' ').filter(Boolean), out=[], last=WALLS.length-1;
+    for(var i=0;i<last;i++){
+      if(words.every(function(x){return KEYS[i].indexOf(' '+x)>=0;})){out.push(i);}
+    }
+    out.push(last);
+    return out;
+  }
+  function find(v){  // index of the wall whose label is v, exactly or apart from case and punctuation; -1 if none
+    if(!v){return -1;}
+    for(var i=0;i<WALLS.length;i++){if(WALLS[i][0]===v){return i;}}
+    var n=norm(v), hit=-1;
+    for(var j=0;j<WALLS.length;j++){if(KEYS[j]===' '+n){if(hit>=0){return -1;} hit=j;}}
+    return hit;
+  }
+  function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+  function validate(f, now){  // f: {wall: index or -1, date, from, until, feel, ...}; returns [[field, message], ...]
+    var bad=[];
+    if(!(f.wall>=0&&f.wall<WALLS.length)){bad.push(['wall','Pick a crag and wall from the list.']);}
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(f.date||'')){bad.push(['date','Enter the date.']);}
+    else if(f.date>(now||today())){bad.push(['date','The date cannot be in the future.']);}
+    var t=/^\d{2}:\d{2}/;
+    if(!t.test(f.from||'')){bad.push(['from','Enter when you got on the rock.']);}
+    if(!t.test(f.until||'')){bad.push(['until','Enter when you came off the rock.']);}
+    else if(t.test(f.from||'')&&f.until.slice(0,5)<=f.from.slice(0,5)){bad.push(['until','This must be later than the start time.']);}
+    if(!f.feel){bad.push(['feel','Choose how the rock felt.']);}
+    return bad;
+  }
+  function payload(f){  // the form-urlencoded body for the Google Form
+    var p=new URLSearchParams(), w=WALLS[f.wall], d=f.date.split('-'), a=f.from.split(':'), b=f.until.split(':');
+    p.append(E.crag,w[1]);
+    p.append(E.wall,w[2]);
+    p.append(E.date+'_year',d[0]);p.append(E.date+'_month',d[1]);p.append(E.date+'_day',d[2]);
+    p.append(E.from+'_hour',a[0]);p.append(E.from+'_minute',a[1]);
+    p.append(E.until+'_hour',b[0]);p.append(E.until+'_minute',b[1]);
+    p.append(E.feel,f.feel);
+    (f.problems||[]).forEach(function(x){p.append(E.problems,x);});
+    p.append(E.initials,(f.initials||'').trim());
+    p.append(E.other,(f.other||'').trim());
+    p.append(E.contact,(f.contact||'').trim());
+    p.append('fvv','1');
+    p.append('pageHistory','0');
+    return p;
+  }
+  return {WALLS:WALLS,POST:POST,norm:norm,filter:filter,find:find,today:today,validate:validate,payload:payload};
+})();
+if(typeof document!=='undefined'){(function(){
+  var G=GripLog, W=G.WALLS;
+  function $(id){return document.getElementById(id);}
+  var form=$('logform'), input=$('wall'), list=$('wall-list'), combo=input.parentNode, chosen=-1, shown=[], active=-1;
+  function isOpen(){return !list.hidden;}
+  function draw(){
+    shown=G.filter(input.value);
+    var html=[];
+    if(shown.length===1&&input.value.trim()){html.push('<li class="none" aria-disabled="true">No wall matches. Try fewer letters, or:</li>');}
+    shown.forEach(function(wi,k){
+      var li='<li role="option" id="opt-'+k+'" data-k="'+k+'"'+(k===active?' aria-selected="true"':'')+'></li>';
+      html.push(li);
+    });
+    list.innerHTML=html.join('');
+    list.querySelectorAll('li[role=option]').forEach(function(li){li.textContent=W[shown[+li.dataset.k]][0];});
+    if(active>=0){input.setAttribute('aria-activedescendant','opt-'+active);var el=$('opt-'+active);if(el&&el.scrollIntoView){el.scrollIntoView({block:'nearest'});}}
+    else{input.removeAttribute('aria-activedescendant');}
+  }
+  function open(){draw();list.hidden=false;input.setAttribute('aria-expanded','true');}
+  function close(){list.hidden=true;active=-1;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');}
+  function choose(wi){chosen=wi;input.value=W[wi][0];close();mark('wall','');}
+  function mark(field,msg){
+    var box=$('f-'+field), err=$(field+'-err');
+    if(err){err.textContent=msg;}
+    if(box){box.classList.toggle('bad',!!msg);}
+  }
+  input.addEventListener('input',function(){chosen=G.find(input.value);active=-1;open();});
+  input.addEventListener('focus',function(){open();});
+  input.addEventListener('click',function(){if(!isOpen()){open();}});
+  input.addEventListener('change',function(){var i=G.find(input.value);if(i>=0){chosen=i;input.value=W[i][0];}});
+  input.addEventListener('keydown',function(e){
+    var k=e.key;
+    if(k==='ArrowDown'||k==='Down'){e.preventDefault();if(!isOpen()){open();}active=Math.min(active+1,shown.length-1);draw();}
+    else if(k==='ArrowUp'||k==='Up'){e.preventDefault();if(isOpen()){active=Math.max(active-1,0);draw();}}
+    else if(k==='Enter'){e.preventDefault();if(isOpen()&&active>=0){choose(shown[active]);}else if(isOpen()&&shown.length===2&&input.value.trim()){choose(shown[0]);}}
+    else if(k==='Escape'||k==='Esc'){if(isOpen()){e.preventDefault();close();}}
+    else if(k==='Tab'){close();}
+  });
+  list.addEventListener('mousedown',function(e){e.preventDefault();});  // keep focus in the box while picking
+  list.addEventListener('click',function(e){
+    var li=e.target.closest?e.target.closest('li[role=option]'):null;
+    if(li){choose(shown[+li.dataset.k]);}
+  });
+  document.addEventListener('pointerdown',function(e){if(isOpen()&&!combo.contains(e.target)){close();}});
+
+  var dt=$('date');
+  dt.max=G.today();
+  var q=new URLSearchParams(location.search);
+  if(q.get('wall')){var i=G.find(q.get('wall'));if(i>=0){chosen=i;input.value=W[i][0];}else{input.value=q.get('wall');}}
+  if(/^\d{4}-\d{2}-\d{2}$/.test(q.get('date')||'')){dt.value=q.get('date');}
+
+  function values(){
+    var feel=form.querySelector('input[name=feel]:checked');
+    return {wall:chosen>=0&&input.value===W[chosen][0]?chosen:G.find(input.value), date:dt.value, from:$('from').value, until:$('until').value,
+      feel:feel?feel.value:'', problems:[].map.call(form.querySelectorAll('input[name=problems]:checked'),function(x){return x.value;}),
+      initials:$('initials').value, other:$('other').value, contact:$('contact').value};
+  }
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var f=values(), bad=G.validate(f), send=$('send');
+    ['wall','date','from','until','feel'].forEach(function(x){mark(x,'');});
+    $('form-err').textContent='';
+    bad.forEach(function(b){mark(b[0],b[1]);});
+    if(bad.length){
+      $('form-err').textContent='Please check the '+(bad.length===1?'field':bad.length+' fields')+' marked above.';
+      var first=bad[0][0]==='feel'?form.querySelector('input[name=feel]'):$(bad[0][0]);
+      if(first){first.focus();}
+      return;
+    }
+    input.value=W[f.wall][0];
+    send.disabled=true;send.textContent='Sending...';
+    fetch(G.POST,{method:'POST',mode:'no-cors',body:G.payload(f)}).then(function(){
+      form.hidden=true;$('done').hidden=false;window.scrollTo(0,0);
+    }).catch(function(){
+      send.disabled=false;send.textContent='Send';
+      $('form-err').textContent='It did not send. Check your connection and try again.';
+    });
+  });
+})();}
+"""
+
+
+def form_walls(cfg):
+    """Every wall as the page log form offers it, in coast order: [label, crag sent to the Google Form, wall sent].
+    A crag missing from the form's options goes in as "Somewhere else on the coast" with the full label as the wall."""
+    try:
+        with open(FORM_CRAGS_FILE) as f:
+            known = set(json.load(f))
+    except Exception as e:  # noqa: BLE001
+        log(f"Warning: cannot read data/form_crags.json ({e}); every log will go in as '{FORM_ELSEWHERE}'")
+        known = set()
+    out, missing = [], []
+    for c in cfg["crags"]:
+        if c["name"] in known:
+            out.append([label(c), c["name"], c.get("wall") or ""])
+        else:
+            out.append([label(c), FORM_ELSEWHERE, label(c)])
+            if c["name"] not in missing:
+                missing.append(c["name"])
+    if missing:
+        log(f"Warning: {len(missing)} crag(s) not in data/form_crags.json, logged as '{FORM_ELSEWHERE}' with the label as the wall: {', '.join(missing)}")
+    if known and FORM_ELSEWHERE not in known:
+        log(f"Warning: '{FORM_ELSEWHERE}' is not in data/form_crags.json")
+    out.append([FORM_ELSEWHERE, FORM_ELSEWHERE, ""])
+    return out
+
+
+def render_log(cfg):
+    """The log form: a searchable crag and wall box that submits into the Google Form, so the responses sheet is unchanged."""
+    def js(x):
+        return json.dumps(x, ensure_ascii=False).replace("</", "<\\/")
+
+    script = (LOG_JS.replace("__WALLS__", js(form_walls(cfg))).replace("__ENTRIES__", js(FORM_ENTRIES))
+              .replace("__POST__", js(FORM_POST)))
+    req = '<span class="req" aria-hidden="true"> *</span>'
+    out = []
+    w = out.append
+    w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
+    w("<title>Grip: log a day on the rock</title>")
+    w('<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet">')
+    w(f"<style>{CSS}{LOG_CSS}</style></head><body><main>")
+    w("<h1>Log a day on the rock</h1>")
+    w('<p class="updated">How did the rock actually feel? Your answers calibrate the Grip forecast. Anonymous, no account needed. One entry per crag per visit.</p>')
+    w('<p class="updated">Score the crag as a whole: how most of the rock felt across your time on it. Not your best route or your worst. '
+      'If one route or patch stood out, say so under &quot;Anything else about the day?&quot;</p>')
+    w(f'<noscript><p>This form needs JavaScript. <a href="{FORM_URL}">Use the Google form</a> instead.</p></noscript>')
+    w('<form id="logform" class="logform" novalidate>')
+    w(f'<div class="field" id="f-wall"><label for="wall" id="wall-label">Crag and wall{req}</label>'
+      '<p class="desc" id="wall-desc">Type any part of the name, then pick from the list.</p>'
+      '<div class="combo"><input id="wall" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="wall-list" '
+      'aria-describedby="wall-desc wall-err" aria-required="true" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">'
+      '<ul id="wall-list" role="listbox" aria-labelledby="wall-label" hidden></ul></div><p class="err" id="wall-err"></p></div>')
+    w(f'<div class="field" id="f-date"><label for="date">Date{req}</label><input id="date" type="date" required aria-describedby="date-err"><p class="err" id="date-err"></p></div>')
+    w(f'<div class="pair"><div class="field" id="f-from"><label for="from">On the rock from{req}</label><input id="from" type="time" step="60" required aria-describedby="from-err"><p class="err" id="from-err"></p></div>'
+      f'<div class="field" id="f-until"><label for="until">On the rock until{req}</label><input id="until" type="time" step="60" required aria-describedby="until-err"><p class="err" id="until-err"></p></div></div>')
+    w(f'<fieldset class="field" id="f-feel" aria-describedby="feel-desc feel-err"><legend>How did the rock feel overall?{req}</legend>'
+      '<p class="desc" id="feel-desc">The crag as a whole, across your session. Not the best or worst route.</p>')
+    for i, v in enumerate(LOG_FEELS):
+        w(f'<label class="opt"><input type="radio" name="feel" id="feel-{i}" value="{escape(v)}">{escape(v)}</label>')
+    w('<p class="err" id="feel-err"></p></fieldset>')
+    w('<fieldset class="field"><legend>If it was poor, what was the problem? Tick any that apply.</legend>')
+    for i, v in enumerate(LOG_PROBLEMS):
+        w(f'<label class="opt"><input type="checkbox" name="problems" id="prob-{i}" value="{escape(v)}">{escape(v)}</label>')
+    w("</fieldset>")
+    w('<div class="field"><label for="initials">Initials</label><input id="initials" type="text" autocomplete="off"></div>')
+    w('<div class="field"><label for="other">Anything else about the day?</label>'
+      '<p class="desc" id="other-desc">For example: a route or patch much worse or better than the rest, wet to look at or just slick, worse near the sea, '
+      'how the wind felt on the wall, whether it changed through the session</p><textarea id="other" aria-describedby="other-desc"></textarea></div>')
+    w('<div class="field"><label for="contact">Happy to answer a follow-up question about this day?</label>'
+      '<p class="desc" id="contact-desc">Leave a name and a way to reach you, WhatsApp number or email. Kept private, never published.</p>'
+      '<input id="contact" type="text" aria-describedby="contact-desc"></div>')
+    w('<p class="err" id="form-err" role="alert"></p><p><button type="submit" class="btn" id="send">Send</button></p></form>')
+    w('<div id="done" hidden><h2>Logged, thank you</h2><p><a href="./">Back to the forecast</a></p></div>')
+    w(f'<p class="foot">Prefer the Google form? <a href="{FORM_URL}">Use it here.</a></p><p class="foot"><a href="./">Back to the forecast</a></p>')
+    w(f"<script>{script}</script></main></body></html>")
+    return "".join(out)
+
+
 def render(results, tides, now, cfg, models_ok, cal=None):
     zones = cfg["zones"]
     today = now.date()
@@ -1199,7 +1451,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     for lo, name, note, css, rng in reversed(BANDS):
         w(f'<div class="{css}"><b>{rng}</b><span>{name}: {note}</span></div>')
     w("</div>")
-    w(f'<p class="log"><a class="btn" href="{FORM_URL}" target="_blank" rel="noopener">Log a day on the rock</a>'
+    w(f'<p class="log"><a class="btn" href="log.html">Log a day on the rock</a>'
       "Climbed on the coast? Say how the rock felt. It takes a minute, it is anonymous, and it is how Grip gets checked against reality. "
       f'Know a crag better than the list does? <a href="{NOTES_URL}" target="_blank" rel="noopener">Send a crag note</a>: aspect, tides, seepage, shelter, birds. '
       f'See the <a href="birds.html">nesting bird register</a> for what Grip currently believes.</p>')
@@ -1355,7 +1607,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       '<p>The blend weights the Met Office 2.5 (1 beyond two days), ECMWF 1 and ICON 1. The Met Office weight was raised after it landed in the felt band on 6 of the first 11 logged days against 3 for each of the others.</p>'
       '<p id="d-birds" style="display:none;color:var(--ink)"></p>'
       '<p><a id="d-detail" href="#">Hour by hour for this crag</a></p>'
-      '<p><a id="d-log" href="#" target="_blank" rel="noopener">Log how it actually was</a> &middot; <a id="d-note" href="#" target="_blank" rel="noopener">Send a crag note</a></p><button>Close</button></form></dialog>')
+      '<p><a id="d-log" href="#">Log how it actually was</a> &middot; <a id="d-note" href="#" target="_blank" rel="noopener">Send a crag note</a></p><button>Close</button></form></dialog>')
     w("""<script>
 (function(){
   var dlg=document.getElementById('detail');
@@ -1456,6 +1708,8 @@ def main():
         f.write(html)
     with open(os.path.join(SITE_DIR, "birds.html"), "w") as f:
         f.write(render_birds(cfg, now))
+    with open(os.path.join(SITE_DIR, "log.html"), "w") as f:
+        f.write(render_log(cfg))
     os.makedirs(os.path.join(SITE_DIR, "detail"), exist_ok=True)
     for gname, walls in groups_of(results):
         with open(os.path.join(SITE_DIR, "detail", slug(gname) + ".html"), "w") as f:
