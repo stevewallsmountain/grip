@@ -914,7 +914,7 @@
      8
     ],
     "level": "affected",
-    "note": "Birds nest spring to summer between The Slide and Insect Groove; they leave in August, nests can linger into autumn (SMC)"
+    "note": "Birds nest from spring to summer on the stretch from The Slide to Insect Groove; they leave in August, nests can linger into autumn (SMC)"
    }
   },
   {
@@ -953,7 +953,7 @@
      8
     ],
     "level": "affected",
-    "note": "Heavily affected by nesting birds April to August (SMC)"
+    "note": "Nesting birds a major problem from April to August (SMC)"
    }
   },
   {
@@ -1018,7 +1018,7 @@
      8
     ],
     "level": "affected",
-    "note": "The odd fulmar may be lurking in summer (SMC)"
+    "note": "An occasional fulmar in summer (SMC)"
    }
   },
   {
@@ -1838,7 +1838,7 @@
      8
     ],
     "level": "affected",
-    "note": "Not recommended in the nesting season, end of April to mid August (UKC)"
+    "note": "Best avoided while birds nest, from late April to mid August (UKC)"
    }
   },
   {
@@ -1863,7 +1863,7 @@
      8
     ],
     "level": "affected",
-    "note": "Not recommended in the nesting season, end of April to mid August (UKC)"
+    "note": "Best avoided while birds nest, from late April to mid August (UKC)"
    }
   },
   {
@@ -1889,7 +1889,7 @@
      8
     ],
     "level": "affected",
-    "note": "Not recommended in the nesting season, end of April to mid August (UKC)"
+    "note": "Best avoided while birds nest, from late April to mid August (UKC)"
    }
   },
   {
@@ -1915,7 +1915,7 @@
      8
     ],
     "level": "affected",
-    "note": "A few kittiwakes nest in summer; some routes out of bounds for a few months (UKC)"
+    "note": "A few kittiwakes nest in summer, closing some routes for a few months (UKC)"
    }
   },
   {
@@ -1969,7 +1969,7 @@
     "level": "affected",
     "note": "Nesting birds noted in the SMC database; months not confirmed"
    },
-   "seep_note": "Seeps badly, especially at the left end; does not usually dry out until May, and wet holds remain after that (developers' notes, 2020)",
+   "seep_note": "Bad seepage, worst at the left end; usually wet until May, with some holds staying wet beyond that (developers' notes, 2020)",
    "seep_until_month": 5
   },
   {
@@ -1994,7 +1994,7 @@
      8
     ],
     "level": "affected",
-    "note": "Ledges birdy during the nesting season, late April to August (SMC)"
+    "note": "Birds on the ledges from late April to August (SMC)"
    }
   },
   {
@@ -2339,7 +2339,7 @@
      8
     ],
     "level": "affected",
-    "note": "Very birdy; best visited in spring or late autumn (SMC)"
+    "note": "Very birdy; go in spring or late autumn (SMC)"
    }
   },
   {
@@ -3229,7 +3229,7 @@
      8
     ],
     "level": "affected",
-    "note": "Can attract nesting birds onto some ledges some years (SMC)"
+    "note": "Some years nesting birds take over a few ledges (SMC)"
    }
   },
   {
@@ -3254,7 +3254,7 @@
      8
     ],
     "level": "affected",
-    "note": "Birds nesting April to August on some routes (UKC)"
+    "note": "Some routes have nesting birds from April to August (UKC)"
    }
   },
   {
@@ -3580,7 +3580,7 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Virtually bird free in the nesting season (SMC database)"
+    "note": "Almost no nesting birds, even in season (SMC database)"
    }
   },
   {
@@ -3602,7 +3602,7 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Virtually bird free in the nesting season (SMC database)"
+    "note": "Almost no nesting birds, even in season (SMC database)"
    }
   },
   {
@@ -3623,7 +3623,7 @@
    "birds": {
     "months": [],
     "level": "clear",
-    "note": "Virtually bird free in the nesting season (SMC database)"
+    "note": "Almost no nesting birds, even in season (SMC database)"
    }
   },
   {
@@ -3646,7 +3646,7 @@
      7
     ],
     "level": "affected",
-    "note": "Seabirds can be a problem in the nesting season (UKC); months not confirmed"
+    "note": "Seabirds can cause trouble while nesting (UKC); months not confirmed"
    }
   },
   {
@@ -3670,7 +3670,7 @@
      7
     ],
     "level": "affected",
-    "note": "Seabirds can be a problem in the nesting season (UKC); months not confirmed"
+    "note": "Seabirds can cause trouble while nesting (UKC); months not confirmed"
    }
   },
   {
@@ -3987,7 +3987,7 @@
      8
     ],
     "level": "restricted",
-    "note": "Auks and gulls occupy the cliff April to August, restricting access to most routes (SMC)"
+    "note": "Auks and gulls take over the cliff between April and August, putting most routes out of bounds (SMC)"
    }
   },
   {
@@ -4633,7 +4633,7 @@
      7
     ],
     "level": "affected",
-    "note": "A few kittiwake and cormorant nests on the lower left side (developers' notes, 2024); months not confirmed"
+    "note": "Some kittiwakes and cormorants nest low on the left side (developers' notes, 2024); months not confirmed"
    },
    "seep_note": "One corner sometimes carries a wet streak (developers' notes, 2024)"
   },
@@ -5150,7 +5150,7 @@
      7
     ],
     "level": "affected",
-    "note": "Birds can be a problem in the nesting season at the seaward end of the ridge (UKC); months not confirmed"
+    "note": "Nesting birds can trouble the routes at the ridge's seaward tip (UKC); months not confirmed"
    }
   },
   {
@@ -5291,7 +5291,7 @@
      7
     ],
     "level": "affected",
-    "note": "Birds can be a problem in the nesting season at the seaward end of the ridge (UKC); months not confirmed"
+    "note": "Nesting birds can trouble the routes at the ridge's seaward tip (UKC); months not confirmed"
    }
   },
   {
