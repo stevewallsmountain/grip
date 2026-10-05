@@ -1032,7 +1032,7 @@ def calibrate(cfg, limit=5):
         ms = [band_miss(getter(v), v["feel"]) for v in scored if getter(v) is not None]
         if ms:
             by_model[lab] = {"n": len(ms), "right": sum(1 for v in scored if getter(v) is not None and band_miss(rnd(getter(v)), v["feel"]) == 0), "bias": sum(ms) / len(ms), "mae": sum(abs(x) for x in ms) / len(ms)}
-    rows = sorted(scored, key=lambda v: v["date"], reverse=True)[:40]
+    rows = sorted(scored, key=lambda v: v["date"], reverse=True)
     return {"n": len(scored), "pending": len(pending), "bias": sum(errs) / len(errs),
             "mae": sum(abs(e) for e in errs) / len(errs), "bands_right": bands_right, "within": within,
             "by_model": by_model, "rows": rows}
@@ -1195,12 +1195,14 @@ dialog button:focus-visible{box-shadow:inset 0 0 0 1px var(--rule),var(--focus-r
 .bar>div{padding:var(--s-6) max(12px,calc((100% - var(--page-max)) / 2 + var(--page-pad)));min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:var(--s-12)}
 .bar img{display:block;height:36px;width:auto}
 .bar a{display:inline-flex;align-items:center;min-height:var(--tap)}
-.bar .back{font-size:var(--t-meta);font-weight:500;white-space:nowrap}
-.bar.home{border-bottom:0}
-.bar.home>div{padding:var(--s-20) max(var(--page-pad),calc((100% - var(--page-max)) / 2 + var(--page-pad))) 0}
-.bar.home h1{margin:0;line-height:0}
-.bar.home img{height:64px}
-.bar.home+main{padding-top:var(--s-12)}
+.bar nav{display:flex;gap:var(--s-2);font:500 var(--t-lead)/1 var(--font-display)}
+.bar nav a{padding:0 7px;white-space:nowrap;text-decoration:none}
+.bar nav a[aria-current=page]{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:6px}
+@media (hover:hover){.bar nav a:hover{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:6px}}
+@media (max-width:400px){.bar>div{gap:var(--s-4)}.bar nav a{padding:0 5px}}
+.sitefoot{display:none;max-width:var(--page-max);margin:0 auto;padding:0 var(--page-pad) var(--s-24)}
+.sitefoot a{display:inline-flex;align-items:center;min-height:var(--tap);font-weight:500}
+@media (max-width:339px){.bar nav a.nm{display:none}.sitefoot{display:block}}
 """
 
 # The logo pack (Claude Design G2): logo files go to site/assets/, favicons to the site root.
@@ -1240,19 +1242,30 @@ def logo(root, height, alt):
             f'<img src="{root}assets/grip-logo-paper.svg" width="{width}" height="{height}" alt="{alt}"></picture>')
 
 
-def header_bar(root="", home=False):
-    """The slim bar at the top of every page. On the home page it carries the large logo as the page heading;
-    elsewhere a small logo linking home, and a text link back on the right."""
-    if home:
-        return f'<header class="bar home"><div><h1>{logo(root, 64, "Grip")}</h1></div></header>'
-    home_url = root or "./"
-    return (f'<header class="bar"><div><a href="{home_url}">{logo(root, 36, "Grip, back to the forecast")}</a>'
-            f'<a class="back" href="{home_url}">Back to the forecast</a></div></header>')
+NAV = [("forecast", "Forecast", ""), ("contribute", "Contribute", "log.html"), ("birds", "Birds", "birds.html"),
+       ("method", "Method", "method.html")]  # the header nav: key, link text, page ("" is the home page)
+
+
+def header_bar(root="", current=None):
+    """The slim bar at the top of every page: the logo linking home, and the nav. current is the NAV key of the page
+    shown, marked aria-current; crag pages pass None. root is the path back to the site root ("../" from detail/)."""
+    links = []
+    for key, text, page in NAV:
+        attrs = ' aria-current="page"' if key == current else ""
+        attrs += ' class="nm"' if key == "method" else ""
+        links.append(f'<a href="{root + page or "./"}"{attrs}>{text}</a>')
+    links = "".join(links)
+    return (f'<header class="bar"><div><a class="logo" href="{root or "./"}" aria-label="Grip, forecast home">{logo(root, 36, "Grip")}</a>'
+            f'<nav aria-label="Main">{links}</nav></div></header>')
+
+
+def site_foot(root=""):
+    """The foot of every page: below 340 px the nav drops Method, and this carries it instead."""
+    return f'<footer class="sitefoot"><a href="{root}method.html">Method</a></footer>'
 
 COAST_CSS = """
 .coast{max-width:52rem}
 .coast h2{margin:var(--s-8) 0 var(--s-4)}
-.coast h2 small{font:400 var(--t-body) var(--font-body);color:var(--muted)}
 .srow{display:grid;grid-template-columns:170px minmax(0,1fr);gap:var(--s-2) var(--s-12);align-items:center;margin:0 0 var(--s-6)}
 .srow .zn{font-size:15px;font-weight:500;line-height:1.2}
 .strip{display:flex;gap:var(--s-3)}
@@ -1266,19 +1279,12 @@ COAST_CSS = """
 .coast .strip span.now{box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--ink)}
 .today .strip.hrs{margin:0 0 var(--s-4)}
 .today .strip{margin:var(--s-6) 0 var(--s-2)}
-@media (max-width:599px){.srow{grid-template-columns:minmax(0,1fr);margin:0 0 var(--s-8)}.srow.head{margin:0 0 var(--s-2)}}
+@media (max-width:599px){.srow{grid-template-columns:minmax(0,1fr);row-gap:var(--s-6);margin:0 0 var(--s-8)}.srow.head{margin:0 0 var(--s-2)}}
 .find{margin:var(--s-16) 0 var(--s-24);max-width:40rem}
 .find label{display:block;font-size:15px;font-weight:600;margin:0 0 var(--s-4)}
 .find input{display:block;width:100%;height:48px;font:inherit;font-size:16px;padding:0 14px;border:1px solid var(--rule);border-radius:var(--r-m);background:var(--card);color:var(--ink)}
 .find input:focus{outline:2px solid transparent;border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink),var(--focus-ring)}
-.find .hint{margin:var(--s-6) 0 0}
-.find .note{font-weight:600;margin:var(--s-8) 0 0}
-.find .note:empty{display:none}
 .grid tr[hidden]{display:none}
-.forms{list-style:none;margin:0 0 var(--s-12);padding:0;max-width:52rem}
-.forms li{display:grid;grid-template-columns:13rem minmax(0,1fr);gap:var(--s-8) var(--s-16);align-items:center;padding:var(--s-12) 0;border-top:1px solid var(--rule);color:var(--muted);font-size:var(--t-meta)}
-.forms .btn{margin:0}
-@media (max-width:599px){.forms li{grid-template-columns:minmax(0,1fr)}.forms .btn{justify-self:start}}
 .popw{max-width:40rem}
 .pop,.pop thead,.pop tbody{display:block}
 .pop tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s-6) var(--s-12);padding:10px var(--s-12);border-bottom:1px solid var(--rule)}
@@ -1301,6 +1307,82 @@ COAST_CSS = """
 .pc small{display:block;color:var(--muted);font-size:var(--t-small)}
 """
 
+HOME_CSS = """
+main.home{padding-top:0}
+.fresh{margin:14px 0 0;font-size:var(--t-meta);color:var(--muted)}
+.stale{margin:14px 0 0;padding:var(--s-12);background:var(--sunk);border:1px solid var(--ink);border-radius:var(--r-m);max-width:52rem}
+.stale+.fresh{margin-top:var(--s-8)}
+.ovl{margin:0;font:600 var(--t-small)/1.2 var(--font-display);letter-spacing:var(--overline-tracking);text-transform:uppercase;color:var(--muted)}
+.cards{display:flex;flex-wrap:wrap;gap:var(--s-12);margin:10px 0 0}
+.card{flex:1 1 300px;display:flex;align-items:center;gap:14px;min-width:0;padding:14px var(--s-16);background:var(--card);border:1px solid var(--rule);border-radius:var(--r-l)}
+.card>div{min-width:0}
+.card .ln{margin:2px 0 0;font:600 21px/1.2 var(--font-display)}
+.card .cm{margin:2px 0 0;font-size:var(--t-meta);color:var(--muted)}
+.num.past{background:var(--past);color:var(--past-ink)}
+.num.none{background:var(--sunk);color:var(--muted);box-shadow:inset 0 0 0 1px var(--rule)}
+.top{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s-24) var(--s-32);margin:var(--s-24) 0 0;align-items:start}
+.top h2{margin-top:0}
+@media (min-width:900px){.top{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}.top .popw{max-width:none}
+#pop-h{display:flex;align-items:center;min-height:48px;margin-bottom:var(--s-4)}}
+.top .scale{margin-bottom:0}
+.popw .all{display:flex;align-items:center;min-height:var(--tap);padding:0 var(--s-12);border-top:1px solid var(--rule);font-weight:500}
+a.all:focus-visible{border-radius:0 0 var(--r-l) var(--r-l)}
+.ch{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--s-8) var(--s-12)}
+.coast .ch h2{margin:0}
+.coast .hint{margin:var(--s-6) 0 10px}
+.seg{display:inline-flex;padding:2px;border:1px solid var(--rule);border-radius:var(--r-m);background:var(--card)}
+.seg[hidden]{display:none}
+.seg button{min-height:40px;padding:0 14px;border:0;border-radius:var(--r-s);background:transparent;color:var(--ink);font:500 var(--t-body)/1 var(--font-display);cursor:pointer}
+.seg button[aria-checked=true]{background:var(--inv-bg);color:var(--inv-fg);font-weight:600}
+@media (hover:hover){.seg button[aria-checked=false]:hover{background:var(--sunk)}}
+.cp+.cp{margin-top:var(--s-16)}
+.cp .pday{margin:0 0 var(--s-6)}
+.coast.js .pday{display:none}
+.coast.js .cp+.cp{margin-top:0}
+.help{margin:var(--s-24) 0 0;padding-top:var(--s-16);border-top:1px solid var(--rule)}
+.help h2{margin:0 0 var(--s-4)}
+.help .hint{margin:0 0 var(--s-12)}
+.hcs{display:flex;flex-wrap:wrap;gap:var(--s-8)}
+.hc{flex:1 1 240px;display:flex;flex-direction:column;gap:var(--s-4);min-height:var(--tap);padding:14px var(--s-16);background:var(--card);border:1px solid var(--rule);border-radius:var(--r-l);color:var(--ink);text-decoration:none}
+a.hc:focus-visible{border-radius:var(--r-l)}
+@media (hover:hover){.hc:hover{background:var(--sunk)}}
+.hc .ht{font:600 var(--t-h3)/1.1 var(--font-display)}
+.hc .hd{font-size:var(--t-meta);color:var(--muted)}
+.hc .ha{margin-top:var(--s-6);font:600 15px/1.2 var(--font-body);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+@media (hover:hover){.hc:hover .ha{text-decoration-thickness:2px}}
+.find{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--s-8) var(--s-16);margin:var(--s-12) 0 var(--s-12);max-width:none}
+.find[hidden]{display:none}
+.find label{flex:1 1 280px;max-width:420px;margin:0;display:flex;flex-direction:column;gap:var(--s-4)}
+.find input{font-weight:400}
+.find .sub{margin:0 0 var(--s-12)}
+.gridbox.nothing>.wrap,.gridbox.nothing::after{display:none}
+.none-box{padding:var(--s-16);background:var(--card);border:1px solid var(--rule);border-radius:var(--r-l)}
+.none-box p{margin:0 0 var(--s-4)}
+.none-box button{min-height:var(--tap);padding:0;border:0;background:none;color:var(--ink);font:600 var(--t-body)/1.2 var(--font-body);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.sure{display:flex;flex-wrap:wrap;gap:var(--s-16) var(--s-32);margin:28px 0 0;padding-top:18px;border-top:1px solid var(--rule)}
+.sure>div{flex:1 1 300px;min-width:0}
+.sure h2{margin:0}
+.sure p{margin:var(--s-6) 0 0;max-width:56ch}
+.sure .links{display:flex;flex-wrap:wrap;gap:0 var(--s-16);margin-top:var(--s-4)}
+.sure .links a{display:inline-flex;align-items:center;min-height:var(--tap);font-weight:500}
+.rec{padding-top:var(--s-4)}
+.sq{display:flex;flex-wrap:wrap;gap:var(--s-4)}
+.sq i,.sql i{display:block;flex:none;width:22px;height:22px;border-radius:var(--r-xs)}
+.sq i.in,.sql i.in{background:var(--ink)}
+.sq i.near,.sql i.near{box-shadow:inset 0 0 0 2px var(--ink)}
+.sq i.out,.sql i.out{border:1px dashed var(--muted)}
+.sql{display:flex;flex-wrap:wrap;gap:var(--s-4) 14px;margin:var(--s-8) 0 0;font-size:var(--t-small);color:var(--muted)}
+.sql span{display:inline-flex;align-items:center;gap:var(--s-6)}
+.sql i{width:12px;height:12px;border-radius:2px}
+dialog p.mh{margin:0;font:600 15px/1.3 var(--font-body);color:var(--ink)}
+dialog p#d-ms{margin:var(--s-2) 0 var(--s-8)}
+"""
+
+METHOD_CSS = """
+.foot{color:var(--muted);font-size:var(--t-small);margin-top:var(--s-32);padding-top:var(--s-12);border-top:1px solid var(--rule);max-width:72ch}
+.foot p{margin:0 0 var(--s-8)}
+"""
+
 MATCH_JS = r"""
 var GripMatch=(function(){  // crag name matching shared by the front page search and the log form
   function norm(s){
@@ -1318,11 +1400,12 @@ var GripMatch=(function(){  // crag name matching shared by the front page searc
 
 FIND_JS = r"""
 (function(){  // Find a crag: filters the seven-day grid's rows as you type; headings with no matching rows are hidden
-  var box=document.getElementById('find'), note=document.getElementById('find-note'), count=document.getElementById('find-count'),
-      rows=[].slice.call(document.querySelectorAll('table.grid tbody tr'));
+  var wrap=document.getElementById('findbox'), box=document.getElementById('find'), count=document.getElementById('find-count'),
+      grid=document.querySelector('.gridbox'), empty=document.getElementById('find-empty'), none=document.getElementById('find-none'),
+      rows=[].slice.call(document.querySelectorAll('table.grid tbody tr')), all=count.textContent;
   var keys=rows.map(function(tr){return tr.dataset.find===undefined?null:GripMatch.key(tr.dataset.find);});
   function draw(){
-    var q=GripMatch.norm(box.value), test=GripMatch.matcher(box.value), n=0, head=null, seen=0;
+    var q=GripMatch.norm(box.value), test=GripMatch.matcher(box.value), n=0, head=null, seen=0, said=box.value.trim();
     rows.forEach(function(tr,i){
       if(keys[i]===null){if(head){head.hidden=!!q&&!seen;}head=tr;seen=0;return;}
       var on=!q||test(keys[i]);
@@ -1330,10 +1413,16 @@ FIND_JS = r"""
       if(on){n++;seen++;}
     });
     if(head){head.hidden=!!q&&!seen;}
-    note.textContent=q&&!n?'No crag matches. Try fewer letters.':'';
-    count.textContent=!q?'':n+(n===1?' crag matches':' crags match');
+    var nothing=!!q&&!n;
+    var miss='No crag matches “'+said+'”. Try part of a name, such as Souter or Cove.';
+    count.textContent=!q?all:nothing?miss:n+(n===1?' crag matches “':' crags match “')+said+'”';
+    count.classList.toggle('vh',nothing);  // said once on screen, in the grid box with Clear; the status still announces it
+    none.textContent=nothing?miss:'';
+    empty.hidden=!nothing;grid.classList.toggle('nothing',nothing);
   }
+  document.getElementById('find-clear').addEventListener('click',function(){box.value='';draw();box.focus();});
   box.addEventListener('input',draw);
+  wrap.hidden=false;
   draw();  // a value restored on going back to the page
 })();
 """
@@ -1889,7 +1978,7 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
         w("</table></div>")
     w("</section>")
     w(f'<p class="foot">Source: <a href="https://routes.smc.org.uk/crag/{int(c0["smc_crag_id"])}">SMC routes database</a> &middot; <a href="../">Back to the forecast</a></p>')
-    w("</main></body></html>")
+    w(f'</main>{site_foot("../")}</body></html>')
     return "".join(out)
 
 
@@ -1960,7 +2049,7 @@ def render_birds(cfg, now):
     w("<title>Grip: nesting birds by crag</title>")
     w(fonts())
     w(icon_links())
-    w(f"<style>{CSS}{BIRDS_CSS}</style></head><body>{header_bar()}<main>")
+    w(f"<style>{CSS}{BIRDS_CSS}</style></head><body>{header_bar(current='birds')}<main>")
     w("<h1>Nesting birds by crag</h1>")
     w(f'<p class="updated">Status, months and source for every crag Grip covers. In season the forecast marks the crag but does not mark it down. '
       f'Most entries come from keyword matching on the SMC routes database and UKC, with the months a placeholder until someone confirms them. '
@@ -2004,7 +2093,7 @@ def render_birds(cfg, now):
             conf = ('<span class="conf"><i class="yes" aria-hidden="true"></i>Yes</span>' if b.get("confirmed")
                     else '<span class="conf"><i class="no" aria-hidden="true">?</i>No</span>')
             w(f'<tr><td>{escape(c["name"])}{wall}</td><td>{tag}</td><td>{span}</td><td class="note">{escape(b.get("note", ""))}</td><td>{conf}</td></tr>')
-    w("</table></div></main></body></html>")
+    w(f"</table></div></main>{site_foot()}</body></html>")
     return "".join(out)
 
 
@@ -2235,7 +2324,7 @@ def render_log(cfg):
     w("<title>Grip: log a day on the rock</title>")
     w(fonts())
     w(icon_links())
-    w(f"<style>{CSS}{LOG_CSS}</style></head><body>{header_bar()}<main>")
+    w(f"<style>{CSS}{LOG_CSS}</style></head><body>{header_bar(current='contribute')}<main>")
     w("<h1>Log a day on the rock</h1>")
     w('<p class="updated">How did the rock actually feel? Your answers calibrate the Grip forecast. Anonymous, no account needed. One entry per crag per visit.</p>')
     w('<p class="updated">Score the crag as a whole: how most of the rock felt across your time on it. Not your best route or your worst. '
@@ -2274,7 +2363,7 @@ def render_log(cfg):
     w('<p class="err" id="form-err" role="alert"></p><p><button type="submit" class="btn" id="send">Send</button></p></form>')
     w('<div id="done" hidden><h2>Logged, thank you</h2><p><a href="./">Back to the forecast</a></p></div>')
     w(f'<div id="foot"><p class="foot">Prefer the Google form? <a href="{FORM_URL}">Use it here.</a></p><p class="foot"><a href="./">Back to the forecast</a></p></div>')
-    w(f"<script>{script}</script></main></body></html>")
+    w(f"<script>{script}</script></main>{site_foot()}</body></html>")
     return "".join(out)
 
 
@@ -2376,25 +2465,360 @@ def render_popular(results, tides, now, cfg):
     for n, _walls, cells in rows:
         w(f'<tr role="row"><th scope="row" role="rowheader"><a href="detail/{slug(n)}.html">{escape(n)}</a></th>'
           + "".join(popular_cell(r, d, dd.isoformat(), tides) for (r, d), dd in zip(cells, days)) + "</tr>")
-    w("</tbody></table></div></section>")
+    w(f'</tbody></table><a class="all" href="#week-h">All {len(groups_of(results))} crags, next 7 days</a></div></section>')
     return "".join(out)
 
 
 def render_coast(results, now, cfg):
-    """The Coast panel: each weather point's walls, hour by hour, for the day."""
-    day, tomorrow, now_hour, rows, cols = coast_view(results, now, cfg)
+    """The Along the coast panel: each weather point's walls, hour by hour, with a Today | Tomorrow switch.
+    Both days are in the page; the switch shows one. After dark it starts on Tomorrow, and Today shows every hour as past.
+    Without JavaScript the switch stays hidden and both days show, each under its own label."""
+    _day, tomorrow, _now_hour, _rows, _cols = coast_view(results, now, cfg)
+    today = now.date()
+    panels = []
+    for i, (title, day) in enumerate((("Today", today), ("Tomorrow", today + timedelta(days=1)))):
+        rows = coast_rows(results, cfg["zones"], day.isoformat())
+        cols = sorted({h for _z, _n, vals in rows for h in vals})
+        now_hour = (99 if tomorrow else now.hour) if i == 0 else -1  # after dark every hour today is past
+        panels.append((title, day, rows, cols, now_hour, (i == 1) == tomorrow))
     out = []
     w = out.append
-    w(f'<section class="coast" aria-labelledby="coast-h"><h2 id="coast-h">Coast {"tomorrow" if tomorrow else "today"} <small>{day.strftime("%a %-d %b")}</small></h2>')
-    w('<p class="hint">The typical score across the walls on each stretch of coast, for each daylight hour. '
-      + ("Earlier hours are greyed and this hour is outlined." if not tomorrow else "Today's daylight is over.") + "</p>")
-    if not cols:
-        w('<p class="sub">No hours scored.</p>')
-    else:
-        w(f'<div class="srow head"><span></span>{hours_head(cols)}</div>')
-        for z, name, vals in rows:
-            w(f'<div class="srow" role="group" aria-label="{escape(name)}"><span class="zn" aria-hidden="true">{escape(name)}</span>{strip_html(cols, vals, now_hour)}</div>')
+    w('<section class="coast" id="coast" aria-labelledby="coast-h"><div class="ch"><h2 id="coast-h">Along the coast</h2>'
+      '<div class="seg" role="radiogroup" aria-label="Day" hidden>')
+    for i, (title, _day, _rows, _cols, _nh, on) in enumerate(panels):
+        w(f'<button type="button" role="radio" aria-checked="{"true" if on else "false"}" tabindex="{0 if on else -1}" aria-controls="cp{i}">{title}</button>')
+    w('</div></div><p class="hint">Typical score across the walls on each stretch, hour by hour. Earlier hours are greyed.</p>')
+    for i, (title, day, rows, cols, now_hour, on) in enumerate(panels):
+        w(f'<div class="cp" id="cp{i}" role="group" aria-label="{title}, {day.strftime("%a %-d %b")}">'
+          f'<p class="ovl pday" aria-hidden="true">{title}, {day.strftime("%a %-d %b")}</p>')
+        if not cols:
+            w('<p class="sub">No hours scored.</p>')
+        else:
+            w(f'<div class="srow head"><span></span>{hours_head(cols)}</div>')
+            for z, name, vals in rows:
+                w(f'<div class="srow" role="group" aria-label="{escape(name)}"><span class="zn" aria-hidden="true">{escape(name)}</span>{strip_html(cols, vals, now_hour)}</div>')
+        w("</div>")
     w("</section>")
+    return "".join(out)
+
+
+SWITCH_JS = r"""
+(function(){  // the coast panel's Today | Tomorrow switch: a radio group, arrow keys move between the two
+  var sec=document.getElementById('coast'), seg=sec&&sec.querySelector('.seg');
+  if(!seg){return;}
+  var btns=[].slice.call(seg.querySelectorAll('button'));
+  function pick(b,focus){
+    btns.forEach(function(x){var on=x===b;x.setAttribute('aria-checked',on?'true':'false');x.tabIndex=on?0:-1;
+      document.getElementById(x.getAttribute('aria-controls')).hidden=!on;});
+    if(focus){b.focus();}
+  }
+  btns.forEach(function(b,i){
+    b.addEventListener('click',function(){pick(b);});
+    b.addEventListener('keydown',function(e){
+      var k=e.key, d=k==='ArrowRight'||k==='ArrowDown'||k==='Right'||k==='Down'?1:k==='ArrowLeft'||k==='ArrowUp'||k==='Left'||k==='Up'?-1:0;
+      if(d){e.preventDefault();pick(btns[(i+d+btns.length)%btns.length],true);}
+    });
+  });
+  sec.classList.add('js');seg.hidden=false;
+  pick(btns.filter(function(b){return b.getAttribute('aria-checked')==='true';})[0]||btns[0]);
+})();
+"""
+
+STALE_HOURS = 9  # the page warns when the newest run is more than this many hours old
+SMALL_SAMPLE = 30  # under this many scored days, How sure leads with "Not very, yet." (the handbook's small-sample threshold)
+
+
+def stale_age(run, now):
+    """The age of a run in whole hours if it is more than STALE_HOURS old, else None. The page's script applies the same rule
+    in the browser, comparing the time embedded in the page with the reader's clock."""
+    secs = (now - run).total_seconds()
+    return int(secs // 3600) if secs > STALE_HOURS * 3600 else None
+
+
+STALE_JS = r"""
+(function(){  // the stale notice: shown above the freshness line when the newest run is more than __HOURS__ hours old
+  var p=document.getElementById('fresh'), t=p?Date.parse(p.getAttribute('data-run')):NaN, age=Date.now()-t;
+  if(isNaN(t)||!(age>__HOURS__*3600000)){return;}
+  var n=document.createElement('p');
+  n.className='stale';n.setAttribute('role','note');
+  n.textContent='This forecast is '+Math.floor(age/3600000)+' hours old. The next run is late, so treat it with care.';
+  p.parentNode.insertBefore(n,p);
+})();
+""".replace("__HOURS__", str(STALE_HOURS))
+
+
+def fresh_line(now):
+    """When the page was made, and when the next run is due. Runs are hourly but often late, so no clock time is promised."""
+    return (f'<p class="fresh" id="fresh" data-run="{now.isoformat(timespec="seconds")}">'
+            f'Updated {now.strftime("%a %-d %b, %H:%M")} &middot; Next update within the hour</p>')
+
+
+def band_floor(index):
+    """The lowest score in the band of a score as shown: 8 for Prime, 6 for Grippy and so on."""
+    s = rnd(index)
+    return next(lo for lo, *_rest in BANDS if s >= lo)
+
+
+def band_run(hs, d):
+    """The hours a wall holds its day's band: the longest run of consecutive hours scoring, as shown, at least the floor of the
+    band of the day's score, among the runs that share an hour with the best window (the earlier run on a tie).
+    hs: the wall's hours that day, in order; d: its daily entry. Returns the run's hours."""
+    floor = band_floor(d["index"])
+    runs, cur = [], []
+    for hr in hs:
+        if rnd(hr["index"]) >= floor and (not cur or hour_of(hr) == hour_of(cur[-1]) + 1):
+            cur.append(hr)
+            continue
+        if cur:
+            runs.append(cur)
+        cur = [hr] if rnd(hr["index"]) >= floor else []
+    if cur:
+        runs.append(cur)
+    in_win = [run for run in runs if any(d["start"] <= hr["t"][11:16] < d["end"] for hr in run)]
+    return max(in_win, key=len) if in_win else [hr for hr in hs if d["start"] <= hr["t"][11:16] < d["end"]]
+
+
+def when_words(run, day_hrs):
+    """Where a run of hours sits in the day, in words. All day; most of the day (two thirds or more); late on (to the day's last
+    hour, starting in its second half); early on (from its first hour, ending in its first half); otherwise by the clock:
+    in the morning, around midday (centred 12:00 to 14:00) or in the afternoon.
+    day_hrs: every scored hour of that day, earlier ones included, so the words do not drift as the day goes on."""
+    first, last = hour_of(day_hrs[0]), hour_of(day_hrs[-1]) + 1
+    a, b = hour_of(run[0]), hour_of(run[-1]) + 1
+    half = (first + last) / 2
+    if a <= first and b >= last:
+        return "all day"
+    if (b - a) * 3 >= (last - first) * 2:
+        return "most of the day"
+    if b >= last and a >= half:
+        return "late on"
+    if a <= first and b <= half:
+        return "early on"
+    mid = (a + b) / 2
+    return "in the morning" if mid < 12 else "around midday" if mid <= 14 else "in the afternoon"
+
+
+def day_summary(results, cfg, day_iso):
+    """The best of a day along the whole coast, for its summary card. The best stretch is the coast panel's stretch (weather point)
+    holding the best wall:
+    the highest day score as shown, ties to the longest run of hours in that band, then coast order.
+    Returns a dict: best (None if nothing is scored), grippy (crags whose day score as shown is 6 or more) and crags (all crags)."""
+    zones = cfg["zones"]
+    best = None
+    for i, r in enumerate(results):
+        d = r["daily"].get(day_iso)
+        if not d:
+            continue
+        hs = [hr for hr in r["hours"] if hr["t"][:10] == day_iso]
+        run = band_run(hs, d)
+        key = (rnd(d["index"]), len(run), -i)
+        if best is None or key > best["key"]:
+            best = {"key": key, "r": r, "d": d, "run": run}
+    groups = groups_of(results)
+    grippy = 0
+    for _n, walls in groups:
+        _r, d = best_wall(walls, day_iso)
+        if d and rnd(d["index"]) >= 6:
+            grippy += 1
+    if best:
+        c = best["r"]["crag"]
+        best["stretch"] = zones[c["zone"]]["name"]
+        best["when"] = when_words(best["run"], day_hours(best["r"], day_iso))
+    return {"best": best, "grippy": grippy, "crags": len(groups)}
+
+
+def day_over(results, day_iso):
+    """The best score anywhere on a day that is already over: the highest best-window mean over its hours. None if none."""
+    wins = [best_window(day_hours(r, day_iso)) for r in results]
+    wins = [x[0] for x in wins if x]
+    return max(wins) if wins else None
+
+
+def summary_card(title, day, s=None, over=None):
+    """One summary card. s: day_summary() for a day still to come; over: the best score of a day whose daylight is over."""
+    head = f'<p class="ovl">{title}, {day.strftime("%a %-d %b")}</p>'
+    if s is None:
+        if over is None:
+            block, line = '<span class="num sz-xl none" aria-hidden="true">-</span>', "Today is over"
+        else:
+            name = band(over)[0]
+            block = f'<span class="num sz-xl past" role="img" aria-label="Best today: {fmt(over)}, {name}">{fmt(over)}</span>'
+            line = "Today is over"
+        return f'<div class="card">{block}<div>{head}<p class="ln">{line}</p></div></div>'
+    b = s["best"]
+    if not b:
+        return f'<div class="card"><span class="num sz-xl none" aria-hidden="true">-</span><div>{head}<p class="ln">No hours scored.</p></div></div>'
+    d = b["d"]
+    name, _note, css = band(d["index"])
+    unsure, risk = d["spread"] > 2 or d["n"] < 2, d["wet"] >= 0.3
+    cls = css + (" unsure" if unsure else "") + (" risk" if risk else "")
+    said = f"{fmt(d['index'])}, {name}" + (", wet-rock risk" if risk else "") + (", models disagree" if unsure else "")
+    block = f'<span class="num sz-xl {cls}" role="img" aria-label="{said}">{fmt(d["index"])}</span>'
+    n = s["grippy"]
+    count = f'{n} of {s["crags"]} crags {"reaches" if n == 1 else "reach"} Grippy.'
+    if rnd(d["index"]) < USABLE:
+        line, meta = f'Nowhere climbable. Best is {name}, {fmt(d["index"])}, at {escape(b["r"]["crag"]["name"])}.', count
+    else:
+        run = b["run"]
+        line = f'{name} {b["when"]}, {run[0]["t"][11:16]} to {end_of(run[-1])}'
+        meta = f'Best from {escape(b["stretch"])}. {count}'
+    return f'<div class="card">{block}<div>{head}<p class="ln">{line}</p><p class="cm">{meta}</p></div></div>'
+
+
+def render_summary(results, now, cfg):
+    """The Today and Tomorrow cards at the top of home. After dark Today reads "Today is over" and Tomorrow comes first."""
+    today = now.date()
+    tomorrow = today + timedelta(days=1)
+    _day, after_dark, *_rest = coast_view(results, now, cfg)
+    later = summary_card("Tomorrow", tomorrow, day_summary(results, cfg, tomorrow.isoformat()))
+    if after_dark:
+        cards = later + summary_card("Today", today, over=day_over(results, today.isoformat()))
+    else:
+        cards = summary_card("Today", today, day_summary(results, cfg, today.isoformat())) + later
+    return f'<section class="cards" aria-label="Best today and tomorrow">{cards}</section>'
+
+
+def render_help():
+    """Help Grip get better: the three forms as equal cards, in a fixed order."""
+    cards = [("log.html", "Log a day on the rock", "Say how the rock felt. It is how the forecast gets checked.", "Log a day", False),
+             (NOTES_URL, "Send a crag note", "Aspect, tides, seepage, shelter or birds wrong or missing.", "Send a note", True),
+             (FEEDBACK_URL, "Give feedback", "What works on the site, what does not, what is missing.", "Give feedback", True)]
+    out = ['<section class="help" aria-labelledby="help-h"><h2 id="help-h">Help Grip get better</h2>'
+           '<p class="hint">Grip is still being calibrated. Each of these takes a minute and needs no account.</p><div class="hcs">']
+    for href, title, desc, act, ext in cards:
+        tgt = ' target="_blank" rel="noopener"' if ext else ""
+        out.append(f'<a class="hc" href="{href}"{tgt}><span class="ht">{title}</span><span class="hd">{desc}</span><span class="ha">{act}</span></a>')
+    out.append("</div></section>")
+    return "".join(out)
+
+
+def grid_sub(walls):
+    """A crag's sub-label in the seven-day grid: its aspect, or how many walls it has, and sport where a wall is bolted."""
+    if len(walls) > 1:
+        sub = f"Best of {len(walls)} walls"
+    else:
+        asp = walls[0]["crag"].get("aspect")
+        sub = f"Faces {asp}" if asp else "Aspect not known"
+    return sub + (" · sport" if any(r["crag"].get("type") == "sport" for r in walls) else "")
+
+
+def odd_one(models):
+    """With three models' scores for an hour, the one standing apart: (its name, how far from the nearer of the other two,
+    negative when lower), when the other two are within 2 points of each other and it is more than 2 from both. Else None."""
+    if len(models) != 3:
+        return None
+    lo, mid, hi = sorted(models, key=lambda m: m[1])
+    if mid[1] - lo[1] > 2 and hi[1] - mid[1] <= 2:
+        return lo[0], lo[1] - mid[1]
+    if hi[1] - mid[1] > 2 and mid[1] - lo[1] <= 2:
+        return hi[0], hi[1] - mid[1]
+    return None
+
+
+def and_list(xs):
+    return xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
+
+
+def models_sentence(r, day_iso, d, is_today):
+    """The pop-up's plain words on the weather models for one wall's day, from its scored hours.
+    An hour counts as a disagreement when the models' scores differ by more than 2, the rule the grid's stripes use.
+    Returns (kind, sentence). kind: "a" the models agree, "w" they agree on the best window but not elsewhere,
+    "d" they disagree in the best window, "o" only one model covers the best window."""
+    hs = [hr for hr in r["hours"] if hr["t"][:10] == day_iso]
+    if not hs:
+        return "a", ""
+    names = [lab for _m, lab, _d, _w in MODELS]
+    seen = {lab for hr in hs for lab, _s in hr["models"]}
+    before = {lab for hr in r["hours"] if hr["t"][:10] < day_iso for lab, _s in hr["models"]}
+    parts = []
+    gone = [lab for lab in names if lab not in seen and lab in before]  # the data shows these stop before this day
+    stop = [(lab, end_of(max((hr for hr in hs if lab in dict(hr["models"])), key=lambda hr: hr["t"])))
+            for lab in names if lab in seen and lab not in dict(hs[-1]["models"])]
+    if len(seen) == 1:
+        lab = next(iter(seen))
+        lead = f"Only {lab} reaches this far ahead." if gone else f"Only {lab} has a forecast for this day."
+        return "o", lead + " Treat it as a rough guide."
+    if gone:
+        parts.append(f"{and_list(gone)} {'does' if len(gone) == 1 else 'do'} not reach this far ahead.")
+    parts += [f"{lab} only reaches to {end}." for lab, end in stop]
+    win = [hr for hr in hs if d["start"] <= hr["t"][11:16] < d["end"]]
+    split = [hr for hr in hs if len(hr["models"]) >= 2 and hr["spread"] > 2]
+    if not split:
+        sets = {tuple(sorted(dict(hr["models"]))) for hr in hs}
+        who = ("All three models are" if len(seen) == 3 else "Both models are") if len(sets) == 1 else "The models are"
+        parts.append(f"{who} within 2 points {'for the rest of the day' if is_today else 'all day'}.")
+        kind = "a"
+    else:
+        hrs = [hour_of(hr) for hr in split]
+        if len(hrs) == 1:
+            when = f"at {split[0]['t'][11:16]}"
+        elif hrs == list(range(hrs[0], hrs[0] + len(hrs))):
+            when = f"from {split[0]['t'][11:16]} to {end_of(split[-1])}"
+        else:
+            when = f"at times between {split[0]['t'][11:16]} and {end_of(split[-1])}"
+
+        def by(x):
+            n = rnd(abs(x))
+            return f"up to {n} points" if n > 2 else "just over 2 points"
+        odd = [odd_one(hr["models"]) for hr in split]
+        pairs = {tuple(sorted(dict(hr["models"]))) for hr in split}
+        if all(odd) and len({o[0] for o in odd}) == 1:
+            lab, gaps = odd[0][0], [o[1] for o in odd]
+            far = max(gaps, key=abs)
+            if all(g < 0 for g in gaps) or all(g > 0 for g in gaps):
+                parts.append(f"{lab} is {by(far)} {'lower' if far < 0 else 'higher'} than the other two {when}.")
+            else:
+                parts.append(f"{lab} differs from the other two by {by(far)} {when}.")
+        elif all(len(hr["models"]) == 2 for hr in split) and len(pairs) == 1:
+            parts.append(f"{and_list(list(next(iter(pairs))))} differ by {by(max(hr['spread'] for hr in split))} {when}.")
+        else:
+            parts.append(f"The models differ by {by(max(hr['spread'] for hr in split))} {when}.")
+        touches = any(hr in win for hr in split)
+        parts.append("This touches the best window." if touches else "The best window is not affected.")
+        kind = "d" if touches else "w"
+    if win and min(len(hr["models"]) for hr in win) < 2:
+        kind = "o"
+        parts.append("Only one model covers part of the best window, so treat it as a rough guide.")
+    return kind, " ".join(parts)
+
+
+def cal_mark(v):
+    """How one scored day went, on the score as shown: "in" the felt band, "near" (within a point) or "out"."""
+    m = band_miss(rnd(v["grip"]), v["feel"])
+    return "in" if m == 0 else "near" if abs(m) <= 1 else "out"
+
+
+def sure_lead(cal):
+    """The opening words of How sure is Grip? on home, from the calibration summary."""
+    if cal is None:
+        return "Logged days are scored against the archived forecasts once the day is over, and the results appear here."
+    n, wait = cal["n"], cal.get("pending", 0)
+    more = f" {wait} more {'is' if wait == 1 else 'are'} waiting to be scored." if wait else ""
+    if n == 0:
+        return "Not very, yet. No logged days have been scored so far." + more
+    lead = "Not very, yet. " if n < SMALL_SAMPLE else ""
+    if n == 1:
+        res = {"in": "landed in the band climbers felt", "near": "was within a point of the band climbers felt",
+               "out": "missed the band climbers felt by more than a point"}[cal_mark(cal["rows"][0])]
+        return f"{lead}1 day has been logged. Grip's score {res}.{more}"
+    return (f"{lead}{n} days have been logged. Grip's score landed in the band climbers felt on {cal['bands_right']} of them, "
+            f"and within a point on {cal['within']}.{more}")
+
+
+def render_sure(cal):
+    """How sure is Grip?, under the grid: the lead in words, one square per scored day, and links to the full record on Method."""
+    out = ['<section class="sure" aria-labelledby="sure-h"><div><h2 id="sure-h">How sure is Grip?</h2>'
+           f'<p>{escape(sure_lead(cal))}</p><p class="links"><a href="method.html#days">Every logged day</a>'
+           '<a href="method.html">How Grip works</a></p></div>']
+    rows = sorted((cal or {}).get("rows", []), key=lambda v: (v["date"], v["crag"]))
+    if rows:
+        marks = [cal_mark(v) for v in rows]
+        k = {m: marks.count(m) for m in ("in", "near", "out")}
+        said = f'{len(marks)} logged day{"s" if len(marks) != 1 else ""}: {k["in"]} in the felt band, {k["near"]} within a point, {k["out"]} further out'
+        out.append(f'<div class="rec"><div class="sq" role="img" aria-label="{said}">' + "".join(f'<i class="{m}"></i>' for m in marks)
+                   + f'</div><p class="sql" aria-hidden="true"><span><i class="in"></i>In the felt band, {k["in"]}</span>'
+                   f'<span><i class="near"></i>Within a point, {k["near"]}</span><span><i class="out"></i>Further out, {k["out"]}</span></p></div>')
+    out.append("</section>")
     return "".join(out)
 
 
@@ -2413,51 +2837,43 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     w('<title>Grip forecast</title>')
     w(fonts())
     w(icon_links())
-    w(f"<style>{CSS}{COAST_CSS}</style></head><body>{header_bar(home=True)}<main>")
-    w(f'<p class="updated">Dry-rock forecast for the sea cliffs of north-east Scotland. Updated {now.strftime("%a %-d %b, %H:%M")}. '
-      f'Models: {escape(", ".join(models_ok)) or "none available"}.</p>')
+    w(f"<style>{CSS}{COAST_CSS}{HOME_CSS}</style></head><body>{header_bar(current='forecast')}<main class=\"home\">")
+    w(fresh_line(now))
+    w('<h1 class="vh">Grip, dry-rock forecast for the north-east sea cliffs</h1>')
+    w(render_summary(results, now, cfg))
+    w('<div class="top"><div>')
     w(render_coast(results, now, cfg))
     w('<div class="scale" aria-label="Grip scale">')
     for lo, name, note, css, rng in reversed(BANDS):
         w(f'<div><b class="kc {css}">{rng}</b><span>{name}: {note}</span></div>')
     w('<div><i class="smp risk" aria-hidden="true"></i><span>Wet-rock risk</span></div>'
-      '<div><i class="smp unsure" aria-hidden="true"></i><span>Models disagree</span></div></div>')
-    w('<ul class="forms">'
-      '<li><a class="btn" href="log.html">Log a day on the rock</a>'
-      "<span>Climbed on the coast? Say how the rock felt. It takes a minute, it is anonymous, and it is how Grip gets checked against reality.</span></li>"
-      f'<li><a class="btn alt" href="{NOTES_URL}" target="_blank" rel="noopener">Send a crag note</a>'
-      '<span>Know a crag better than the list does? Aspect, tides, seepage, shelter, birds. '
-      'See the <a href="birds.html">nesting bird register</a> for what Grip currently believes.</span></li>'
-      f'<li><a class="btn alt" href="{FEEDBACK_URL}" target="_blank" rel="noopener">Give feedback</a>'
-      "<span>Something confusing, missing or wrong? Tell us.</span></li></ul>")
+      '<div><i class="smp unsure" aria-hidden="true"></i><span>Models disagree</span></div></div></div>')
     w(render_popular(results, tides, now, cfg))
+    w("</div>")
+    w(render_help())
 
+    sections = []
+    for n, walls in groups:
+        sec = walls[0]["crag"].get("section") or zones[walls[0]["crag"]["zone"]]["name"]
+        if sec not in sections:
+            sections.append(sec)
     w('<h2 id="week-h">Next 7 days</h2>')
-    w('<div class="find" role="search"><label for="find">Find a crag</label>'
-      '<input id="find" type="search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-controls="grid" aria-describedby="find-hint">'
-      '<p class="hint" id="find-hint">Type the start of any word in a crag or wall name to filter the grid below.</p>'
-      '<p class="note" id="find-note"></p><p class="vh" id="find-count" aria-live="polite"></p></div>')
     w('<p class="hint">Crags with several walls show their best wall. Tap a crag name for its hour-by-hour page; tap any score for the other walls, what each weather model gives it, climbable hours and wet-rock risk.</p>')
+    w('<div class="find" id="findbox" role="search" hidden><label for="find">Find a crag'
+      '<input id="find" type="search" placeholder="Start typing a name, such as Logie" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-controls="grid" aria-describedby="find-count"></label>'
+      f'<p class="sub" id="find-count" role="status">{len(groups)} crags in {len(sections)} stretches</p></div>')
     w('<div class="gridbox"><div class="wrap"><table class="grid" id="grid" aria-labelledby="week-h"><thead><tr><th class="crag">Crag</th>')
     for d in all_days:
         dd = date.fromisoformat(d)
         today_col = ' class="today"' if dd == today else ""
         w(f"<th{today_col}><span>{dd.strftime('%a')}</span><span>{dd.day}</span></th>")
     w("</tr></thead><tbody>")
-    sections = []
-    for n, walls in groups:
-        sec = walls[0]["crag"].get("section") or zones[walls[0]["crag"]["zone"]]["name"]
-        if sec not in sections:
-            sections.append(sec)
+    said_at = {}
     for sec in sections:
         zgroups = [(n, walls) for n, walls in groups if (walls[0]["crag"].get("section") or zones[walls[0]["crag"]["zone"]]["name"]) == sec]
         w(f'<tr class="zone"><th colspan="{len(all_days) + 1}"><span>{escape(sec)}</span></th></tr>')
         for gname, walls in zgroups:
-            c0 = walls[0]["crag"]
-            if len(walls) == 1:
-                sub = ", ".join(x for x in (c0.get("aspect") or "aspect unknown", c0["type"]) if x)
-            else:
-                sub = f"{len(walls)} walls, best shown"
+            sub = grid_sub(walls)
             gb = birds_in(walls, all_days)
             if gb:
                 sub += ". Restricted: nesting birds" if gb["level"] == "restricted" else ". Nesting birds"
@@ -2481,13 +2897,16 @@ def render(results, tides, now, cfg, models_ok, cal=None):
                             parts.append(f'{wr["crag"].get("wall") or "Main face"}~{wd["index"]:.1f}~{wd["start"]} to {wd["end"]}~{wd["usable"]} of {wd["hours"]}~{pct(wd["wet"])}')
                     wl = "|".join(parts)
                 dd = date.fromisoformat(d).strftime("%a %-d %b")
-                w(f'<td><button type="button" class="cell {cls}" data-crag="{escape(gname)}" data-wall="{escape(c.get("wall") or "")}" data-day="{dd}" '
+                said = "".join(models_sentence(r, d, v, date.fromisoformat(d) == today))  # its kind, then the sentence
+                said = said_at.setdefault(said, len(said_at))  # each distinct sentence goes in the page once
+                w(f'<td><button type="button" class="cell {cls}" data-crag="{escape(gname)}" data-wall="{escape(c.get("wall") or "")}" data-day="{dd}" data-ms="{said}" '
                   f'data-win="{v["start"]} to {v["end"]}" data-score="{v["index"]:.1f}" data-usable="{v["usable"]} of {v["hours"]}" data-drying="{escape(v["drying"])}" '
                   f'data-wet="{pct(v["wet"])}" data-models="{escape(mods)}" data-walls="{escape(wl)}" data-log="{escape(log_link(c, d if date.fromisoformat(d) <= today else today.isoformat()))}" data-note="{escape(note_link(c))}" data-detail="detail/{slug(gname)}.html" '
                   f'data-birds="{escape(gb["note"]) if gb else ""}" '
                   f'aria-label="{escape(label(c))}, {dd}: {fmt(v["index"])}, {name}">{fmt(v["index"])}</button></td>')
             w("</tr>")
-    w("</tbody></table></div></div>")
+    w('</tbody></table></div><div class="none-box" id="find-empty" hidden><p id="find-none"></p>'
+      '<button type="button" class="clear" id="find-clear">Clear</button></div></div>')
     w('<div class="key">')
     for lo, name, note, css, rng in BANDS:
         w(f'<span><i class="kc {css}">{rng}</i> {name}: {note}</span>')
@@ -2496,39 +2915,74 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     w("</div>")
 
 
-    w('<h2>Checking Grip against real days</h2><div class="method">')
-    if cal is None:
-        w("<p>Logged days are scored against the archived forecasts once the day is over, and the results appear here.</p>")
-    elif cal["n"] == 0:
-        w(f"<p>No scored days yet. {cal['pending']} logged and waiting to be scored.</p>")
-    else:
-        w(f"<p>{cal['n']} logged day{'s' if cal['n'] != 1 else ''} scored so far"
-          f"{', ' + str(cal['pending']) + ' waiting' if cal['pending'] else ''}. "
-          f"Taking the score as shown, Grip landed in the felt band {cal['bands_right']} time{'s' if cal['bands_right'] != 1 else ''}, and within a point of it {cal['within']} time{'s' if cal['within'] != 1 else ''}. "
-          f"Misses are measured on the unrounded score from the edge of the band, since the form records a band rather than a number: "
-          f"typical miss {cal['mae']:.1f}" + (f", on average {abs(cal['bias']):.1f} {'above' if cal['bias'] > 0 else 'below'} the felt band" if abs(cal['bias']) >= 0.05 else "") + ".</p>")
-        if cal.get("by_model"):
-            parts = [f'{lab} in the band {m["right"]} of {m["n"]}, typical miss {m["mae"]:.1f}' + (f' ({"above" if m["bias"] > 0 else "below"} by {abs(m["bias"]):.1f})' if abs(m["bias"]) >= 0.05 else "")
-                     for lab, m in cal["by_model"].items()]
-            w(f"<p>By model: {'; '.join(parts)}. The model that lands in the band most often over enough days is the one to trust most in the blend. "
-              "The actual-weather column scores the day from the ERA5 reanalysis, the best record of what the weather really did, so it tests the scoring logic itself rather than the forecasts.</p>")
+    w(render_sure(cal))
+    w('<dialog id="detail" aria-labelledby="d-title"><form method="dialog"><div class="dh"><h3 id="d-title"></h3><button>Close</button></div>'
+      '<div class="ds"><span id="d-score"></span><div><p class="ovl">Blended</p><p id="d-sub"></p></div></div>'
+      '<div class="dm"><p class="ovl" id="d-mhead" hidden></p><p class="mh" id="d-mh"></p><p id="d-ms"></p><div id="d-models"></div></div>'
+      '<div id="d-wallbox" hidden><p class="ovl">Walls</p><div id="d-walls"></div></div>'
+      '<p class="blend">The blend weights the Met Office 2.5 (1 beyond two days), ECMWF 1 and ICON 1. The Met Office weight was raised early on, when it led the other models on the first logged days; on the current count its lead is narrow, so the weights will be reviewed as more days are logged.</p>'
+      '<p id="d-birds" style="display:none;color:var(--ink)"></p>'
+      '<p class="acts"><a id="d-detail" href="#">Hour by hour for this crag</a></p>'
+      '<p class="acts"><a id="d-log" href="#">Log how it actually was</a> &middot; <a id="d-note" href="#" target="_blank" rel="noopener">Send a crag note</a></p></form></dialog>')
+    w(f"<script>var MODELS_SAID={js(list(said_at))};{STALE_JS}{SWITCH_JS}{MATCH_JS}{FIND_JS}{FADE_JS}</script>")
+    w("""<script>
+(function(){
+  var dlg=document.getElementById('detail'), sel=null,
+      MK={a:'The models agree',w:'The models agree on the best window',d:'The models disagree',o:'One model only'};
+  function band(s){s=Math.round(s);return s>=8?'b5':s>=6?'b4':s>=4?'b3':s>=2?'b2':'b1';}
+  function item(s,name,more){  // a score block and its name, with an optional detail line under the name
+    var el=document.createElement('div'), c=document.createElement('span'), t=document.createElement('span');
+    c.className='chip '+band(s);c.textContent=Math.round(s);
+    t.textContent=name;
+    if(more){var m=document.createElement('small');m.textContent=more;t.appendChild(m);}
+    el.appendChild(c);el.appendChild(t);return el;
+  }
+  document.querySelectorAll('button.cell').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.getElementById('d-title').textContent=b.dataset.crag;
+      var who=b.dataset.wall?(' on '+b.dataset.wall):'';
+      document.getElementById('d-sub').textContent=b.dataset.day+', best window '+b.dataset.win+who+'. Climbable hours: '+b.dataset.usable+'. Wet-rock risk: '+b.dataset.wet+'.'+(b.dataset.drying?(' '+b.dataset.drying+'.'):'');
+      var s=parseFloat(b.dataset.score), sc=document.getElementById('d-score');
+      sc.className='num sz-xl '+band(s)+(b.classList.contains('unsure')?' unsure':'')+(b.classList.contains('risk')?' risk':'');
+      sc.textContent=Math.round(s);
+      var mh=document.getElementById('d-mhead'), ms=document.getElementById('d-models'), wb=document.getElementById('d-wallbox'), ws=document.getElementById('d-walls');
+      mh.textContent='Models'+who;mh.hidden=!b.dataset.walls;
+      var said=MODELS_SAID[+b.dataset.ms]||'a', mt=document.getElementById('d-ms');  // its kind, then the sentence
+      document.getElementById('d-mh').textContent=MK[said.charAt(0)];
+      mt.textContent=said.slice(1);mt.hidden=!mt.textContent;
+      ms.textContent='';
+      b.dataset.models.split('|').forEach(function(m){var p=m.split('~');ms.appendChild(item(parseFloat(p[1]),p[0]));});
+      ws.textContent='';wb.hidden=!b.dataset.walls;
+      if(b.dataset.walls){
+        b.dataset.walls.split('|').forEach(function(m){var p=m.split('~');ws.appendChild(item(parseFloat(p[1]),p[0],p[2]+', '+p[3]+' climbable, wet risk '+p[4]));});
+      }
+      document.getElementById('d-log').href=b.dataset.log;
+      document.getElementById('d-note').href=b.dataset.note;
+      document.getElementById('d-detail').href=b.dataset.detail;
+      var bp=document.getElementById('d-birds'); if(b.dataset.birds){bp.textContent='Birds: '+b.dataset.birds; bp.style.display='block';} else {bp.style.display='none';}
+      if(sel){sel.classList.remove('sel');}
+      sel=b;b.classList.add('sel');
+      if(dlg.showModal){dlg.showModal();}else{dlg.setAttribute('open','');}
+    });
+  });
+  dlg.addEventListener('click',function(e){if(e.target===dlg){dlg.close();}});
+  dlg.addEventListener('close',function(){if(sel){sel.classList.remove('sel');sel=null;}});
+})();
+</script>""")
+    w(f"</main>{site_foot()}</body></html>")
+    return "".join(out)
 
-        def chip(x):
-            if x is None:
-                return "-"
-            name, note, css = band(x)
-            return f'<span class="chip {css}">{fmt(x)}</span>'
 
-        w('<div class="wrap"><table class="cal"><tr><th>Date</th><th>Crag</th><th>Felt</th><th>Grip</th>' + "".join(f"<th>{lab}</th>" for _m, lab, _d, _w in MODELS) + "<th>Actual weather</th></tr>")
-        for v in cal["rows"]:
-            cells = "".join(f'<td>{chip(v.get("models", {}).get(lab))}</td>' for _m, lab, _d, _w in MODELS) + f'<td>{chip(v.get("era"))}</td>'
-            lo, hi = FEEL_RANGE[v["feel"]]
-            times = f' <small>({v["n_logs"]} logs)</small>' if v.get("n_logs", 1) > 1 else ""
-            w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(v["crag"])}{times}</td><td>{escape(FEEL_NAME[v["feel"]])} ({lo:g} to {min(hi - 1, 10):g})</td>'
-              f'<td>{chip(v["grip"])} {band(v["grip"])[0]}</td>{cells}</tr>')
-        w("</table></div>")  # in its own scrolling box, like the crag pages' logged days, so the page never scrolls sideways
-    w("</div>")
-    w('<h2>How Grip works</h2><div class="method">')
+def render_method(cal, now, models_ok):
+    """The Method page: how Grip works, the weather models in the latest run, and the full calibration against logged days."""
+    out = []
+    w = out.append
+    w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
+    w("<title>Grip: how Grip works</title>")
+    w(fonts())
+    w(icon_links())
+    w(f"<style>{CSS}{METHOD_CSS}</style></head><body>{header_bar(current='method')}<main>")
+    w('<h1>How Grip works</h1><div class="method">')
     w("<p>Grip estimates the state of the rock, hour by hour, for each wall. It models the two things that make sea-cliff rock greasy: "
       "water on the surface, from rain, spray, sea salt drawing moisture out of damp air, or condensation on rock colder than the air's dew point; "
       "and how fast the air, wind and sun can dry it again. Each daylight hour collects points from the factors below, which are turned into a "
@@ -2562,58 +3016,48 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     w("<p>The index is 3 plus half the points, held between 0 and 10. Hours with the sun less than 5 degrees above the horizon are not scored. "
       "Tides are shown for planning but not scored, and so are nesting birds: a crag in its bird season is marked, not marked down. Model disagreement is shown rather than hidden: striped cells and the wet-rock risk tell you when the forecasts differ. "
       "The weightings are a first estimate and are being checked against real days; expect them to change.</p>")
-    w('<p>Forecast data: <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0), including UK Met Office data (CC BY-SA 4.0). '
-      "Crag details, aspects and tidal status from the <a href=\"https://routes.smc.org.uk/\">SMC routes database</a>, with local corrections; nesting bird notes from the SMC database and UKC.</p></div>")
-    w('<dialog id="detail" aria-labelledby="d-title"><form method="dialog"><div class="dh"><h3 id="d-title"></h3><button>Close</button></div>'
-      '<div class="ds"><span id="d-score"></span><div><p class="ovl">Blended</p><p id="d-sub"></p></div></div>'
-      '<div class="dm"><p class="ovl" id="d-mhead" hidden></p><div id="d-models"></div></div>'
-      '<div id="d-wallbox" hidden><p class="ovl">Walls</p><div id="d-walls"></div></div>'
-      '<p class="blend">The blend weights the Met Office 2.5 (1 beyond two days), ECMWF 1 and ICON 1. The Met Office weight was raised early on, when it led the other models on the first logged days; on the current count its lead is narrow, so the weights will be reviewed as more days are logged.</p>'
-      '<p id="d-birds" style="display:none;color:var(--ink)"></p>'
-      '<p class="acts"><a id="d-detail" href="#">Hour by hour for this crag</a></p>'
-      '<p class="acts"><a id="d-log" href="#">Log how it actually was</a> &middot; <a id="d-note" href="#" target="_blank" rel="noopener">Send a crag note</a></p></form></dialog>')
-    w(f"<script>{MATCH_JS}{FIND_JS}{FADE_JS}</script>")
-    w("""<script>
-(function(){
-  var dlg=document.getElementById('detail'), sel=null;
-  function band(s){s=Math.round(s);return s>=8?'b5':s>=6?'b4':s>=4?'b3':s>=2?'b2':'b1';}
-  function item(s,name,more){  // a score block and its name, with an optional detail line under the name
-    var el=document.createElement('div'), c=document.createElement('span'), t=document.createElement('span');
-    c.className='chip '+band(s);c.textContent=Math.round(s);
-    t.textContent=name;
-    if(more){var m=document.createElement('small');m.textContent=more;t.appendChild(m);}
-    el.appendChild(c);el.appendChild(t);return el;
-  }
-  document.querySelectorAll('button.cell').forEach(function(b){
-    b.addEventListener('click',function(){
-      document.getElementById('d-title').textContent=b.dataset.crag;
-      var who=b.dataset.wall?(' on '+b.dataset.wall):'';
-      document.getElementById('d-sub').textContent=b.dataset.day+', best window '+b.dataset.win+who+'. Climbable hours: '+b.dataset.usable+'. Wet-rock risk: '+b.dataset.wet+'.'+(b.dataset.drying?(' '+b.dataset.drying+'.'):'');
-      var s=parseFloat(b.dataset.score), sc=document.getElementById('d-score');
-      sc.className='num sz-xl '+band(s)+(b.classList.contains('unsure')?' unsure':'')+(b.classList.contains('risk')?' risk':'');
-      sc.textContent=Math.round(s);
-      var mh=document.getElementById('d-mhead'), ms=document.getElementById('d-models'), wb=document.getElementById('d-wallbox'), ws=document.getElementById('d-walls');
-      mh.textContent='Models'+who;mh.hidden=!b.dataset.walls;
-      ms.textContent='';
-      b.dataset.models.split('|').forEach(function(m){var p=m.split('~');ms.appendChild(item(parseFloat(p[1]),p[0]));});
-      ws.textContent='';wb.hidden=!b.dataset.walls;
-      if(b.dataset.walls){
-        b.dataset.walls.split('|').forEach(function(m){var p=m.split('~');ws.appendChild(item(parseFloat(p[1]),p[0],p[2]+', '+p[3]+' climbable, wet risk '+p[4]));});
-      }
-      document.getElementById('d-log').href=b.dataset.log;
-      document.getElementById('d-note').href=b.dataset.note;
-      document.getElementById('d-detail').href=b.dataset.detail;
-      var bp=document.getElementById('d-birds'); if(b.dataset.birds){bp.textContent='Birds: '+b.dataset.birds; bp.style.display='block';} else {bp.style.display='none';}
-      if(sel){sel.classList.remove('sel');}
-      sel=b;b.classList.add('sel');
-      if(dlg.showModal){dlg.showModal();}else{dlg.setAttribute('open','');}
-    });
-  });
-  dlg.addEventListener('click',function(e){if(e.target===dlg){dlg.close();}});
-  dlg.addEventListener('close',function(){if(sel){sel.classList.remove('sel');sel=null;}});
-})();
-</script>""")
-    w("</main></body></html>")
+    w("</div>")
+    w('<h2 id="models">Weather models</h2><div class="method">'
+      f'<p>Models in the latest run, {now.strftime("%a %-d %b, %H:%M")}: {escape(", ".join(models_ok)) or "none available"}.</p></div>')
+    w('<h2 id="days">Checking Grip against real days</h2><div class="method">')
+    if cal is None:
+        w("<p>Logged days are scored against the archived forecasts once the day is over, and the results appear here.</p>")
+    elif cal["n"] == 0:
+        w(f"<p>No scored days yet. {cal['pending']} logged and waiting to be scored.</p>")
+    else:
+        w(f"<p>{cal['n']} logged day{'s' if cal['n'] != 1 else ''} scored so far"
+          f"{', ' + str(cal['pending']) + ' waiting' if cal['pending'] else ''}. "
+          f"Taking the score as shown, Grip landed in the felt band {cal['bands_right']} time{'s' if cal['bands_right'] != 1 else ''}, and within a point of it {cal['within']} time{'s' if cal['within'] != 1 else ''}. "
+          f"Misses are measured on the unrounded score from the edge of the band, since the form records a band rather than a number: "
+          f"typical miss {cal['mae']:.1f}" + (f", on average {abs(cal['bias']):.1f} {'above' if cal['bias'] > 0 else 'below'} the felt band" if abs(cal['bias']) >= 0.05 else "") + ".</p>")
+        if cal.get("by_model"):
+            parts = [f'{lab} in the band {m["right"]} of {m["n"]}, typical miss {m["mae"]:.1f}' + (f' ({"above" if m["bias"] > 0 else "below"} by {abs(m["bias"]):.1f})' if abs(m["bias"]) >= 0.05 else "")
+                     for lab, m in cal["by_model"].items()]
+            w(f"<p>By model: {'; '.join(parts)}. The model that lands in the band most often over enough days is the one to trust most in the blend. "
+              "The actual-weather column scores the day from the ERA5 reanalysis, the best record of what the weather really did, so it tests the scoring logic itself rather than the forecasts.</p>")
+
+        def chip(x):
+            if x is None:
+                return "-"
+            name, note, css = band(x)
+            return f'<span class="chip {css}">{fmt(x)}</span>'
+
+        w('<div class="wrap"><table class="cal"><tr><th>Date</th><th>Crag</th><th>Felt</th><th>Grip</th>' + "".join(f"<th>{lab}</th>" for _m, lab, _d, _w in MODELS) + "<th>Actual weather</th></tr>")
+        for v in cal["rows"]:
+            cells = "".join(f'<td>{chip(v.get("models", {}).get(lab))}</td>' for _m, lab, _d, _w in MODELS) + f'<td>{chip(v.get("era"))}</td>'
+            lo, hi = FEEL_RANGE[v["feel"]]
+            times = f' <small>({v["n_logs"]} logs)</small>' if v.get("n_logs", 1) > 1 else ""
+            w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(v["crag"])}{times}</td><td>{escape(FEEL_NAME[v["feel"]])} ({lo:g} to {min(hi - 1, 10):g})</td>'
+              f'<td>{chip(v["grip"])} {band(v["grip"])[0]}</td>{cells}</tr>')
+        w("</table></div>")  # in its own scrolling box, like the crag pages' logged days, so the page never scrolls sideways
+    w("</div>")
+    w('<footer class="foot"><p>Forecast data: <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0), from the Met Office '
+      "(UK Met Office data, CC BY-SA 4.0), ECMWF and the Deutscher Wetterdienst (ICON). The actual-weather column is scored from the ERA5 "
+      "reanalysis of the Copernicus Climate Change Service, also through Open-Meteo. "
+      "Crag details, aspects and tidal status from the <a href=\"https://routes.smc.org.uk/\">SMC routes database</a>, with local corrections; "
+      "nesting bird notes from the SMC database and UKC.</p>"
+      "<p>Grip is independent and not affiliated with the SMC or UKClimbing.</p></footer>")
+    w(f"</main>{site_foot()}</body></html>")
     return "".join(out)
 
 
@@ -2682,6 +3126,8 @@ def main():
     html = render(results, tides, now, cfg, models_ok, cal)
     with open(os.path.join(SITE_DIR, "index.html"), "w") as f:
         f.write(html)
+    with open(os.path.join(SITE_DIR, "method.html"), "w") as f:
+        f.write(render_method(cal, now, models_ok))
     with open(os.path.join(SITE_DIR, "birds.html"), "w") as f:
         f.write(render_birds(cfg, now))
     with open(os.path.join(SITE_DIR, "log.html"), "w") as f:
