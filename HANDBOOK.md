@@ -47,6 +47,8 @@ Log review (whenever logs arrive):
 4. Record the day in the `Log notes` tab: detail, what it told us, what changed. Pin the log to the right wall if needed (`LOG_PINS`).
 5. Change the model only when more than one day points the same way, and never from a single log.
 
+Remembered days: a day logged more than 30 days after it happened is a remembered day. Mark it '(remembered)' after the crag and wall in its Log notes row. It counts in the tally like any other day, but on its own it cannot count towards the two-day trigger for a scoring change: it counts only alongside at least one day logged within 30 days, missing the same way for the same physical reason. Days before mid-2024 score on the Met Office and ICON only, since the archive has no ECMWF before then; note that in the row as well.
+
 Scoring change:
 1. Reproduce the day locally with the hourly data (the hour-by-hour page shows the breakdown), test the change on every day with data, check the forecast grid does not go flat or run away.
 2. Bump `MODEL_VERSION` so all logged days re-score, update the "How Grip works" table on the page, commit and merge as under Changing the repository below, run the workflow on `main` three times to re-score all logs, re-check correlation, write the row in `Log notes`.
@@ -71,7 +73,7 @@ Google Forms and Sheets are edited through their normal pages. Facebook group fi
 1. Evidence. A log becomes a data point once it is pinned to the right wall and, where the logger scored the worst route rather than the day, the crag-overall reading is noted alongside it in Log notes. Both readings are kept; neither is deleted.
 2. Metrics, recorded in a review row in Log notes at every review: days in band, days within a point, mean error (the sign shows bias), mean absolute miss, correlation against the logged bands and against the crag-overall readings, per-model in-band counts, and the grid shape for the next three days (share of cells at 8 or above, any flat day).
 3. Diagnosis before change. For each miss, the actual-weather (ERA5) column separates the two causes: if ERA5 is also wrong it is the scoring; if only the forecasts are, it is the blend. Reproduce the day locally and name the factor responsible before touching anything.
-4. Trigger for a scoring change: at least two days, from different crags or dates, missing in the same direction for the same stated physical reason. One day gets a note and a question to the logger, nothing more. A change must have a mechanism, not just a weight that fits.
+4. Trigger for a scoring change: at least two days, from different crags or dates, missing in the same direction for the same stated physical reason. One day gets a note and a question to the logger, nothing more. A change must have a mechanism, not just a weight that fits. Remembered days count towards the trigger only as set out under Log review.
 5. The smallest change that explains the misses, tested on every day we hold data for before it is committed. Regression rule: no day currently in band may leave it; if one does, the change is wrong or incomplete.
 6. Overfitting guard. Under thirty logs: structural fixes with a physical story only, one scoring change per review, the grid check after every change. Over thirty: hold back every fourth log by date as a validation set and report fit and holdout separately.
 7. Blend weights are adjusted on per-model in-band counts only, with at least ten scored days.
