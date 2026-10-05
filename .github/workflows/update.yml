@@ -22,7 +22,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # The latest main, not the commit that triggered the run, so a run queued behind
+      # another starts from its saved state. Full history so the save step can rebase.
       - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
 
       - uses: actions/setup-python@v7
         with:
@@ -38,14 +43,31 @@ jobs:
           export GRIP_PAGE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/"
           python grip.py
 
+      # If main has moved since checkout, rebase the state commit onto it and push once more.
+      # A failed save only warns: the page still deploys and the next run recomputes the state.
       - name: Save state and calibration cache (also keeps the schedule alive)
+        continue-on-error: true
         run: |
-          if [ -n "$(git status --porcelain state.json calibration.json calibration.csv crags.json)" ]; then
-            git config user.name "grip-bot"
-            git config user.email "grip-bot@users.noreply.github.com"
-            git add state.json calibration.json calibration.csv crags.json
-            git commit -m "Update state"
-            git push
+          if [ -z "$(git status --porcelain state.json calibration.json calibration.csv crags.json)" ]; then
+            echo "No state changes to save."
+            exit 0
+          fi
+          git config user.name "grip-bot"
+          git config user.email "grip-bot@users.noreply.github.com"
+          git add state.json calibration.json calibration.csv crags.json
+          git commit -m "Update state"
+          if git push; then
+            exit 0
+          fi
+          echo "Push rejected: main has moved. Rebasing the state commit onto the latest main."
+          git fetch origin main
+          if ! git rebase origin/main; then
+            git rebase --abort
+            echo "::warning title=State not saved::Rebasing the state commit onto main conflicted, so this run's state was not saved. The page still deploys; the next run recomputes the state."
+            exit 0
+          fi
+          if ! git push; then
+            echo "::warning title=State not saved::The push was rejected again after rebasing, so this run's state was not saved. The page still deploys; the next run recomputes the state."
           fi
 
       - uses: actions/configure-pages@v6
