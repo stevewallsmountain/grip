@@ -2234,14 +2234,14 @@ def render(results, tides, now, cfg, models_ok, cal=None):
             name, note, css = band(x)
             return f'<span class="chip {css}" style="display:inline-block;min-width:2.2rem;text-align:center;padding:1px 6px;border-radius:3px;font-weight:600">{fmt(x)}</span>'
 
-        w('<table class="cal"><tr><th>Date</th><th>Crag</th><th>Felt</th><th>Grip</th>' + "".join(f"<th>{lab}</th>" for _m, lab, _d, _w in MODELS) + "<th>Actual weather</th></tr>")
+        w('<div class="wrap"><table class="cal"><tr><th>Date</th><th>Crag</th><th>Felt</th><th>Grip</th>' + "".join(f"<th>{lab}</th>" for _m, lab, _d, _w in MODELS) + "<th>Actual weather</th></tr>")
         for v in cal["rows"]:
             cells = "".join(f'<td>{chip(v.get("models", {}).get(lab))}</td>' for _m, lab, _d, _w in MODELS) + f'<td>{chip(v.get("era"))}</td>'
             lo, hi = FEEL_RANGE[v["feel"]]
             times = f' <small>({v["n_logs"]} logs)</small>' if v.get("n_logs", 1) > 1 else ""
             w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(v["crag"])}{times}</td><td>{escape(FEEL_NAME[v["feel"]])} ({lo:g} to {min(hi - 1, 10):g})</td>'
               f'<td>{chip(v["grip"])} {band(v["grip"])[0]}</td>{cells}</tr>')
-        w("</table>")
+        w("</table></div>")  # in its own scrolling box, like the crag pages' logged days, so the page never scrolls sideways
     w("</div>")
     w('<h2>How Grip works</h2><div class="method">')
     w("<p>Grip estimates the state of the rock, hour by hour, for each wall. It models the two things that make sea-cliff rock greasy: "
