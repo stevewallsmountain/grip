@@ -1,8 +1,9 @@
 """Tests for the home page redesign: summary cards, the stale notice, the pop-up's models sentence, How sure,
-grid sub-labels and the header nav on every page.
+grid sub-labels, the header nav on every page and the intro and how-to.
 
 Standard library only. Run from the repository root or anywhere: python3 tests/test_home.py
 """
+import json
 import os
 import re
 import sys
@@ -367,6 +368,73 @@ class Nav(unittest.TestCase):
                      "1 logged day scored so far", "Grip is independent and not affiliated with the SMC or UKClimbing.",
                      "Open-Meteo</a> (CC BY 4.0)"):
             self.assertIn(text, html)
+
+
+class Intro(unittest.TestCase):
+    """The intro and how-to on the home page, built from the synthetic weather (GRIP_FAKE's): exact wording, the three links,
+    where it sits, the stored choice read in <head>, and the Got it button hidden until the script shows it."""
+
+    @classmethod
+    def setUpClass(cls):
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, "crags.json")) as f:
+            cfg = json.load(f)
+        cfg["crags"] = [c for c in cfg["crags"] if c["name"] in {"Logie Head", "Souter Head"}]
+        models, marine = grip.fake_data(cfg["zones"])
+        results, tides, now = grip.build(cfg, models, marine)
+        cls.html = grip.render(results, tides, now, cfg, ["Met Office", "ECMWF", "ICON"], None)
+
+    def text(self, fragment):
+        return re.sub(r"<[^>]+>", "", fragment)
+
+    def test_wording(self):
+        box = re.search(r'<section class="howto" id="how-to" aria-label="How to use Grip" tabindex="-1">(.*?)</section>', self.html).group(1)
+        self.assertIn("<p class=\"lead\"><strong>Grip</strong> forecasts whether the sea cliffs of north-east Scotland will be dry "
+                      "enough to climb, hour by hour, for the week ahead.</p>", box)
+        steps = re.findall(r'<li><span aria-hidden="true">(\d)</span><span>(.*?)</span></li>', box)
+        self.assertEqual([n for n, _s in steps], ["1", "2", "3", "4"])
+        self.assertEqual([re.match(r"<strong>([^<]+)</strong> ", s).group(1) for _n, s in steps],
+                         ["Where and when:", "Your crag:", "After climbing:", "Know a crag well?"])  # each lead-in in bold
+        self.assertEqual([self.text(s) for _n, s in steps], [
+            "Where and when: the cards and coast panel show the best of today and tomorrow.",
+            "Your crag: find it below for hour-by-hour detail, why it scores what it does, and how sure Grip is.",
+            "After climbing: log how the rock felt. Every log makes Grip more accurate.",
+            "Know a crag well? Send a crag note if Grip has something wrong or missing, such as aspect, seepage or nesting birds."])
+        self.assertIn('<ol role="list">', box)
+        self.assertIn('<p class="end">Like any weather forecast, Grip will only ever be a guide. Check the rock yourself before you commit.</p>', box)
+        self.assertIn('<div class="foot"><p class="sig">Steve</p><button type="button" id="intro-ok" hidden>Got it</button></div>', box)
+        self.assertNotRegex(box, "\u2014|!|calibrating")  # no em dashes, no exclamation marks, not the mock-up's old closing line
+
+    def test_links(self):
+        box = re.search(r'id="how-to".*?</section>', self.html).group(0)
+        self.assertEqual(re.findall(r'<a href="([^"]+)">([^<]+)</a>', box),
+                         [("log.html", "log how the rock felt"), ("note.html", "Send a crag note"), ("birds.html", "nesting birds")])
+
+    def test_place_and_reopen_line(self):
+        h = self.html
+        self.assertLess(h.index("</header>"), h.index('id="how-to"'))
+        self.assertLess(h.index('id="how-to"'), h.index('id="intro-open"'))
+        self.assertLess(h.index('id="intro-open"'), h.index('id="fresh"'))
+        self.assertEqual(h.count('id="how-to"'), 1)
+        self.assertIn('</section><a class="reopen" id="intro-open" href="#how-to" aria-controls="how-to" aria-expanded="false">'
+                      'New here? How to use Grip</a><p class="fresh"', h)
+
+    def test_stored_choice_read_before_the_page_draws(self):
+        head = self.html[:self.html.index("</head>")]
+        self.assertIn(f"<script>{grip.INTRO_HEAD_JS}</script>", head)
+        self.assertLess(head.index(grip.INTRO_HEAD_JS), head.index("<style>"))
+        self.assertIn("try{if(localStorage.getItem('grip-intro')==='closed')", grip.INTRO_HEAD_JS)
+        self.assertTrue(grip.INTRO_HEAD_JS.endswith("catch(e){}"))  # storage failing leaves the intro showing
+        self.assertIn(grip.INTRO_JS, self.html)
+        self.assertIn("html[data-intro=closed] .howto{display:none}", self.html)
+        self.assertIn(".reopen{display:none;", self.html)  # without script the line never shows
+
+    def test_home_only(self):
+        now = datetime(2026, 10, 5, 12, 0, tzinfo=grip.TZ)
+        for html in (grip.render_birds({"crags": []}, now), grip.render_log({"crags": []}),
+                     grip.render_method({"n": 0, "pending": 0, "rows": []}, now, ["ECMWF"])):
+            self.assertNotIn("how-to", html)
+            self.assertNotIn("grip-intro", html)
 
 
 if __name__ == "__main__":

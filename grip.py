@@ -1440,6 +1440,23 @@ COAST_CSS = """
 
 HOME_CSS = """
 main.home{padding-top:0}
+.howto{margin:var(--s-12) 0 0;max-width:760px;padding:var(--s-12) var(--s-16) 10px;background:var(--card);border:1px solid var(--rule);border-radius:var(--r-l)}
+.howto .lead{margin:0;font-size:15px;line-height:1.4}
+.howto ol{display:flex;flex-direction:column;gap:5px;margin:var(--s-8) 0 0;padding:0;list-style:none;font-size:var(--t-meta);line-height:1.35}
+.howto li{display:flex;gap:var(--s-8)}
+.howto li>span:first-child{flex:none;width:14px;font:600 15px/1.25 var(--font-display);color:var(--muted)}
+.howto a{color:var(--ink)}
+.howto .end{margin:var(--s-8) 0 0;font-size:var(--t-meta);line-height:1.35}
+.howto .foot{display:flex;align-items:center;justify-content:space-between;gap:var(--s-12);margin-top:var(--s-2)}
+.howto .sig{margin:0;font:italic 400 15px/1.2 var(--font-body);color:var(--muted)}
+.howto button{min-height:var(--tap);padding:0 var(--s-16);border:1px solid var(--rule);border-radius:var(--r-m);background:var(--paper);color:var(--ink);font:600 15px/1 var(--font-body);cursor:pointer}
+.howto button[hidden]{display:none}
+.howto button:active{transform:translateY(1px)}
+@media (hover:hover){.howto button:hover{background:var(--sunk)}}
+.reopen{display:none;align-items:center;min-height:var(--tap);margin-top:var(--s-4);font-size:var(--t-meta);color:var(--ink)}
+html[data-intro=closed] .howto{display:none}
+html[data-intro=closed] .reopen{display:inline-flex}
+html[data-intro=closed] .reopen+.fresh,html[data-intro=closed] .reopen+.stale{margin-top:0}
 .fresh{margin:14px 0 0;font-size:var(--t-meta);color:var(--muted)}
 .stale{margin:14px 0 0;padding:var(--s-12);background:var(--sunk);border:1px solid var(--ink);border-radius:var(--r-m);max-width:52rem}
 .stale+.fresh{margin-top:var(--s-8)}
@@ -4269,6 +4286,49 @@ def render_summary(results, now, cfg):
     return f'<section class="cards" aria-label="{said}">{cards}</section>'
 
 
+INTRO_KEY = "grip-intro"  # the localStorage key that remembers "Got it" in this browser
+
+# In the home page's <head>, before anything draws: a returning visitor who chose "Got it" gets data-intro="closed" on
+# <html>, which hides the intro and shows the "New here?" line, so the intro never flashes. If storage fails, the intro shows.
+INTRO_HEAD_JS = ("try{if(localStorage.getItem('" + INTRO_KEY + "')==='closed'){"
+                 "document.documentElement.setAttribute('data-intro','closed');}}catch(e){}")
+
+INTRO_JS = r"""
+(function(){  // the intro: Got it hides it and remembers that in this browser; New here? reopens it. Without script it always shows.
+  var box=document.getElementById('how-to'), ok=document.getElementById('intro-ok'), back=document.getElementById('intro-open'), root=document.documentElement;
+  if(!box||!ok||!back){return;}
+  ok.hidden=false;
+  ok.addEventListener('click',function(){
+    try{localStorage.setItem('__KEY__','closed');}catch(e){}
+    root.setAttribute('data-intro','closed');back.focus();
+  });
+  back.addEventListener('click',function(e){
+    e.preventDefault();
+    try{localStorage.removeItem('__KEY__');}catch(e2){}
+    root.removeAttribute('data-intro');box.focus();
+  });
+})();
+""".replace("__KEY__", INTRO_KEY)
+
+
+def render_intro():
+    """The home page's intro and how-to, signed by Steve, between the header and the freshness line, then the quiet line that
+    reopens it. Open in the HTML; the Got it button stays hidden until the script shows it."""
+    steps = ["<strong>Where and when:</strong> the cards and coast panel show the best of today and tomorrow.",
+             "<strong>Your crag:</strong> find it below for hour-by-hour detail, why it scores what it does, and how sure Grip is.",
+             '<strong>After climbing:</strong> <a href="log.html">log how the rock felt</a>. Every log makes Grip more accurate.',
+             '<strong>Know a crag well?</strong> <a href="note.html">Send a crag note</a> if Grip has something wrong or missing, '
+             'such as aspect, seepage or <a href="birds.html">nesting birds</a>.']
+    lis = "".join(f'<li><span aria-hidden="true">{i}</span><span>{s}</span></li>' for i, s in enumerate(steps, 1))
+    return ('<section class="howto" id="how-to" aria-label="How to use Grip" tabindex="-1">'
+            '<p class="lead"><strong>Grip</strong> forecasts whether the sea cliffs of north-east Scotland will be dry enough to climb, '
+            'hour by hour, for the week ahead.</p>'
+            f'<ol role="list">{lis}</ol>'
+            '<p class="end">Like any weather forecast, Grip will only ever be a guide. Check the rock yourself before you commit.</p>'
+            '<div class="foot"><p class="sig">Steve</p><button type="button" id="intro-ok" hidden>Got it</button></div></section>'
+            '<a class="reopen" id="intro-open" href="#how-to" aria-controls="how-to" aria-expanded="false">New here? How to use Grip</a>')
+
+
 def render_help():
     """Help Grip get better: the three forms as equal cards, in a fixed order."""
     cards = [("log.html", "Log a day on the rock", "Say how the rock felt. It is how the forecast gets checked.", "Log a day"),
@@ -4424,12 +4484,14 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     w = out.append
     w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8">')
     w('<meta name="viewport" content="width=device-width, initial-scale=1">')
+    w(f'<script>{INTRO_HEAD_JS}</script>')
     w('<title>Grip forecast</title>')
     w(fonts())
     w(icon_links())
     w(f"<style>{CSS}{COAST_CSS}{HOME_CSS}</style></head><body>{header_bar(current='forecast')}<main class=\"home\">")
-    w(fresh_line(now))
     w('<h1 class="vh">Grip, dry-rock forecast for the north-east sea cliffs</h1>')
+    w(render_intro())
+    w(fresh_line(now))
     w(render_summary(results, now, cfg))
     w('<div class="top"><div>')
     w(render_coast(results, now, cfg))
@@ -4514,7 +4576,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       '<p id="d-birds" style="display:none;color:var(--ink)"></p>'
       '<p class="acts"><a id="d-detail" href="#">Hour by hour for this crag</a></p>'
       '<p class="acts"><a id="d-log" href="#">Log how it actually was</a> &middot; <a id="d-note" href="#">Send a crag note</a></p></form></dialog>')
-    w(f"<script>var MODELS_SAID={js(list(said_at))};{STALE_JS}{SWITCH_JS}{MATCH_JS}{FIND_JS}{FADE_JS}</script>")
+    w(f"<script>var MODELS_SAID={js(list(said_at))};{INTRO_JS}{STALE_JS}{SWITCH_JS}{MATCH_JS}{FIND_JS}{FADE_JS}</script>")
     w("""<script>
 (function(){
   var dlg=document.getElementById('detail'), sel=null,
