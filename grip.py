@@ -13,6 +13,7 @@ import math
 import os
 import random
 import re
+import statistics
 import sys
 import time
 import urllib.parse
@@ -486,8 +487,86 @@ def drying_note(hs):
     return f"Wet all day ({first['film']:.1f} mm on the rock at the start, {hs[-1]['d']['film']:.1f} mm at the end)"
 
 
-def score_crag(zones, crag, models, marine, now):
-    """Hourly Grip for one wall: each model scored separately, then blended. Hours before now are skipped."""
+def best_window(hs):
+    """A day's best window: the highest mean of three consecutive hours (two at the end of the day), the first on a tie.
+    hs: hour dicts with "t" and "index", in time order. Returns (mean, [hours]), or None with fewer than two hours."""
+    best = None
+    for i in range(len(hs)):
+        win = hs[i:i + 3]
+        if len(win) < 2:
+            continue
+        s = sum(x["index"] for x in win) / len(win)
+        if best is None or s > best[0]:
+            best = (s, win)
+    return best
+
+
+def hour_of(hr):
+    return int(hr["t"][11:13])
+
+
+def end_of(hr):
+    return (datetime.fromisoformat(hr["t"]) + timedelta(hours=1)).strftime("%H:%M")
+
+
+def usable_from(hs):
+    """The first hour from which the score, as shown, stays usable for at least two consecutive hours; None if none."""
+    for a, b in zip(hs, hs[1:]):
+        if rnd(a["index"]) >= USABLE and rnd(b["index"]) >= USABLE and hour_of(b) == hour_of(a) + 1:
+            return a
+    return None
+
+
+def plain_line(hs, now_hour=None, tomorrow=False):
+    """The plain-words line in the crag search, for one wall's daylight hours of the day shown (earlier hours included).
+    Today: the band this hour, when it becomes usable and the best window still to come. Tomorrow: the whole day."""
+    rest = hs if tomorrow else [x for x in hs if hour_of(x) >= now_hour]
+    if not rest:
+        return "No daylight hours left today." if not tomorrow else "Tomorrow: no hours scored."
+    start = usable_from(rest)
+    if tomorrow:
+        parts = ["Tomorrow: " + (f"usable from {start['t'][11:16]}" if start else "not usable")]
+    else:
+        cur = rest[0] if hour_of(rest[0]) == now_hour else None
+        parts = [f"{band(cur['index'])[0]} now"] if cur else []
+        if not (cur and rnd(cur["index"]) >= USABLE):
+            parts.append(f"usable from {start['t'][11:16]}" if start else "not usable today")
+    bw = best_window(rest)
+    if bw:
+        parts.append(f"best {bw[1][0]['t'][11:16]} to {end_of(bw[1][-1])}")
+    line = ", ".join(parts)
+    return line[0].upper() + line[1:] + "."
+
+
+def day_hours(r, day_iso):
+    """One wall's scored daylight hours on a date, including today's earlier hours."""
+    return [hr for hr in r.get("earlier", []) + r["hours"] if hr["t"][:10] == day_iso]
+
+
+def coast_day(results, now):
+    """The day the Coast panel and the crag search show: today until its daylight is over, then tomorrow."""
+    today = now.date()
+    if any(hr["t"][:10] == today.isoformat() for r in results for hr in r["hours"]):
+        return today, False
+    return today + timedelta(days=1), True
+
+
+def coast_rows(results, zones, day_iso):
+    """One row per weather point, in coast order: (zone key, name, {hour: median blended index across its walls})."""
+    order, by_zone = [], {}
+    for r in results:
+        z = r["crag"]["zone"]
+        if z not in by_zone:
+            order.append(z)
+            by_zone[z] = {}
+        for hr in day_hours(r, day_iso):
+            by_zone[z].setdefault(hour_of(hr), []).append(hr["index"])
+    return [(z, zones[z]["name"], {h: statistics.median(v) for h, v in sorted(by_zone[z].items())}) for z in order]
+
+
+def score_crag(zones, crag, models, marine, now, since=None):
+    """Hourly Grip for one wall: each model scored separately, then blended. Hours before since (default now) are skipped."""
+    cutoff = now if since is None else since
     z = zones[crag["zone"]]
     asp = COMPASS.get(crag.get("aspect") or "", None)
     coast = z.get("coast_faces", 112.5)
@@ -548,7 +627,7 @@ def score_crag(zones, crag, models, marine, now):
         rows = {}
         for i, t in enumerate(times):
             dt = datetime.fromisoformat(t).replace(tzinfo=TZ)
-            if dt + timedelta(hours=1) <= now:
+            if dt + timedelta(hours=1) <= cutoff:
                 continue
             sun_pts, sun_note, az, el = suns[i]
             if el < 5 or (RH[i] is None and WS[i] is None):
@@ -638,21 +717,18 @@ def build(cfg, models, marine):
             tt = datetime.fromisoformat(t[i]) + timedelta(hours=off)
             tides[zk].setdefault(tt.date().isoformat(), []).append(tt.strftime("%H:%M"))
 
+    day0 = now.replace(hour=0, minute=0, second=0, microsecond=0)
     for crag in cfg["crags"]:
-        hours = score_crag(zones, crag, models, marine, now)
+        # today's earlier hours are scored too, for the Coast panel only; everything else starts at the current hour
+        scored = score_crag(zones, crag, models, marine, now, since=day0)
+        hours = [hr for hr in scored if datetime.fromisoformat(hr["t"]).replace(tzinfo=TZ) + timedelta(hours=1) > now]
+        earlier = scored[:len(scored) - len(hours)]
         days = {}
         for hr in hours:
             days.setdefault(hr["t"][:10], []).append(hr)
         daily = {}
         for d, hs in days.items():
-            best = None
-            for i in range(len(hs)):
-                win = hs[i:i + 3]
-                if len(win) < 2:
-                    continue
-                s = sum(x["index"] for x in win) / len(win)
-                if best is None or s > best[0]:
-                    best = (s, win)
+            best = best_window(hs)
             if best:
                 win = best[1]
                 pm = {}
@@ -664,11 +740,11 @@ def build(cfg, models, marine):
                     "end": (datetime.fromisoformat(win[-1]["t"]) + timedelta(hours=1)).strftime("%H:%M"),
                     "spread": max(x["spread"] for x in win), "n": min(x["n"] for x in win),
                     "wet": sum(x["wet"] for x in win) / len(win),
-                    "usable": sum(1 for x in hs if x["index"] >= USABLE), "hours": len(hs),
+                    "usable": sum(1 for x in hs if rnd(x["index"]) >= USABLE), "hours": len(hs),  # as shown, so it agrees with the hour blocks
                     "drying": drying_note(hs),
                     "models": [(lab, sum(v) / len(v)) for lab, v in pm.items()],
                 }
-        results.append({"crag": crag, "hours": hours, "daily": daily})
+        results.append({"crag": crag, "hours": hours, "earlier": earlier, "daily": daily})
     return results, tides, now
 
 
@@ -1018,6 +1094,88 @@ dialog .chip{display:inline-block;min-width:2.2rem;text-align:center;padding:2px
 dialog button{font:inherit;padding:6px 14px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);color:var(--ink);cursor:pointer}
 """
 
+COAST_CSS = """
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.coast{max-width:52rem}
+.coast h2{margin:6px 0 2px}
+.coast h2 small{font:400 1rem "Barlow",system-ui,sans-serif;color:var(--muted)}
+.srow{display:grid;grid-template-columns:12rem minmax(0,1fr);gap:2px 10px;align-items:center;margin:0 0 4px}
+.srow .zn{font-size:.88rem;font-weight:600;line-height:1.2}
+.strip{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px}
+.strip span{display:block;height:1.7rem;line-height:1.7rem;text-align:center;border-radius:3px;font:600 .9rem/1.7rem "Barlow Condensed",system-ui,sans-serif}
+.strip.hrs span{height:auto;font:400 .72rem/1.3 "Barlow",system-ui,sans-serif;color:var(--muted)}
+.strip span.past{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--rule)}
+.strip .now{box-shadow:inset 0 0 0 2px var(--ink),inset 0 0 0 3px var(--paper)}
+@media (max-width:640px){.srow{grid-template-columns:minmax(0,1fr);margin:0 0 8px}.srow.head{margin:0 0 2px}}
+.find{margin:18px 0 26px;max-width:40rem}
+.find label{display:block;font-weight:600;margin:0 0 4px}
+.find input{display:block;width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--rule);border-radius:4px;background:var(--card);color:var(--ink)}
+.found{list-style:none;margin:10px 0 0;padding:0}
+.found li{padding:10px 0;border-top:1px solid var(--rule)}
+.found li>a{font-weight:600;display:inline-block;margin:0 0 4px}
+.found p{margin:4px 0 0;font-size:.92rem}
+.find .note{color:var(--muted);font-size:.9rem;margin:8px 0 0}
+.find .note:empty{display:none}
+"""
+
+MATCH_JS = r"""
+var GripMatch=(function(){  // crag name matching shared by the front page search and the log form
+  function norm(s){
+    return String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+      .replace(/['`\u2018\u2019\u02bc\u00b4]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+  }
+  function key(s){return ' '+norm(s);}
+  function matcher(q){  // a test for keys made by key(): true when every typed word starts one of the name's words, in any order
+    var words=norm(q).split(' ').filter(Boolean);
+    return function(k){return words.every(function(x){return k.indexOf(' '+x)>=0;});};
+  }
+  return {norm:norm,key:key,matcher:matcher};
+})();
+"""
+
+SEARCH_JS = r"""
+var GripFind=(function(){
+  var D=__COAST__;  // {h: daylight hours shown, now: the current hour or -1, b: bands [min, name, css], w: [[label, detail page name, scores by hour, plain words], ...]}
+  var KEYS=D.w.map(function(w){return GripMatch.key(w[0]);});
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function band(v){for(var i=0;i<D.b.length;i++){if(v>=D.b[i][0]){return D.b[i];}}return D.b[D.b.length-1];}
+  function strip(vals){  // the same blocks as the Coast panel rows
+    var head='', cells='';
+    D.h.forEach(function(h,i){
+      var hh=(h<10?'0':'')+h, v=vals[i];
+      head+='<span>'+hh+'</span>';
+      if(v===null||v===undefined){cells+='<span></span>';return;}
+      var b=band(v), when=D.now<0?'':h<D.now?'past':h===D.now?'now':'';
+      cells+='<span role="img" class="'+b[2]+(when?' '+when:'')+'" aria-label="'+hh+':00, '+(when?when+', ':'')+b[1].toLowerCase()+', '+v+'">'+v+'</span>';
+    });
+    return '<div class="strip hrs" aria-hidden="true">'+head+'</div><div class="strip">'+cells+'</div>';
+  }
+  function search(q, limit){  // indices of the matching walls, in coast order; nothing for an empty box
+    var test=GripMatch.matcher(q), out=[];
+    if(!GripMatch.norm(q)){return out;}
+    for(var i=0;i<D.w.length&&out.length<limit;i++){if(test(KEYS[i])){out.push(i);}}
+    return out;
+  }
+  return {D:D,strip:strip,search:search,esc:esc};
+})();
+if(typeof document!=='undefined'){(function(){
+  var F=GripFind, box=document.getElementById('find'), res=document.getElementById('find-res'),
+      note=document.getElementById('find-note'), count=document.getElementById('find-count'), MAX=20;
+  function draw(){
+    var hits=F.search(box.value, MAX+1), more=hits.length>MAX, q=GripMatch.norm(box.value);
+    hits=hits.slice(0,MAX);
+    res.innerHTML=hits.map(function(i){
+      var w=F.D.w[i];
+      return '<li><a href="detail/'+F.esc(w[1])+'.html">'+F.esc(w[0])+'</a>'+F.strip(w[2])+'<p>'+F.esc(w[3])+'</p></li>';
+    }).join('');
+    note.textContent=!q?'':!hits.length?'No crag matches. Try fewer letters.':more?'Keep typing to narrow it down.':'';
+    count.textContent=!q?'':more?'More than '+MAX+' matches':hits.length+(hits.length===1?' match':' matches');
+  }
+  box.addEventListener('input',draw);
+  draw();  // a value restored on going back to the page
+})();}
+"""
+
 
 def label(c):
     return c["name"] + (f" ({c['wall']})" if c.get("wall") else "")
@@ -1194,8 +1352,8 @@ LOG_CSS = """
 @media (hover:hover){.combo li:hover{background:var(--rule)}}
 .combo li[aria-selected=true]{background:var(--ink);color:var(--paper)}
 .combo li.none{cursor:default;color:var(--muted)}
-.opt{display:flex;gap:10px;align-items:flex-start;padding:5px 0;font-weight:400;cursor:pointer}
-.opt input{flex:none;width:1.15rem;height:1.15rem;margin:.18rem 0 0;accent-color:var(--ink)}
+.field .opt{display:flex;gap:12px;align-items:flex-start;margin:0;padding:5px 0;font-weight:400;cursor:pointer}
+.field .opt input{flex:none;width:1.15rem;height:1.15rem;margin:.18rem 0 0;accent-color:var(--ink)}
 .err{color:var(--err);font-size:.9rem;margin:4px 0 0}
 .err:empty{display:none}
 .bad input[type=text],.bad input[type=date],.bad input[type=time]{border-color:var(--err)}
@@ -1209,15 +1367,12 @@ var GripLog=(function(){
   var WALLS=__WALLS__;  // [label shown, crag sent to the form, wall sent to the form], coast order, "Somewhere else" last
   var E=__ENTRIES__;
   var POST=__POST__;
-  function norm(s){
-    return String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
-      .replace(/['`\u2018\u2019\u02bc\u00b4]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
-  }
-  var KEYS=WALLS.map(function(w){return ' '+norm(w[0]);});
+  var norm=GripMatch.norm;
+  var KEYS=WALLS.map(function(w){return GripMatch.key(w[0]);});
   function filter(q){  // indices of the walls whose label has every typed word at the start of one of its words; "Somewhere else" always last
-    var words=norm(q).split(' ').filter(Boolean), out=[], last=WALLS.length-1;
+    var test=GripMatch.matcher(q), out=[], last=WALLS.length-1;
     for(var i=0;i<last;i++){
-      if(words.every(function(x){return KEYS[i].indexOf(' '+x)>=0;})){out.push(i);}
+      if(test(KEYS[i])){out.push(i);}
     }
     out.push(last);
     return out;
@@ -1332,7 +1487,7 @@ if(typeof document!=='undefined'){(function(){
     input.value=W[f.wall][0];
     send.disabled=true;send.textContent='Sending...';
     fetch(G.POST,{method:'POST',mode:'no-cors',body:G.payload(f)}).then(function(){
-      form.hidden=true;$('done').hidden=false;window.scrollTo(0,0);
+      form.hidden=true;$('done').hidden=false;$('foot').hidden=true;window.scrollTo(0,0);
     }).catch(function(){
       send.disabled=false;send.textContent='Send';
       $('form-err').textContent='It did not send. Check your connection and try again.';
@@ -1367,13 +1522,15 @@ def form_walls(cfg):
     return out
 
 
+def js(x):
+    """A value as a JavaScript literal, safe inside a script element."""
+    return json.dumps(x, ensure_ascii=False).replace("</", "<\\/")
+
+
 def render_log(cfg):
     """The log form: a searchable crag and wall box that submits into the Google Form, so the responses sheet is unchanged."""
-    def js(x):
-        return json.dumps(x, ensure_ascii=False).replace("</", "<\\/")
-
-    script = (LOG_JS.replace("__WALLS__", js(form_walls(cfg))).replace("__ENTRIES__", js(FORM_ENTRIES))
-              .replace("__POST__", js(FORM_POST)))
+    script = MATCH_JS + (LOG_JS.replace("__WALLS__", js(form_walls(cfg))).replace("__ENTRIES__", js(FORM_ENTRIES))
+                         .replace("__POST__", js(FORM_POST)))
     req = '<span class="req" aria-hidden="true"> *</span>'
     out = []
     w = out.append
@@ -1388,7 +1545,7 @@ def render_log(cfg):
     w(f'<noscript><p>This form needs JavaScript. <a href="{FORM_URL}">Use the Google form</a> instead.</p></noscript>')
     w('<form id="logform" class="logform" novalidate>')
     w(f'<div class="field" id="f-wall"><label for="wall" id="wall-label">Crag and wall{req}</label>'
-      '<p class="desc" id="wall-desc">Type any part of the name, then pick from the list.</p>'
+      '<p class="desc" id="wall-desc">Type the start of any word in the name, then pick from the list.</p>'
       '<div class="combo"><input id="wall" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="wall-list" '
       'aria-describedby="wall-desc wall-err" aria-required="true" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">'
       '<ul id="wall-list" role="listbox" aria-labelledby="wall-label" hidden></ul></div><p class="err" id="wall-err"></p></div>')
@@ -1413,8 +1570,62 @@ def render_log(cfg):
       '<input id="contact" type="text" aria-describedby="contact-desc"></div>')
     w('<p class="err" id="form-err" role="alert"></p><p><button type="submit" class="btn" id="send">Send</button></p></form>')
     w('<div id="done" hidden><h2>Logged, thank you</h2><p><a href="./">Back to the forecast</a></p></div>')
-    w(f'<p class="foot">Prefer the Google form? <a href="{FORM_URL}">Use it here.</a></p><p class="foot"><a href="./">Back to the forecast</a></p>')
+    w(f'<div id="foot"><p class="foot">Prefer the Google form? <a href="{FORM_URL}">Use it here.</a></p><p class="foot"><a href="./">Back to the forecast</a></p></div>')
     w(f"<script>{script}</script></main></body></html>")
+    return "".join(out)
+
+
+def strip_html(cols, vals, now_hour):
+    """A row of hour blocks: the score as a whole number, coloured by band, earlier hours greyed, the current hour outlined.
+    cols: the hours shown; vals: {hour: score}; now_hour: the current hour, or -1 when showing tomorrow."""
+    out = []
+    for h in cols:
+        v = vals.get(h)
+        if v is None:
+            out.append("<span></span>")
+            continue
+        name, _note, css = band(v)
+        when = "" if now_hour < 0 else "past" if h < now_hour else "now" if h == now_hour else ""
+        out.append(f'<span role="img" class="{css}{" " + when if when else ""}" aria-label="{h:02d}:00, {when + ", " if when else ""}{name.lower()}, {rnd(v)}">{rnd(v)}</span>')
+    return '<div class="strip">' + "".join(out) + "</div>"
+
+
+def hours_head(cols):
+    return '<div class="strip hrs" aria-hidden="true">' + "".join(f"<span>{h:02d}</span>" for h in cols) + "</div>"
+
+
+def render_coast(results, now, cfg):
+    """The Coast panel (each weather point's walls, hour by hour, for the day) and the crag search below it."""
+    day, tomorrow = coast_day(results, now)
+    di = day.isoformat()
+    now_hour = -1 if tomorrow else now.hour
+    rows = coast_rows(results, cfg["zones"], di)
+    cols = sorted({h for _z, _n, vals in rows for h in vals})
+    out = []
+    w = out.append
+    w(f'<section class="coast" aria-labelledby="coast-h"><h2 id="coast-h">Coast {"tomorrow" if tomorrow else "today"} <small>{day.strftime("%a %-d %b")}</small></h2>')
+    w('<p class="hint">The typical score across the walls on each stretch of coast, for each daylight hour. '
+      + ("Earlier hours are greyed and this hour is outlined." if not tomorrow else "Today's daylight is over.") + "</p>")
+    if not cols:
+        w('<p class="sub">No hours scored.</p>')
+    else:
+        w(f'<div class="srow head"><span></span>{hours_head(cols)}</div>')
+        for z, name, vals in rows:
+            w(f'<div class="srow" role="group" aria-label="{escape(name)}"><span class="zn" aria-hidden="true">{escape(name)}</span>{strip_html(cols, vals, now_hour)}</div>')
+    w("</section>")
+
+    walls = []
+    for r in results:
+        hs = day_hours(r, di)
+        vals = {hour_of(hr): rnd(hr["index"]) for hr in hs}
+        walls.append([label(r["crag"]), slug(r["crag"]["name"]), [vals.get(h) for h in cols],
+                      plain_line(hs, now_hour, tomorrow)])
+    data = {"h": cols, "now": now_hour, "b": [[lo, name, css] for lo, name, _n, css, _r in BANDS], "w": walls}
+    w('<div class="find" role="search"><label for="find">Find a crag</label>'
+      '<input id="find" type="search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-controls="find-res" aria-describedby="find-hint">'
+      '<p class="hint vh" id="find-hint">Matches the start of any word in the name. Results appear below as you type.</p>'
+      '<ul class="found" id="find-res"></ul><p class="note" id="find-note"></p><p class="vh" id="find-count" aria-live="polite"></p></div>')
+    w(f"<script>{MATCH_JS}{SEARCH_JS.replace('__COAST__', js(data))}</script>")
     return "".join(out)
 
 
@@ -1443,10 +1654,11 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     w('<title>Grip forecast</title>')
     w('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
     w('<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600&display=swap" rel="stylesheet">')
-    w(f"<style>{CSS}</style></head><body><main>")
+    w(f"<style>{CSS}{COAST_CSS}</style></head><body><main>")
     w("<h1>Grip</h1>")
     w(f'<p class="updated">Dry-rock forecast for the sea cliffs of north-east Scotland. Updated {now.strftime("%a %-d %b, %H:%M")}. '
       f'Models: {escape(", ".join(models_ok)) or "none available"}.</p>')
+    w(render_coast(results, now, cfg))
     w('<div class="scale" aria-label="Grip scale">')
     for lo, name, note, css, rng in reversed(BANDS):
         w(f'<div class="{css}"><b>{rng}</b><span>{name}: {note}</span></div>')
@@ -1604,7 +1816,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     w('<p>Forecast data: <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0), including UK Met Office data (CC BY-SA 4.0). '
       "Crag details, aspects and tidal status from the <a href=\"https://routes.smc.org.uk/\">SMC routes database</a>, with local corrections; nesting bird notes from the SMC database and UKC.</p></div>")
     w('<dialog id="detail"><form method="dialog"><h3 id="d-title"></h3><p id="d-sub"></p><table id="d-models"></table>'
-      '<p>The blend weights the Met Office 2.5 (1 beyond two days), ECMWF 1 and ICON 1. The Met Office weight was raised after it landed in the felt band on 6 of the first 11 logged days against 3 for each of the others.</p>'
+      '<p>The blend weights the Met Office 2.5 (1 beyond two days), ECMWF 1 and ICON 1. The Met Office weight was raised early on, when it led the other models on the first logged days; on the current count its lead is narrow, so the weights will be reviewed as more days are logged.</p>'
       '<p id="d-birds" style="display:none;color:var(--ink)"></p>'
       '<p><a id="d-detail" href="#">Hour by hour for this crag</a></p>'
       '<p><a id="d-log" href="#">Log how it actually was</a> &middot; <a id="d-note" href="#" target="_blank" rel="noopener">Send a crag note</a></p><button>Close</button></form></dialog>')
