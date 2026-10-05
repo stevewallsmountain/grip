@@ -4538,14 +4538,9 @@
    "lat": 57.42746,
    "lon": -1.81573,
    "birds": {
-    "months": [
-     4,
-     5,
-     6,
-     7
-    ],
-    "level": "partly",
-    "note": "Gulls nest where Airegin, Ostrichism and the routes beside them top out, and on the Aiguille's top; Groovin' High is clear",
+    "months": [],
+    "level": "clear",
+    "note": "No nesting birds reported on these walls",
     "confirmed": false,
     "source": "access notes"
    }
@@ -4566,14 +4561,9 @@
    "lon": -1.81573,
    "inlet": true,
    "birds": {
-    "months": [
-     4,
-     5,
-     6,
-     7
-    ],
-    "level": "partly",
-    "note": "Gulls nest where Airegin, Ostrichism and the routes beside them top out, and on the Aiguille's top; Groovin' High is clear",
+    "months": [],
+    "level": "clear",
+    "note": "No nesting birds reported on these walls",
     "confirmed": false,
     "source": "access notes"
    }

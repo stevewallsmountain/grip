@@ -1229,7 +1229,7 @@
    "months_source": "access notes",
    "note": "Fulmars and razorbills nest here; keep off while birds or eggs are about, above all on the Jaded headwall",
    "source": "access notes",
-   "scope": "crag"
+   "scope": "wall"
   },
   "Brown Crag": {
    "level": "partly",
@@ -1651,7 +1651,7 @@
    "months_source": null,
    "note": "Gulls nest where Airegin, Ostrichism and the routes beside them top out, and on the Aiguille's top; Groovin' High is clear",
    "source": "access notes",
-   "scope": "crag"
+   "scope": "wall"
   },
   "Grey Mare Slabs (Pocket Wall)": {
    "level": "partly",
@@ -1659,23 +1659,23 @@
    "months_source": null,
    "note": "Gulls nest where Airegin, Ostrichism and the routes beside them top out, and on the Aiguille's top; Groovin' High is clear",
    "source": "access notes",
-   "scope": "crag"
+   "scope": "wall"
   },
   "Grey Mare Slabs (Southern Rocks)": {
-   "level": "partly",
+   "level": "clear",
    "months": [],
    "months_source": null,
-   "note": "Gulls nest where Airegin, Ostrichism and the routes beside them top out, and on the Aiguille's top; Groovin' High is clear",
+   "note": "No nesting birds reported on these walls",
    "source": "access notes",
-   "scope": "crag"
+   "scope": "wall"
   },
   "Grey Mare Slabs (Northern Rocks)": {
-   "level": "partly",
+   "level": "clear",
    "months": [],
    "months_source": null,
-   "note": "Gulls nest where Airegin, Ostrichism and the routes beside them top out, and on the Aiguille's top; Groovin' High is clear",
+   "note": "No nesting birds reported on these walls",
    "source": "access notes",
-   "scope": "crag"
+   "scope": "wall"
   },
   "Lammylair": {
    "level": "affected",
@@ -1816,7 +1816,7 @@
    "months_source": "access notes",
    "note": "Seabirds crowd the cliff from around mid-March into late summer; routes starting at the foot stay dirty until storms wash them",
    "source": "access notes",
-   "scope": "crag"
+   "scope": "wall"
   },
   "The Plateau South Wall": {
    "level": "partly",

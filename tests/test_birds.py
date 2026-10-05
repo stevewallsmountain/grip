@@ -163,7 +163,7 @@ class Register(unittest.TestCase):
         self.assertEqual(n["unknown"], kinds.count("unknown"))
         self.assertEqual(n["restricted"] + n["nesting"] + n["partly"] + n["clear"] + n["unknown"], n["all"])
         self.assertEqual((n["all"], n["restricted"], n["nesting"], n["partly"], n["clear"], n["unknown"]),
-                         (191, 12, 41, 48, 16, 74))  # crags.json today: rows, walls sharing an entry counted once
+                         (192, 12, 41, 48, 17, 74))  # crags.json today: rows, walls sharing an entry counted once
 
     def test_every_wall_is_in_one_row_of_its_status(self):
         seen = {}
@@ -348,11 +348,15 @@ class Build(unittest.TestCase):
             self.assertEqual((b["level"], b["months"], b["confirmed"], b["months_source"]), ("affected", months, True, "access notes"), k)
         self.assertIn("Jaded headwall", w["Johnsheugh"]["birds"]["note"])
         self.assertEqual(grip.birds_line(w["The Red Wall"]["birds"])[:41], "Reported nesting, March to August. Seabir")
-        for k in ("Grey Mare Slabs", "Grey Mare Slabs (Pocket Wall)", "Grey Mare Slabs (Southern Rocks)", "Grey Mare Slabs (Northern Rocks)"):
+        for k in ("Grey Mare Slabs", "Grey Mare Slabs (Pocket Wall)"):  # where Airegin, Ostrichism and the Aiguille are
             b = w[k]["birds"]
             self.assertEqual((b["level"], b["confirmed"]), ("partly", False), k)
             self.assertIn("Airegin", b["note"])
             self.assertIn("Groovin' High is clear", b["note"])
+        for k in ("Grey Mare Slabs (Southern Rocks)", "Grey Mare Slabs (Northern Rocks)"):
+            b = w[k]["birds"]
+            self.assertEqual((b["level"], b["note"]), ("clear", "No nesting birds reported on these walls"), k)
+            self.assertEqual(grip.birds_line(b), "None reported on these walls.")
         self.assertEqual((w["Little O Wall"]["birds"]["level"], w["Little O Wall"]["birds"]["note"]),
                          ("partly", "Some routes are out of bounds in the nesting season"))
         self.assertEqual(w["Tangerine Point"]["birds"]["level"], "restricted")
