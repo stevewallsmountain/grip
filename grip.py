@@ -65,9 +65,29 @@ FEEL_ALIASES = {"Climbable": "Usable", "Grippy": "Crisp"}  # band names as peopl
 LOG_PROBLEMS = ["Wet from rain", "Greasy or sweating", "Seepage", "Haar or fog", "Spray from the sea",
                 "Still wet from the night before", "Fine until the sun left the face"]
 NOTES_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9yiBWbQ27h_CLWvUP52EbOWPg/viewform"
+NOTES_POST = "https://docs.google.com/forms/d/e/1FAIpQLSeFKYLfOJ5V7yZiKIyMd9RxH9yiBWbQ27h_CLWvUP52EbOWPg/formResponse"
 NOTES_CRAG = "entry.1230562053"
 NOTES_WALL = "entry.763167181"
+NOTES_ENTRIES = {"crag": NOTES_CRAG, "wall": NOTES_WALL, "about": "entry.1812259591", "situation": "entry.1835765743",
+                 "months": "entry.193272001", "note": "entry.408400775", "initials": "entry.1715627746"}
+NOTES_ELSEWHERE = "A crag that is not on the list yet"  # the notes form's last crag option; the log form's is FORM_ELSEWHERE
+NOTE_ABOUT = [("Aspect", "Which way the wall faces"), ("Tidal", "Whether it is tidal"), ("Seepage", "Seepage after rain"),
+              ("Shelter", "Shelter from wind"), ("Birds", "Birds: nesting, restrictions, or best avoided in season"),
+              ("Missing crag or wall", "A wall or crag that should be added"), ("Other", "Something else")]  # chip, the form's option
+NOTE_BIRDS = NOTE_ABOUT[4][1]  # the bird fields are sent only when this is ticked
+BIRD_SITUATIONS = [("Formal restriction", "Formal restriction or ban in place", "A restriction or ban is in place."),
+                   ("Nesting, climbing affected", "Birds nesting and the climbing is affected: noise, mess, dive-bombing, routes to avoid",
+                    "Noise, mess, dive-bombing, routes to avoid."),
+                   ("Nesting, not really affected", "Birds nesting but climbing not really affected", ""),
+                   ("Finished for the season", "Birds have finished for the season, crag clear", "The crag is clear."),
+                   ("No birds that I know of", "No birds here that I know of", "")]  # tile, the form's option, tile description
 FEEDBACK_URL = "https://docs.google.com/forms/d/e/1FAIpQLSc7K1EeOhs2swtdZqFqffm3A02RSLHIn01_sKwN85Xlw-7qGQ/viewform"
+FEEDBACK_POST = "https://docs.google.com/forms/d/e/1FAIpQLSc7K1EeOhs2swtdZqFqffm3A02RSLHIn01_sKwN85Xlw-7qGQ/formResponse"
+FEEDBACK_ENTRIES = {"trying": "entry.1944115557", "worked": "entry.2066085876", "failed": "entry.247873462", "ideas": "entry.368810859",
+                    "page": "entry.1335516550", "device": "entry.285027101", "contact": "entry.901330593"}
+FEEDBACK_PAGES = {"home": "Home page", "crag": "A crag page", "log": "Log a day", "note": "Send a crag note",
+                  "feedback": "Give feedback", "birds": "Nesting birds", "method": "How Grip works", "": "Somewhere else"}  # ?from= key: the form's option
+DEVICES = ["Phone", "Tablet", "Computer"]  # the feedback form's options; prefilled from the screen width, under 600 px and under 1024 px
 POPULAR_FILE = os.path.join(HERE, "data", "popular.json")  # the crags people climb most, in order, for the front page table
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
@@ -1489,9 +1509,14 @@ def log_link(c, day_iso, root=""):
     return f"{root}log.html?" + urllib.parse.urlencode({"wall": label(c), "date": day_iso}, quote_via=urllib.parse.quote)
 
 
-def note_link(c):
-    q = f"{NOTES_URL}?usp=pp_url&{NOTES_CRAG}={urllib.parse.quote(c['name'])}"
-    return q + (f"&{NOTES_WALL}={urllib.parse.quote(c['wall'])}" if c.get("wall") else "")
+def note_link(c, root=""):
+    """The page crag note form, filled with this wall (or crag). root is the path back to the site root ("../" from detail/)."""
+    return f"{root}note.html?" + urllib.parse.urlencode({"wall": label(c)}, quote_via=urllib.parse.quote)
+
+
+def feedback_link(page, root=""):
+    """The page feedback form, told which page the person came from (a FEEDBACK_PAGES key)."""
+    return f"{root}feedback.html?from={page}"
 
 
 def slug(name):
@@ -2258,7 +2283,7 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
       f'Updated {now.strftime("%a %-d %b, %H:%M")}</p></div>')
     log_c = c0 if not multi else {"name": gname}
     w(f'<p class="acts"><a class="btn" href="{escape(log_link(log_c, today.isoformat(), "../"))}">Log a day here</a>'
-      f'<a class="btn alt" href="{escape(note_link(log_c))}" target="_blank" rel="noopener">Send a crag note</a></p></div>')
+      f'<a class="btn alt" href="{escape(note_link(log_c, "../"))}">Send a crag note</a></p></div>')
     w('<div class="cols"><div class="side">')
 
     if multi:
@@ -2445,7 +2470,7 @@ def render_birds(cfg, now):
     w("<h1>Nesting birds by crag</h1>")
     w(f'<p class="updated">Status, months and source for every crag Grip covers. In season the forecast marks the crag but does not mark it down. '
       f'Most entries come from keyword matching on the SMC routes database and UKC, with the months a placeholder until someone confirms them. '
-      f'If you know better, <a href="{NOTES_URL}" target="_blank" rel="noopener">send a crag note</a>. Updated {now.strftime("%a %-d %b, %H:%M")}.</p>')
+      f'If you know better, <a href="note.html">send a crag note</a>. Updated {now.strftime("%a %-d %b, %H:%M")}.</p>')
     groups = []
     for c in cfg["crags"]:
         key = (c.get("section") or "", c["name"])
@@ -2489,19 +2514,39 @@ def render_birds(cfg, now):
     return "".join(out)
 
 
-LOG_CSS = """
-.logform{max-width:680px}
-.field{margin:0 0 var(--s-24);padding:0;border:0;min-width:0}
+FORM_CSS = """
+.seg{display:flex;max-width:460px;margin:0 0 var(--s-20);padding:var(--s-2);border:1px solid var(--rule);border-radius:var(--r-m);background:var(--card)}
+.seg a{flex:1 1 0;display:flex;align-items:center;justify-content:center;min-height:42px;padding:0 10px;border-radius:var(--r-s);font:500 var(--t-body)/1 var(--font-display);text-align:center;text-decoration:none;white-space:nowrap}
+.seg a[aria-current=page]{background:var(--inv-bg);color:var(--inv-fg);font-weight:600}
+@media (hover:hover){.seg a:not([aria-current]):hover{background:var(--sunk)}}
+.lead{margin:0 0 var(--s-20);max-width:56ch}
+.nojs{font-size:var(--t-lead);margin:0 0 var(--s-24);padding:var(--s-12) 14px;border:1px solid var(--rule);border-radius:var(--r-l);background:var(--card);max-width:56ch}
+.fcols{display:flex;flex-wrap:wrap;gap:var(--s-24) var(--s-48);align-items:flex-start}
+.fmain{flex:2 1 520px;min-width:0;max-width:680px}
+.aside{flex:1 1 280px;min-width:0;max-width:420px;display:flex;flex-direction:column;gap:var(--s-12)}
+.acard{padding:14px var(--s-16);border:1px solid var(--rule);border-radius:var(--r-l)}
+.acard h2{font:600 var(--t-h3)/var(--lh-tight) var(--font-display);margin:0}
+.acard p{margin:var(--s-6) 0 0;font-size:15px}
+.gform{min-width:0}
+.lock{margin:0;padding:0;border:0;min-width:0}
+.field{margin:0 0 22px;padding:0;border:0;min-width:0}
 .field>label,.field legend{display:block;font-weight:600;margin:0 0 var(--s-4);padding:0}
+.opt{font-weight:400;color:var(--muted)}
 .desc{color:var(--muted);font-size:var(--t-meta);margin:0 0 var(--s-8)}
-.req{color:var(--ink)}
-.logform input[type=text],.logform input[type=date],.logform input[type=time],.logform textarea{display:block;width:100%;min-height:48px;font:inherit;font-size:16px;padding:var(--s-8) var(--s-12);border:1px solid var(--rule);border-radius:var(--r-m);background:var(--card);color:var(--ink)}
-.updated{color:var(--ink);font-size:var(--t-body);max-width:56ch}
-.logform textarea{min-height:96px;resize:vertical}
-.logform input:focus,.logform input:focus-within,.logform textarea:focus{outline:2px solid transparent;border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink),var(--focus-ring)}
-.pair{display:flex;flex-wrap:wrap;gap:0 var(--s-12)}
-.pair .field{flex:1 1 90px}
-.pair #f-date{flex-basis:150px}
+.gform input[type=text],.gform input[type=date],.gform input[type=time],.gform textarea,.gform select{display:block;width:100%;min-height:48px;font:inherit;font-size:16px;padding:var(--s-8) var(--s-12);border:1px solid var(--rule);border-radius:var(--r-m);background:var(--card);color:var(--ink)}
+.gform select{appearance:none;-webkit-appearance:none;padding-right:40px;background-image:linear-gradient(45deg,transparent 50%,var(--ink) 50%),linear-gradient(135deg,var(--ink) 50%,transparent 50%);background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;background-size:6px 6px;background-repeat:no-repeat}
+.gform textarea{min-height:96px;resize:vertical}
+.gform textarea.short{min-height:72px}
+.gform textarea.tall{min-height:120px}
+.gform input:focus,.gform textarea:focus,.gform select:focus{outline:2px solid transparent;border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink),var(--focus-ring)}
+.pair,.row2{display:flex;flex-wrap:wrap;gap:0 var(--s-12)}
+.row2>.field{flex:1 1 240px;min-width:0}
+.row2>#f-initials{flex:0 1 140px}
+.row2>#f-page{flex:1 1 220px}
+.below{color:var(--muted);font-size:var(--t-small);margin:var(--s-6) 0 0}
+.pair .field{flex:1 1 0;min-width:0}
+.pair #f-date{flex:1 0 100%}
+@media (min-width:600px){.pair #f-date{flex:1.6 1 150px}}
 .combo{position:relative}
 .combo ul{position:absolute;left:0;right:0;top:100%;z-index:5;margin:var(--s-4) 0 0;padding:0;list-style:none;max-height:min(20rem,45vh);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--card);border:1px solid var(--rule);border-radius:var(--r-m);box-shadow:var(--shadow-overlay)}
 .combo li{display:flex;align-items:center;min-height:var(--tap);padding:var(--s-8) var(--s-12);cursor:pointer;border-bottom:1px solid var(--rule)}
@@ -2509,8 +2554,8 @@ LOG_CSS = """
 @media (hover:hover){.combo li:hover{background:var(--sunk)}}
 .combo li[aria-selected=true]{background:var(--inv-bg);color:var(--inv-fg)}
 .combo li.none{cursor:default;color:var(--muted)}
-.field>label.tile{display:block;position:relative;margin:0 0 var(--s-6);font-weight:400;cursor:pointer}
-.tile input,.pchip input{position:absolute;top:0;left:0;width:1px;height:1px;margin:0;opacity:0}
+.field>label.tile,.tiles>label.tile{display:block;position:relative;margin:0 0 var(--s-6);font-weight:400;cursor:pointer}
+.tile input,.pchip input,.mon input,.segr input{position:absolute;top:0;left:0;width:1px;height:1px;margin:0;opacity:0}
 .tile .tb{display:flex;align-items:center;gap:var(--s-12);min-height:52px;padding:var(--s-4) var(--s-12) var(--s-4) var(--s-4);background:var(--card);border-radius:var(--r-m);box-shadow:inset 0 0 0 1px var(--rule)}
 .tile .tb::after{content:"";flex:none;margin-left:auto;width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--ink)}
 .tile .kc{min-width:var(--score-l);height:var(--score-l);font-size:15px;border-radius:var(--r-s)}
@@ -2520,6 +2565,10 @@ LOG_CSS = """
 .tile input:checked+.tb::after{box-shadow:inset 0 0 0 2px var(--ink);background:radial-gradient(circle,var(--ink) 0 5px,transparent 5.5px)}
 .tile input:focus-visible+.tb{box-shadow:inset 0 0 0 1px var(--rule),var(--focus-ring)}
 .tile input:checked:focus-visible+.tb{box-shadow:inset 0 0 0 2px var(--ink),var(--focus-ring)}
+.tile.tick .tb{min-height:48px;padding-left:var(--s-12)}
+.tile.tick .tb::after{order:-1;margin-left:0;border-radius:var(--r-xs)}
+.tile.tick input:checked+.tb::after{background:var(--ink) no-repeat center/14px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2 7.5l3 3 7-7' fill='none' stroke='%23fff' stroke-width='2.2'/%3E%3C/svg%3E")}
+@media (prefers-color-scheme:dark){.tile.tick input:checked+.tb::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2 7.5l3 3 7-7' fill='none' stroke='%23141d23' stroke-width='2.2'/%3E%3C/svg%3E")}}
 @media (hover:hover){.tile:hover .tb{background:var(--sunk)}}
 .chips{display:flex;flex-wrap:wrap;gap:var(--s-8)}
 .pchip{position:relative;display:inline-block;cursor:pointer}
@@ -2530,39 +2579,183 @@ LOG_CSS = """
 .pchip input:focus-visible+span{box-shadow:inset 0 0 0 1px var(--rule),var(--focus-ring)}
 .pchip input:checked:focus-visible+span{box-shadow:inset 0 0 0 1px var(--ink),var(--focus-ring)}
 @media (hover:hover){.pchip:hover input:not(:checked)+span{background:var(--sunk)}}
+.birds{margin:0 0 var(--s-24);padding:var(--s-12) 14px var(--s-16);border:1px solid var(--rule);border-radius:var(--r-l);background:var(--card);min-width:0}
+.birds>legend{padding:0 var(--s-6);font-weight:600}
+.birds .field{margin-bottom:var(--s-16)}
+.birds .field legend{font-size:15px}
+.birds .field:last-child{margin-bottom:0}
+.birds .tile .tb{background:var(--paper)}
+.months{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:var(--s-4);max-width:640px}
+.mon{position:relative;display:block;cursor:pointer}
+.mon>span{display:flex;align-items:center;justify-content:center;min-height:var(--tap);border-radius:var(--r-s);background:var(--paper);box-shadow:inset 0 0 0 1px var(--rule);font:600 15px/1 var(--font-display)}
+.mon input:checked+span{background:var(--inv-bg);color:var(--inv-fg);box-shadow:none}
+.mon input:focus-visible+span{box-shadow:inset 0 0 0 1px var(--rule),var(--focus-ring)}
+@media (hover:hover){.mon:hover input:not(:checked)+span{background:var(--sunk)}}
+.segr{display:flex;max-width:460px;padding:var(--s-2);border:1px solid var(--rule);border-radius:var(--r-m);background:var(--card)}
+.segr label{position:relative;flex:1 1 0;cursor:pointer}
+.segr span{display:flex;align-items:center;justify-content:center;min-height:42px;padding:0 var(--s-8);border-radius:var(--r-s);font:500 var(--t-body)/1 var(--font-display)}
+.segr input:checked+span{background:var(--inv-bg);color:var(--inv-fg);font-weight:600}
+.segr input:focus-visible+span{box-shadow:var(--focus-ring)}
+@media (hover:hover){.segr label:hover input:not(:checked)+span{background:var(--sunk)}}
 .err{color:var(--ink);font-size:var(--t-meta);font-weight:600;margin:var(--s-6) 0 0}
 .err:empty{display:none}
-.bad input[type=text],.bad input[type=date],.bad input[type=time]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+#form-err{font-size:var(--t-body);margin:0 0 var(--s-12);max-width:56ch}
+.bad input[type=text],.bad input[type=date],.bad input[type=time],.bad textarea{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .bad .tb{box-shadow:inset 0 0 0 1px var(--ink)}
-button.btn{min-height:52px;width:100%;max-width:320px;margin:0;font-size:18px}
-button.btn:disabled{background:var(--past);color:var(--past-ink);cursor:default;opacity:1}
-#done h2{margin-top:var(--s-24)}
-.foot{color:var(--muted);font-size:var(--t-meta);margin-top:var(--s-32)}
+.send{margin:var(--s-8) 0 0}
+.send .btn{min-height:52px;width:100%;max-width:320px;margin:0;font-size:18px}
+.send .btn[aria-disabled=true]{background:var(--past);color:var(--past-ink);cursor:default;opacity:1;transform:none}
+.alt-link{color:var(--muted);font-size:var(--t-meta);margin:var(--s-8) 0 0}
+.alt-link a{color:var(--ink)}
+.sent{padding:var(--s-20) var(--s-20) 22px;border:1px solid var(--rule);border-radius:12px;background:var(--card)}
+.sent .ovl{margin:0 0 var(--s-4);font:600 var(--t-small)/1.2 var(--font-display);letter-spacing:var(--overline-tracking);text-transform:uppercase;color:var(--muted)}
+.sent h1{margin:0;font-size:2.125rem;line-height:1.05}
+.sent h1:focus{outline:none;box-shadow:none}
+.sent dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s-8) var(--s-16);margin:var(--s-16) 0 0;font-size:15px}
+.sent dt{font-weight:600}
+.sent dd{margin:0;display:flex;align-items:center;gap:var(--s-8);min-width:0;overflow-wrap:anywhere}
+.sent dd .kc{min-width:28px;height:28px;font-size:var(--t-meta)}
+.sent p{margin:var(--s-16) 0 0;max-width:56ch}
+.sent .acts{display:flex;flex-wrap:wrap;gap:var(--s-8);margin:18px 0 0}
+.sent .acts .btn{margin:0;min-height:48px}
+"""
+
+FORMS_JS = r"""
+var GripForms=(function(){  // the parts the three forms share: the crag and wall list, dates, and the summary words
+  function walls(W){  // W: [label shown, crag sent to the form, wall sent to the form], coast order, the form's own last option last
+    var norm=GripMatch.norm, KEYS=W.map(function(w){return GripMatch.key(w[0]);});
+    function filter(q){  // indices of the walls whose label has every typed word at the start of one of its words; the last option always last
+      var test=GripMatch.matcher(q), out=[], last=W.length-1;
+      for(var i=0;i<last;i++){
+        if(test(KEYS[i])){out.push(i);}
+      }
+      out.push(last);
+      return out;
+    }
+    function find(v){  // index of the wall whose label is v, exactly or apart from case and punctuation; -1 if none
+      if(!v){return -1;}
+      for(var i=0;i<W.length;i++){if(W[i][0]===v){return i;}}
+      var n=norm(v), hit=-1;
+      for(var j=0;j<W.length;j++){if(KEYS[j]===' '+n){if(hit>=0){return -1;} hit=j;}}
+      return hit;
+    }
+    return {W:W,filter:filter,find:find};
+  }
+  function prefill(L,search){  // the box's text and chosen index from ?wall= on the link from a crag page or the pop-up; null without one
+    var v=new URLSearchParams(search).get('wall');
+    if(!v){return null;}
+    var i=L.find(v);
+    return {i:i,text:i>=0?L.W[i][0]:v};
+  }
+  function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+  var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function day(iso){  // "2026-10-05" -> "Mon 5 Oct"
+    var p=iso.split('-'), d=new Date(+p[0],+p[1]-1,+p[2]);
+    return DAYS[d.getDay()]+' '+d.getDate()+' '+MON[d.getMonth()];
+  }
+  return {walls:walls,prefill:prefill,today:today,day:day};
+})();
+if(typeof document!=='undefined'){var GripUI=(function(){  // the page parts the three forms share: the combobox and the send, failed and sent states
+  function $(id){return document.getElementById(id);}
+  function combo(L){  // wires the crag and wall box to the list L made by GripForms.walls; returns a getter for the chosen index
+    var W=L.W, input=$('wall'), list=$('wall-list'), box=input.parentNode, chosen=-1, shown=[], active=-1;
+    function isOpen(){return !list.hidden;}
+    function draw(){
+      shown=L.filter(input.value);
+      var html=[];
+      if(shown.length===1&&input.value.trim()){html.push('<li class="none" aria-disabled="true">No wall matches. Try fewer letters, or:</li>');}
+      shown.forEach(function(wi,k){
+        html.push('<li role="option" id="opt-'+k+'" data-k="'+k+'"'+(k===active?' aria-selected="true"':'')+'></li>');
+      });
+      list.innerHTML=html.join('');
+      list.querySelectorAll('li[role=option]').forEach(function(li){li.textContent=W[shown[+li.dataset.k]][0];});
+      if(active>=0){input.setAttribute('aria-activedescendant','opt-'+active);var el=$('opt-'+active);if(el&&el.scrollIntoView){el.scrollIntoView({block:'nearest'});}}
+      else{input.removeAttribute('aria-activedescendant');}
+    }
+    function open(){draw();list.hidden=false;input.setAttribute('aria-expanded','true');}
+    function close(){list.hidden=true;active=-1;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');}
+    function choose(wi){chosen=wi;input.value=W[wi][0];close();mark('wall','');}
+    input.addEventListener('input',function(){chosen=L.find(input.value);active=-1;open();});
+    input.addEventListener('focus',function(){open();});
+    input.addEventListener('click',function(){if(!isOpen()){open();}});
+    input.addEventListener('change',function(){var i=L.find(input.value);if(i>=0){chosen=i;input.value=W[i][0];}});
+    input.addEventListener('keydown',function(e){
+      var k=e.key;
+      if(k==='ArrowDown'||k==='Down'){e.preventDefault();if(!isOpen()){open();}active=Math.min(active+1,shown.length-1);draw();}
+      else if(k==='ArrowUp'||k==='Up'){e.preventDefault();if(isOpen()){active=Math.max(active-1,0);draw();}}
+      else if(k==='Enter'){e.preventDefault();if(isOpen()&&active>=0){choose(shown[active]);}else if(isOpen()&&shown.length===2&&input.value.trim()){choose(shown[0]);}}
+      else if(k==='Escape'||k==='Esc'){if(isOpen()){e.preventDefault();close();}}
+      else if(k==='Tab'){close();}
+    });
+    list.addEventListener('mousedown',function(e){e.preventDefault();});  // keep focus in the box while picking
+    list.addEventListener('click',function(e){
+      var li=e.target.closest?e.target.closest('li[role=option]'):null;
+      if(li){choose(shown[+li.dataset.k]);}
+    });
+    document.addEventListener('pointerdown',function(e){if(isOpen()&&!box.contains(e.target)){close();}});
+    var pre=GripForms.prefill(L,location.search), hint=$('wall-pre');
+    if(pre){chosen=pre.i;input.value=pre.text;if(hint){hint.hidden=false;$('wall-desc').hidden=true;}}
+    return function(){return chosen>=0&&input.value===W[chosen][0]?chosen:L.find(input.value);};
+  }
+  function mark(field,msg){
+    var box=$('f-'+field), err=$(field+'-err');
+    if(err){err.textContent=msg;}
+    if(box){box.classList.toggle('bad',!!msg);}
+  }
+  function sent(rows){  // the form gives way to the sent card, which takes focus
+    var dl=$('done-sum');
+    dl.innerHTML='';
+    rows.forEach(function(r){  // [term, value] or [term, value, [band class, range]]
+      var dt=document.createElement('dt'), dd=document.createElement('dd');
+      dt.textContent=r[0];
+      if(r[2]){var c=document.createElement('span');c.className='kc '+r[2][0];c.setAttribute('aria-hidden','true');c.textContent=r[2][1];dd.appendChild(c);}
+      dd.appendChild(document.createTextNode(r[1]));
+      dl.appendChild(dt);dl.appendChild(dd);
+    });
+    $('page').hidden=true;$('done').hidden=false;
+    window.scrollTo(0,0);
+    $('done-h').focus();
+  }
+  function run(o){  // o: {post, fields: the fields validate can name, values(), validate(f), payload(f), summary(f), first(field)}
+    var form=$('gform'), send=$('send'), lock=$('lock'), err=$('form-err'), busy=false;
+    form.addEventListener('submit',function(e){
+      e.preventDefault();
+      if(busy){return;}
+      var f=o.values(), bad=o.validate(f);
+      o.fields.forEach(function(x){mark(x,'');});
+      err.textContent='';
+      bad.forEach(function(b){mark(b[0],b[1]);});
+      if(bad.length){
+        err.textContent='Please check the '+(bad.length===1?'field':bad.length+' fields')+' marked above.';
+        var first=o.first?o.first(bad[0][0]):null;
+        (first||$(bad[0][0])).focus();
+        return;
+      }
+      if(o.before){o.before(f);}
+      var body=o.payload(f);
+      busy=true;send.textContent='Sending…';send.setAttribute('aria-disabled','true');lock.disabled=true;
+      fetch(o.post,{method:'POST',mode:'no-cors',body:body}).then(function(){
+        sent(o.summary(f));
+      }).catch(function(){
+        busy=false;lock.disabled=false;send.textContent='Send';send.removeAttribute('aria-disabled');
+        err.textContent='That did not go through. Check your signal and send again, or use the Google Form.';
+        send.focus();
+      });
+    });
+  }
+  function ticked(name){return [].map.call(document.querySelectorAll('input[name='+name+']:checked'),function(x){return x.value;});}
+  return {$:$,combo:combo,mark:mark,run:run,ticked:ticked};
+})();}
 """
 
 LOG_JS = r"""
 var GripLog=(function(){
-  var WALLS=__WALLS__;  // [label shown, crag sent to the form, wall sent to the form], coast order, "Somewhere else" last
+  var L=GripForms.walls(__WALLS__);  // "Somewhere else on the coast" last
+  var WALLS=L.W;
   var E=__ENTRIES__;
   var POST=__POST__;
-  var norm=GripMatch.norm;
-  var KEYS=WALLS.map(function(w){return GripMatch.key(w[0]);});
-  function filter(q){  // indices of the walls whose label has every typed word at the start of one of its words; "Somewhere else" always last
-    var test=GripMatch.matcher(q), out=[], last=WALLS.length-1;
-    for(var i=0;i<last;i++){
-      if(test(KEYS[i])){out.push(i);}
-    }
-    out.push(last);
-    return out;
-  }
-  function find(v){  // index of the wall whose label is v, exactly or apart from case and punctuation; -1 if none
-    if(!v){return -1;}
-    for(var i=0;i<WALLS.length;i++){if(WALLS[i][0]===v){return i;}}
-    var n=norm(v), hit=-1;
-    for(var j=0;j<WALLS.length;j++){if(KEYS[j]===' '+n){if(hit>=0){return -1;} hit=j;}}
-    return hit;
-  }
-  function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+  var BANDS=__BANDS__;  // band name: [class, range], for the chip on the sent card
+  var today=GripForms.today;
   function validate(f, now){  // f: {wall: index or -1, date, from, until, feel, ...}; returns [[field, message], ...]
     var bad=[];
     if(!(f.wall>=0&&f.wall<WALLS.length)){bad.push(['wall','Pick a crag and wall from the list.']);}
@@ -2591,112 +2784,199 @@ var GripLog=(function(){
     p.append('pageHistory','0');
     return p;
   }
-  return {WALLS:WALLS,POST:POST,norm:norm,filter:filter,find:find,today:today,validate:validate,payload:payload};
+  function summary(f){  // the sent card's rows
+    var felt=f.feel.split(':')[0];
+    return [['Crag',WALLS[f.wall][0]],['When',GripForms.day(f.date)+', '+f.from.slice(0,5)+' to '+f.until.slice(0,5)],['Felt',felt,BANDS[felt]]];
+  }
+  return {WALLS:WALLS,list:L,POST:POST,filter:L.filter,find:L.find,today:today,validate:validate,payload:payload,summary:summary};
 })();
 if(typeof document!=='undefined'){(function(){
-  var G=GripLog, W=G.WALLS;
-  function $(id){return document.getElementById(id);}
-  var form=$('logform'), input=$('wall'), list=$('wall-list'), combo=input.parentNode, chosen=-1, shown=[], active=-1;
-  function isOpen(){return !list.hidden;}
-  function draw(){
-    shown=G.filter(input.value);
-    var html=[];
-    if(shown.length===1&&input.value.trim()){html.push('<li class="none" aria-disabled="true">No wall matches. Try fewer letters, or:</li>');}
-    shown.forEach(function(wi,k){
-      var li='<li role="option" id="opt-'+k+'" data-k="'+k+'"'+(k===active?' aria-selected="true"':'')+'></li>';
-      html.push(li);
-    });
-    list.innerHTML=html.join('');
-    list.querySelectorAll('li[role=option]').forEach(function(li){li.textContent=W[shown[+li.dataset.k]][0];});
-    if(active>=0){input.setAttribute('aria-activedescendant','opt-'+active);var el=$('opt-'+active);if(el&&el.scrollIntoView){el.scrollIntoView({block:'nearest'});}}
-    else{input.removeAttribute('aria-activedescendant');}
-  }
-  function open(){draw();list.hidden=false;input.setAttribute('aria-expanded','true');}
-  function close(){list.hidden=true;active=-1;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');}
-  function choose(wi){chosen=wi;input.value=W[wi][0];close();mark('wall','');}
-  function mark(field,msg){
-    var box=$('f-'+field), err=$(field+'-err');
-    if(err){err.textContent=msg;}
-    if(box){box.classList.toggle('bad',!!msg);}
-  }
-  input.addEventListener('input',function(){chosen=G.find(input.value);active=-1;open();});
-  input.addEventListener('focus',function(){open();});
-  input.addEventListener('click',function(){if(!isOpen()){open();}});
-  input.addEventListener('change',function(){var i=G.find(input.value);if(i>=0){chosen=i;input.value=W[i][0];}});
-  input.addEventListener('keydown',function(e){
-    var k=e.key;
-    if(k==='ArrowDown'||k==='Down'){e.preventDefault();if(!isOpen()){open();}active=Math.min(active+1,shown.length-1);draw();}
-    else if(k==='ArrowUp'||k==='Up'){e.preventDefault();if(isOpen()){active=Math.max(active-1,0);draw();}}
-    else if(k==='Enter'){e.preventDefault();if(isOpen()&&active>=0){choose(shown[active]);}else if(isOpen()&&shown.length===2&&input.value.trim()){choose(shown[0]);}}
-    else if(k==='Escape'||k==='Esc'){if(isOpen()){e.preventDefault();close();}}
-    else if(k==='Tab'){close();}
-  });
-  list.addEventListener('mousedown',function(e){e.preventDefault();});  // keep focus in the box while picking
-  list.addEventListener('click',function(e){
-    var li=e.target.closest?e.target.closest('li[role=option]'):null;
-    if(li){choose(shown[+li.dataset.k]);}
-  });
-  document.addEventListener('pointerdown',function(e){if(isOpen()&&!combo.contains(e.target)){close();}});
-
+  var G=GripLog, U=GripUI, $=U.$, form=$('gform');
+  var chosen=U.combo(G.list);
   var dt=$('date');
   dt.max=G.today();
   var q=new URLSearchParams(location.search);
-  if(q.get('wall')){var i=G.find(q.get('wall'));if(i>=0){chosen=i;input.value=W[i][0];}else{input.value=q.get('wall');}}
   if(/^\d{4}-\d{2}-\d{2}$/.test(q.get('date')||'')){dt.value=q.get('date');}
+  U.run({post:G.POST, fields:['wall','date','from','until','feel'], validate:function(f){return G.validate(f);}, payload:G.payload, summary:G.summary,
+    values:function(){
+      var feel=form.querySelector('input[name=feel]:checked');
+      return {wall:chosen(), date:dt.value, from:$('from').value, until:$('until').value,
+        feel:feel?feel.value:'', problems:U.ticked('problems'), initials:$('initials').value, other:$('other').value, contact:$('contact').value};
+    },
+    first:function(x){return x==='feel'?form.querySelector('input[name=feel]'):null;},
+    before:function(f){$('wall').value=G.WALLS[f.wall][0];}});
+})();}
+"""
 
-  function values(){
-    var feel=form.querySelector('input[name=feel]:checked');
-    return {wall:chosen>=0&&input.value===W[chosen][0]?chosen:G.find(input.value), date:dt.value, from:$('from').value, until:$('until').value,
-      feel:feel?feel.value:'', problems:[].map.call(form.querySelectorAll('input[name=problems]:checked'),function(x){return x.value;}),
-      initials:$('initials').value, other:$('other').value, contact:$('contact').value};
+NOTE_JS = r"""
+var GripNote=(function(){
+  var L=GripForms.walls(__WALLS__);  // "A crag that is not on the list yet" last
+  var WALLS=L.W;
+  var E=__ENTRIES__;
+  var POST=__POST__;
+  var ABOUT=__ABOUT__, BIRDS=__BIRDS__, SITUATIONS=__SITUATIONS__;  // [chip, the form's option]; the Birds option; [tile, the form's option]
+  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  function short(list,v){for(var i=0;i<list.length;i++){if(list[i][1]===v){return list[i][0];}}return v;}
+  function validate(f){  // f: {wall: index or -1, about: [options], situation: [options], months: [names], note, initials}
+    var bad=[];
+    if(!(f.wall>=0&&f.wall<WALLS.length)){bad.push(['wall','Pick a crag and wall from the list.']);}
+    if(!(f.note||'').trim()){bad.push(['note','Write the note.']);}
+    return bad;
   }
-  form.addEventListener('submit',function(e){
-    e.preventDefault();
-    var f=values(), bad=G.validate(f), send=$('send');
-    ['wall','date','from','until','feel'].forEach(function(x){mark(x,'');});
-    $('form-err').textContent='';
-    bad.forEach(function(b){mark(b[0],b[1]);});
-    if(bad.length){
-      $('form-err').textContent='Please check the '+(bad.length===1?'field':bad.length+' fields')+' marked above.';
-      var first=bad[0][0]==='feel'?form.querySelector('input[name=feel]'):$(bad[0][0]);
-      if(first){first.focus();}
-      return;
+  function payload(f){  // the form-urlencoded body for the Google Form; the bird questions only when Birds is ticked
+    var p=new URLSearchParams(), w=WALLS[f.wall], about=f.about||[];
+    p.append(E.crag,w[1]);
+    p.append(E.wall,w[2]);
+    about.forEach(function(x){p.append(E.about,x);});
+    if(about.indexOf(BIRDS)>=0){
+      (f.situation||[]).forEach(function(x){p.append(E.situation,x);});
+      MONTHS.forEach(function(m){if((f.months||[]).indexOf(m)>=0){p.append(E.months,m);}});
     }
-    input.value=W[f.wall][0];
-    send.disabled=true;send.textContent='Sending...';
-    fetch(G.POST,{method:'POST',mode:'no-cors',body:G.payload(f)}).then(function(){
-      form.hidden=true;$('done').hidden=false;$('foot').hidden=true;window.scrollTo(0,0);
-    }).catch(function(){
-      send.disabled=false;send.textContent='Send';
-      $('form-err').textContent='It did not send. Check your connection and try again.';
-    });
-  });
+    p.append(E.note,(f.note||'').trim());
+    p.append(E.initials,(f.initials||'').trim());
+    p.append('fvv','1');
+    p.append('pageHistory','0');
+    return p;
+  }
+  function monthWords(names){  // ["April","May","June","August"] -> "Apr to Jun, Aug"
+    var on=MONTHS.map(function(m){return (names||[]).indexOf(m)>=0;}), out=[];
+    for(var i=0;i<12;i++){
+      if(!on[i]){continue;}
+      var j=i;
+      while(j<11&&on[j+1]){j++;}
+      out.push(MONTHS[i].slice(0,3)+(j>i?' to '+MONTHS[j].slice(0,3):''));
+      i=j;
+    }
+    return out.join(', ');
+  }
+  function summary(f){  // the sent card's rows
+    var about=f.about||[], rows=[['Crag',WALLS[f.wall][0]]];
+    if(about.length){rows.push(['About',about.map(function(x){return short(ABOUT,x);}).join(', ')]);}
+    if(about.indexOf(BIRDS)>=0){
+      var b=(f.situation||[]).map(function(x){return short(SITUATIONS,x);});
+      if((f.months||[]).length){b.push(monthWords(f.months));}
+      if(b.length){rows.push(['Birds',b.join('; ')]);}
+    }
+    return rows;
+  }
+  function google(base,search){  // the Google notes form, filled with the crag and wall the page was opened with, as the crag pages used to link it
+    var pre=GripForms.prefill(L,search), crag='', wall='';
+    if(!pre){return base;}
+    if(pre.i>=0){crag=WALLS[pre.i][1];wall=WALLS[pre.i][2];}
+    else{for(var i=0;i<WALLS.length;i++){if(WALLS[i][1]===pre.text){crag=pre.text;break;}}}  // a crag of several walls
+    if(!crag){return base;}
+    return base+'?usp=pp_url&'+E.crag+'='+encodeURIComponent(crag)+(wall?'&'+E.wall+'='+encodeURIComponent(wall):'');
+  }
+  return {WALLS:WALLS,list:L,POST:POST,MONTHS:MONTHS,filter:L.filter,find:L.find,validate:validate,payload:payload,summary:summary,
+    monthWords:monthWords,google:google};
+})();
+if(typeof document!=='undefined'){(function(){
+  var G=GripNote, U=GripUI, $=U.$;
+  var chosen=U.combo(G.list);
+  var alt=$('alt-google');
+  alt.href=G.google(alt.href,location.search);
+  var birds=$('f-birds'), tick=$('about-birds');
+  function show(){birds.hidden=!tick.checked;}
+  tick.addEventListener('change',show);
+  show();
+  U.run({post:G.POST, fields:['wall','note'], validate:G.validate, payload:G.payload, summary:G.summary,
+    values:function(){
+      return {wall:chosen(), about:U.ticked('about'), situation:U.ticked('situation'), months:U.ticked('months'),
+        note:$('note').value, initials:$('initials').value};
+    },
+    before:function(f){$('wall').value=G.WALLS[f.wall][0];}});
+})();}
+"""
+
+FEEDBACK_JS = r"""
+var GripFeedback=(function(){
+  var E=__ENTRIES__;
+  var POST=__POST__;
+  var PAGES=__PAGES__;  // ?from= key: the form's option
+  function device(w){return w<600?'Phone':w<1024?'Tablet':'Computer';}  // from the screen width
+  function pageFrom(from, ref, here){  // the form's option for the page the person came from: ?from=, else a referrer on this site, else ''
+    if(from&&Object.prototype.hasOwnProperty.call(PAGES,from)){return PAGES[from];}
+    if(!ref){return '';}
+    var u, h;
+    try{u=new URL(ref);h=new URL(here);}catch(e){return '';}
+    var base=h.pathname.replace(/[^\/]*$/,'');  // the site root: the feedback page sits in it
+    if(u.origin!==h.origin||u.pathname.indexOf(base)!==0){return '';}
+    var p=u.pathname.slice(base.length);
+    if(p===''||p==='index.html'){return PAGES.home;}
+    if(/^detail\//.test(p)){return PAGES.crag;}
+    var m=/^(log|note|birds|method)\.html$/.exec(p);  // not this page itself: sending more feedback says nothing of where
+    return m?PAGES[m[1]]:'';
+  }
+  function validate(f){
+    return (f.trying||'').trim()?[]:[['trying','Say what you were trying to do.']];
+  }
+  function payload(f){  // the form-urlencoded body for the Google Form; the two choices only when made
+    var p=new URLSearchParams();
+    p.append(E.trying,(f.trying||'').trim());
+    p.append(E.worked,(f.worked||'').trim());
+    p.append(E.failed,(f.failed||'').trim());
+    p.append(E.ideas,(f.ideas||'').trim());
+    if(f.page){p.append(E.page,f.page);}
+    if(f.device){p.append(E.device,f.device);}
+    p.append(E.contact,(f.contact||'').trim());
+    p.append('fvv','1');
+    p.append('pageHistory','0');
+    return p;
+  }
+  function summary(f){
+    return [['Page',f.page||'Not given'],['Device',f.device||'Not given']];
+  }
+  return {POST:POST,PAGES:PAGES,device:device,pageFrom:pageFrom,validate:validate,payload:payload,summary:summary};
+})();
+if(typeof document!=='undefined'){(function(){
+  var G=GripFeedback, U=GripUI, $=U.$, form=$('gform');
+  var page=$('page-on'), q=new URLSearchParams(location.search);
+  var on=G.pageFrom(q.get('from'),document.referrer,location.href);
+  if(on){page.value=on;}
+  var dev=form.querySelector('input[name=device][value="'+G.device(screen.width)+'"]');
+  if(dev){dev.checked=true;}
+  U.run({post:G.POST, fields:['trying'], validate:G.validate, payload:G.payload, summary:G.summary,
+    values:function(){
+      var d=form.querySelector('input[name=device]:checked');
+      return {trying:$('trying').value, worked:$('worked').value, failed:$('failed').value, ideas:$('ideas').value,
+        page:page.value, device:d?d.value:'', contact:$('contact').value};
+    }});
 })();}
 """
 
 
-def form_walls(cfg):
-    """Every wall as the page log form offers it, in coast order: [label, crag sent to the Google Form, wall sent].
-    A crag missing from the form's options goes in as "Somewhere else on the coast" with the full label as the wall."""
+def form_crag_options(elsewhere):
+    """A form's crag options in order: the crag names in data/form_crags.json, then that form's own last option."""
+    with open(FORM_CRAGS_FILE) as f:
+        names = json.load(f)
+    return [n for n in names if n != FORM_ELSEWHERE] + [elsewhere]
+
+
+def form_walls(cfg, elsewhere=FORM_ELSEWHERE, form="log form"):
+    """Every wall as a page form offers it, in coast order: [label, crag sent to the Google Form, wall sent].
+    A crag missing from the form's options goes in as its last option ("Somewhere else on the coast" on the log
+    form) with the full label as the wall. Warns, naming the form, about any crag in crags.json missing from it."""
     try:
-        with open(FORM_CRAGS_FILE) as f:
-            known = set(json.load(f))
+        known = set(form_crag_options(elsewhere))
+        if form == "log form":
+            with open(FORM_CRAGS_FILE) as f:
+                if FORM_ELSEWHERE not in json.load(f):
+                    log(f"Warning: '{FORM_ELSEWHERE}' is not in data/form_crags.json")
     except Exception as e:  # noqa: BLE001
-        log(f"Warning: cannot read data/form_crags.json ({e}); every log will go in as '{FORM_ELSEWHERE}'")
+        log(f"Warning: cannot read data/form_crags.json ({e}); every {form} entry will go in as '{elsewhere}'")
         known = set()
     out, missing = [], []
     for c in cfg["crags"]:
         if c["name"] in known:
             out.append([label(c), c["name"], c.get("wall") or ""])
         else:
-            out.append([label(c), FORM_ELSEWHERE, label(c)])
+            out.append([label(c), elsewhere, label(c)])
             if c["name"] not in missing:
                 missing.append(c["name"])
     if missing:
-        log(f"Warning: {len(missing)} crag(s) not in data/form_crags.json, logged as '{FORM_ELSEWHERE}' with the label as the wall: {', '.join(missing)}")
-    if known and FORM_ELSEWHERE not in known:
-        log(f"Warning: '{FORM_ELSEWHERE}' is not in data/form_crags.json")
-    out.append([FORM_ELSEWHERE, FORM_ELSEWHERE, ""])
+        log(f"Warning: {len(missing)} crag(s) not in data/form_crags.json, so not options on the {form}; "
+            f"sent as '{elsewhere}' with the label as the wall: {', '.join(missing)}")
+    out.append([elsewhere, elsewhere, ""])
     return out
 
 
@@ -2705,58 +2985,188 @@ def js(x):
     return json.dumps(x, ensure_ascii=False).replace("</", "<\\/")
 
 
-def render_log(cfg):
+def log_script(cfg):
+    bands = {name: [css, rng] for _lo, name, _note, css, rng in BANDS}
+    return MATCH_JS + FORMS_JS + (LOG_JS.replace("__WALLS__", js(form_walls(cfg))).replace("__ENTRIES__", js(FORM_ENTRIES))
+                                  .replace("__POST__", js(FORM_POST)).replace("__BANDS__", js(bands)))
+
+
+def note_script(cfg):
+    return MATCH_JS + FORMS_JS + (NOTE_JS.replace("__WALLS__", js(form_walls(cfg, NOTES_ELSEWHERE, "notes form")))
+                                  .replace("__ENTRIES__", js(NOTES_ENTRIES)).replace("__POST__", js(NOTES_POST))
+                                  .replace("__ABOUT__", js([list(x) for x in NOTE_ABOUT])).replace("__BIRDS__", js(NOTE_BIRDS))
+                                  .replace("__SITUATIONS__", js([[a, b] for a, b, _d in BIRD_SITUATIONS])))
+
+
+def feedback_script():
+    pages = {k: v for k, v in FEEDBACK_PAGES.items() if k}
+    return MATCH_JS + FORMS_JS + (FEEDBACK_JS.replace("__ENTRIES__", js(FEEDBACK_ENTRIES)).replace("__POST__", js(FEEDBACK_POST))
+                                  .replace("__PAGES__", js(pages)))
+
+
+FORM_PAGES = [("log", "log.html", "Log a day"), ("note", "note.html", "Crag note"), ("feedback", "feedback.html", "Feedback")]
+
+
+def opt():
+    return ' <span class="opt">Optional</span>'
+
+
+def combo_field(pre_hint=False):
+    """The crag and wall box the log and note forms share. With pre_hint, the hint for a box filled from a crag page
+    replaces the usual one when the page was opened with ?wall=."""
+    pre = ('<p class="desc" id="wall-pre" hidden>Filled in from the crag page. Change it if needed.</p>' if pre_hint else "")
+    desc = "wall-desc wall-pre wall-err" if pre_hint else "wall-desc wall-err"
+    return ('<div class="field" id="f-wall"><label for="wall" id="wall-label">Crag and wall</label>'
+            f'<p class="desc" id="wall-desc">Type the start of any word in the name, then pick from the list.</p>{pre}'
+            '<div class="combo"><input id="wall" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="wall-list" '
+            f'aria-describedby="{desc}" aria-required="true" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">'
+            '<ul id="wall-list" role="listbox" aria-labelledby="wall-label" hidden></ul></div><p class="err" id="wall-err"></p></div>')
+
+
+def initials_field():
+    return (f'<div class="field" id="f-initials"><label for="initials">Initials{opt()}</label>'
+            '<input id="initials" type="text" autocomplete="off"></div>')
+
+
+def contact_field(lab):
+    return (f'<div class="field" id="f-contact"><label for="contact">{lab}{opt()}</label>'
+            '<input id="contact" type="text" placeholder="Email or WhatsApp number" aria-describedby="contact-desc">'
+            '<p class="below" id="contact-desc">Kept private. Never published.</p></div>')
+
+
+def form_page(key, title, h1, intro, fields, aside, sent, google, script):
+    """The frame the three forms share: header with Contribute current, the Contribute nav, then the h1, intro and the
+    form with Send and one Google Form link, beside an aside. Sent, the h1, intro and form give way to the sent card and
+    the aside stays. Without JavaScript the form gives way to the Google Form link. sent: (h1, what happens next, "send another" text)."""
+    nav = []
+    for k, page, text in FORM_PAGES:
+        href = feedback_link(key) if k == "feedback" and key != "feedback" else page
+        nav.append(f'<a href="{escape(href)}"' + (' aria-current="page"' if k == key else "") + f">{text}</a>")
+    cards = "".join(f'<section class="acard"><h2>{t}</h2><p>{p}</p></section>' for t, p in aside)
+    done_h, done_next, again = sent
+    return "".join([
+        '<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">',
+        f"<title>Grip: {title}</title>", fonts(), icon_links(),
+        f"<style>{CSS}{FORM_CSS}</style></head><body>{header_bar(current='contribute')}<main>",
+        f'<nav class="seg" aria-label="Contribute">{"".join(nav)}</nav>',
+        f'<div class="fcols"><div class="fmain"><div id="page"><h1>{h1}</h1><p class="lead">{intro}</p>',
+        f'<noscript><style>.gform{{display:none}}</style><p class="nojs">This form needs JavaScript. <a href="{google}">Use the Google Form instead.</a></p></noscript>',
+        f'<form id="gform" class="gform" novalidate><fieldset class="lock" id="lock">{fields}</fieldset>',
+        '<p class="err" id="form-err" role="alert"></p><div class="send"><button type="submit" class="btn" id="send">Send</button>',
+        f'<p class="alt-link">Prefer the Google form? <a id="alt-google" href="{google}">Use it here</a>.</p></div></form></div>',
+        f'<section class="sent" id="done" role="status" aria-labelledby="done-h" hidden><p class="ovl">Sent</p>'
+        f'<h1 id="done-h" tabindex="-1">{done_h}</h1><dl id="done-sum"></dl><p>{done_next}</p>'
+        f'<p class="acts"><a class="btn" href="{dict((k, p) for k, p, _t in FORM_PAGES)[key]}">{again}</a>'
+        '<a class="btn alt" href="./">Back to the forecast</a></p></section></div>',
+        f'<aside class="aside" aria-label="About this form">{cards}</aside></div>',
+        f"<script>{script}</script></main>{site_foot()}</body></html>"])
+
+
+def why_log(cal):
+    """The log page's first aside card, with the calibration tally when there is one."""
+    tally = ""
+    if cal and cal.get("n", 0) > 1:
+        tally = f" {cal['n']} days logged so far; Grip landed in the felt band on {cal['bands_right']}."
+    return ("Why log", f"Grip’s weightings are a first estimate.{tally} More days, from more crags, is the only way it gets better.")
+
+
+def render_log(cfg, cal=None):
     """The log form: a searchable crag and wall box that submits into the Google Form, so the responses sheet is unchanged."""
-    script = MATCH_JS + (LOG_JS.replace("__WALLS__", js(form_walls(cfg))).replace("__ENTRIES__", js(FORM_ENTRIES))
-                         .replace("__POST__", js(FORM_POST)))
-    req = '<span class="req" aria-hidden="true"> *</span>'
-    out = []
-    w = out.append
-    w('<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">')
-    w("<title>Grip: log a day on the rock</title>")
-    w(fonts())
-    w(icon_links())
-    w(f"<style>{CSS}{LOG_CSS}</style></head><body>{header_bar(current='contribute')}<main>")
-    w("<h1>Log a day on the rock</h1>")
-    w('<p class="updated">How did the rock actually feel? Your answers calibrate the Grip forecast. Anonymous, no account needed. One entry per crag per visit.</p>')
-    w('<p class="updated">Score the crag as a whole: how most of the rock felt across your time on it. Not your best route or your worst. '
-      'If one route or patch stood out, say so under &quot;Anything else about the day?&quot;</p>')
-    w(f'<noscript><p>This form needs JavaScript. <a href="{FORM_URL}">Use the Google form</a> instead.</p></noscript>')
-    w('<form id="logform" class="logform" novalidate>')
-    w(f'<div class="field" id="f-wall"><label for="wall" id="wall-label">Crag and wall{req}</label>'
-      '<p class="desc" id="wall-desc">Type the start of any word in the name, then pick from the list.</p>'
-      '<div class="combo"><input id="wall" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="wall-list" '
-      'aria-describedby="wall-desc wall-err" aria-required="true" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">'
-      '<ul id="wall-list" role="listbox" aria-labelledby="wall-label" hidden></ul></div><p class="err" id="wall-err"></p></div>')
-    w(f'<div class="pair"><div class="field" id="f-date"><label for="date">Date{req}</label><input id="date" type="date" required aria-describedby="date-err"><p class="err" id="date-err"></p></div>'
-      f'<div class="field" id="f-from"><label for="from">On the rock from{req}</label><input id="from" type="time" step="60" required aria-describedby="from-err"><p class="err" id="from-err"></p></div>'
-      f'<div class="field" id="f-until"><label for="until">On the rock until{req}</label><input id="until" type="time" step="60" required aria-describedby="until-err"><p class="err" id="until-err"></p></div></div>')
-    w(f'<fieldset class="field" id="f-feel" aria-describedby="feel-desc feel-err"><legend>How did the rock feel overall?{req}</legend>'
-      '<p class="desc" id="feel-desc">The crag as a whole, across your session. Not the best or worst route.</p>')
+    w = [combo_field()]
+    w.append('<div class="pair"><div class="field" id="f-date"><label for="date">Date</label><input id="date" type="date" required aria-describedby="date-err"><p class="err" id="date-err"></p></div>'
+             '<div class="field" id="f-from"><label for="from">From</label><input id="from" type="time" step="60" required aria-describedby="from-err"><p class="err" id="from-err"></p></div>'
+             '<div class="field" id="f-until"><label for="until">Until</label><input id="until" type="time" step="60" required aria-describedby="until-err"><p class="err" id="until-err"></p></div></div>')
+    w.append('<fieldset class="field" id="f-feel" aria-describedby="feel-desc feel-err"><legend>How did the rock feel overall?</legend>'
+             '<p class="desc" id="feel-desc">Most of the rock, across your session. Not your best or worst route.</p>')
     ranges = {name: (css, rng) for _lo, name, _note, css, rng in BANDS}
     for i, v in enumerate(LOG_FEELS):  # one tile per band: its chip, then the option's own words, name and description
         name, desc = v.split(": ", 1)
         css, rng = ranges[name]
-        w(f'<label class="tile"><input type="radio" name="feel" id="feel-{i}" value="{escape(v)}"><span class="tb">'
-          f'<span class="kc {css}" aria-hidden="true">{rng}</span><span><span class="fn">{escape(name)}<span class="vh">:</span></span> '
-          f'<span class="fd">{escape(desc)}</span></span></span></label>')
-    w('<p class="err" id="feel-err"></p></fieldset>')
-    w('<fieldset class="field"><legend>If it was poor, what was the problem? Tick any that apply.</legend><div class="chips">')
+        w.append(f'<label class="tile"><input type="radio" name="feel" id="feel-{i}" value="{escape(v)}"><span class="tb">'
+                 f'<span class="kc {css}" aria-hidden="true">{rng}</span><span><span class="fn">{escape(name)}<span class="vh">:</span></span> '
+                 f'<span class="fd">{escape(desc[:1].upper() + desc[1:])}</span></span></span></label>')
+    w.append('<p class="err" id="feel-err"></p></fieldset>')
+    w.append(f'<fieldset class="field"><legend>Anything that made it worse?{opt()}</legend><p class="desc">Tick any that apply.</p><div class="chips">')
     for i, v in enumerate(LOG_PROBLEMS):
-        w(f'<label class="pchip"><input type="checkbox" name="problems" id="prob-{i}" value="{escape(v)}"><span>{escape(v)}</span></label>')
-    w("</div></fieldset>")
-    w('<div class="field"><label for="initials">Initials</label><input id="initials" type="text" autocomplete="off"></div>')
-    w('<div class="field"><label for="other">Anything else about the day?</label>'
-      '<p class="desc" id="other-desc">For example: a route or patch much worse or better than the rest, wet to look at or just slick, worse near the sea, '
-      'how the wind felt on the wall, whether it changed through the session</p><textarea id="other" aria-describedby="other-desc"></textarea></div>')
-    w('<div class="field"><label for="contact">Happy to answer a follow-up question about this day?</label>'
-      '<p class="desc" id="contact-desc">Leave a name and a way to reach you, WhatsApp number or email. Kept private, never published.</p>'
-      '<input id="contact" type="text" aria-describedby="contact-desc"></div>')
-    w('<p class="err" id="form-err" role="alert"></p><p><button type="submit" class="btn" id="send">Send</button></p></form>')
-    w('<div id="done" hidden><h2>Logged, thank you</h2><p><a href="./">Back to the forecast</a></p></div>')
-    w(f'<div id="foot"><p class="foot">Prefer the Google form? <a href="{FORM_URL}">Use it here.</a></p><p class="foot"><a href="./">Back to the forecast</a></p></div>')
-    w(f"<script>{script}</script></main>{site_foot()}</body></html>")
-    return "".join(out)
+        w.append(f'<label class="pchip"><input type="checkbox" name="problems" id="prob-{i}" value="{escape(v)}"><span>{escape(v)}</span></label>')
+    w.append("</div></fieldset>")
+    w.append(f'<div class="field"><label for="other">Anything else about the day?{opt()}</label>'
+             '<p class="desc" id="other-desc">For example: a route or patch much worse or better than the rest, wet to look at or just slick, worse near the sea, '
+             'how the wind felt on the wall, whether it changed through the session.</p><textarea id="other" aria-describedby="other-desc"></textarea></div>')
+    w.append(f'<div class="row2">{initials_field()}{contact_field("Contact for a follow-up")}</div>')
+    aside = [why_log(cal),
+             ("One crag per visit", "Climbed two crags? Send one log for each. Score the crag as a whole, not your best route or your worst; "
+              "if a single route stood out, say so in the notes rather than in the score.")]
+    sent = ("Thank you. Your day is logged.",
+            "Grip checks its forecast against your day within a few hours. It then shows on the crag page and on the Method page.",
+            "Log another day")
+    return form_page("log", "log a day on the rock", "Log a day on the rock",
+                     "How did the rock feel? Each day logged tests Grip against real rock. It takes about a minute and needs no account.",
+                     "".join(w), aside, sent, FORM_URL, log_script(cfg))
+
+
+def render_note(cfg):
+    """The crag note form: crag and wall, what the note is about, the bird questions when Birds is ticked, the note."""
+    w = [combo_field(pre_hint=True)]
+    w.append(f'<fieldset class="field"><legend>What is the note about?{opt()}</legend><p class="desc">Tick any that apply.</p><div class="chips">')
+    for i, (chip, v) in enumerate(NOTE_ABOUT):
+        idx = ' id="about-birds"' if v == NOTE_BIRDS else f' id="about-{i}"'
+        w.append(f'<label class="pchip"><input type="checkbox" name="about"{idx} value="{escape(v)}"><span>{escape(chip)}</span></label>')
+    w.append("</div></fieldset>")
+    w.append('<fieldset class="birds" id="f-birds"><legend>Birds</legend>'
+             f'<fieldset class="field"><legend>What is the situation?{opt()}</legend><p class="desc">Tick any that apply.</p><div class="tiles">')
+    for i, (tile, v, desc) in enumerate(BIRD_SITUATIONS):
+        d = f' <span class="fd">{escape(desc)}</span>' if desc else ""
+        w.append(f'<label class="tile tick"><input type="checkbox" name="situation" id="sit-{i}" value="{escape(v)}"><span class="tb">'
+                 f'<span><span class="fn">{escape(tile)}</span>{d}</span></span></label>')
+    w.append(f'</div></fieldset><fieldset class="field"><legend>Which months?{opt()}</legend><p class="desc">Tap each month birds are on the crag.</p><div class="months">')
+    for m in MONTHS[1:]:
+        w.append(f'<label class="mon"><input type="checkbox" name="months" value="{m}"><span><span aria-hidden="true">{m[:3]}</span><span class="vh">{m}</span></span></label>')
+    w.append("</div></fieldset></fieldset>")
+    w.append('<div class="field" id="f-note"><label for="note">The note</label>'
+             '<p class="desc" id="note-desc">What is wrong or missing, and how you know.</p>'
+             '<textarea id="note" class="tall" aria-describedby="note-desc note-err" aria-required="true"></textarea><p class="err" id="note-err"></p></div>')
+    w.append(f'<div class="row2">{initials_field()}</div>')
+    aside = [("What a note changes", "Aspect, tide and shelter feed straight into the score. Seepage and birds are shown on the crag page "
+              "and the bird register."),
+             ("Conditions only", "Grip does not list routes, grades or approaches. Keep notes to what affects the rock and the right to climb it.")]
+    sent = ("Thank you. Your note is in.",
+            "Notes are checked by hand before they change the forecast or the bird register. That can take a week or two.",
+            "Send another note")
+    return form_page("note", "send a crag note", "Send a crag note",
+                     "Know a crag better than Grip does? A note corrects what Grip believes about a wall for everyone who checks it.",
+                     "".join(w), aside, sent, NOTES_URL, note_script(cfg))
+
+
+def render_feedback():
+    """The feedback form: what you were trying to do, what worked and what did not, the page and the device."""
+    def text(eid, lab, desc="", optional=True, extra=""):
+        d = f'<p class="desc" id="{eid}-desc">{desc}</p>' if desc else ""
+        by = " ".join(x for x in (f"{eid}-desc" if desc else "", "" if optional else f"{eid}-err") if x)
+        by = f' aria-describedby="{by}"' if by else ""
+        err = "" if optional else f'<p class="err" id="{eid}-err"></p>'
+        return (f'<div class="field" id="f-{eid}"><label for="{eid}">{lab}{opt() if optional else ""}</label>{d}'
+                f'<textarea id="{eid}" class="short"{by}{extra}></textarea>{err}</div>')
+    w = [text("trying", "What were you trying to do?", "For example: find a dry crag for Saturday morning.", optional=False, extra=' aria-required="true"'),
+         text("worked", "What worked?"), text("failed", "What didn't work?", extra=' placeholder="Anything confusing, slow or wrong."'),
+         text("ideas", "Anything missing, or ideas?", extra=' placeholder="Something you looked for and could not find."')]
+    w.append(f'<div class="row2"><div class="field" id="f-page"><label for="page-on">Which page were you on?{opt()}</label>'
+             '<select id="page-on"><option value="">Choose a page</option>')
+    for v in FEEDBACK_PAGES.values():
+        w.append(f'<option>{escape(v)}</option>')
+    w.append(f'</select></div><fieldset class="field" id="f-device"><legend>What were you using?{opt()}</legend><div class="segr">')
+    for v in DEVICES:
+        w.append(f'<label><input type="radio" name="device" value="{v}"><span>{v}</span></label>')
+    w.append("</div></fieldset></div>")
+    w.append(f'<div class="row2">{contact_field("A way to reach you")}</div>')
+    aside = [("Not about the rock?", 'For how a crag actually felt, <a href="log.html">log a day</a>. For a wrong aspect, tide or bird note, '
+              '<a href="note.html">send a crag note</a>. Feedback is for the site itself.')]
+    sent = ("Thank you. Feedback sent.",
+            "Every message is read. If you left a way to reach you, you may get a reply.",
+            "Send more feedback")
+    return form_page("feedback", "give feedback", "Give feedback",
+                     "What works, what does not, and what is missing. Plain words are fine; short is fine.",
+                     "".join(w), aside, sent, FEEDBACK_URL, feedback_script())
 
 
 def strip_html(cols, vals, now_hour):
@@ -3072,14 +3482,13 @@ def render_summary(results, now, cfg):
 
 def render_help():
     """Help Grip get better: the three forms as equal cards, in a fixed order."""
-    cards = [("log.html", "Log a day on the rock", "Say how the rock felt. It is how the forecast gets checked.", "Log a day", False),
-             (NOTES_URL, "Send a crag note", "Aspect, tides, seepage, shelter or birds wrong or missing.", "Send a note", True),
-             (FEEDBACK_URL, "Give feedback", "What works on the site, what does not, what is missing.", "Give feedback", True)]
+    cards = [("log.html", "Log a day on the rock", "Say how the rock felt. It is how the forecast gets checked.", "Log a day"),
+             ("note.html", "Send a crag note", "Aspect, tides, seepage, shelter or birds wrong or missing.", "Send a note"),
+             (feedback_link("home"), "Give feedback", "What works on the site, what does not, what is missing.", "Give feedback")]
     out = ['<section class="help" aria-labelledby="help-h"><h2 id="help-h">Help Grip get better</h2>'
            '<p class="hint">Grip is still being calibrated. Each of these takes a minute and needs no account.</p><div class="hcs">']
-    for href, title, desc, act, ext in cards:
-        tgt = ' target="_blank" rel="noopener"' if ext else ""
-        out.append(f'<a class="hc" href="{href}"{tgt}><span class="ht">{title}</span><span class="hd">{desc}</span><span class="ha">{act}</span></a>')
+    for href, title, desc, act in cards:
+        out.append(f'<a class="hc" href="{href}"><span class="ht">{title}</span><span class="hd">{desc}</span><span class="ha">{act}</span></a>')
     out.append("</div></section>")
     return "".join(out)
 
@@ -3315,7 +3724,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
       '<p class="blend">The blend weights the Met Office 2.5 (1 beyond two days), ECMWF 1 and ICON 1. The Met Office weight was raised early on, when it led the other models on the first logged days; on the current count its lead is narrow, so the weights will be reviewed as more days are logged.</p>'
       '<p id="d-birds" style="display:none;color:var(--ink)"></p>'
       '<p class="acts"><a id="d-detail" href="#">Hour by hour for this crag</a></p>'
-      '<p class="acts"><a id="d-log" href="#">Log how it actually was</a> &middot; <a id="d-note" href="#" target="_blank" rel="noopener">Send a crag note</a></p></form></dialog>')
+      '<p class="acts"><a id="d-log" href="#">Log how it actually was</a> &middot; <a id="d-note" href="#">Send a crag note</a></p></form></dialog>')
     w(f"<script>var MODELS_SAID={js(list(said_at))};{STALE_JS}{SWITCH_JS}{MATCH_JS}{FIND_JS}{FADE_JS}</script>")
     w("""<script>
 (function(){
@@ -3523,7 +3932,11 @@ def main():
     with open(os.path.join(SITE_DIR, "birds.html"), "w") as f:
         f.write(render_birds(cfg, now))
     with open(os.path.join(SITE_DIR, "log.html"), "w") as f:
-        f.write(render_log(cfg))
+        f.write(render_log(cfg, cal))
+    with open(os.path.join(SITE_DIR, "note.html"), "w") as f:
+        f.write(render_note(cfg))
+    with open(os.path.join(SITE_DIR, "feedback.html"), "w") as f:
+        f.write(render_feedback())
     os.makedirs(os.path.join(SITE_DIR, "detail"), exist_ok=True)
     view, here, logged = coast_view(results, now, cfg), zone_now(cfg, models, marine, now), logged_days(cfg)
     nxt = next_view(results, view)
