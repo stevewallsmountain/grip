@@ -54,6 +54,8 @@ See sections at the end of this file (component spec, then tokens CSS).
 |---|---|---|
 | Band names | Usable / Crisp (home key, calibration) | Climbable / Grippy everywhere |
 | Home subtitle | Dry-rock forecast for the sea cliffs of north-east Scotland. Updated Mon 5 Oct, 11:37. Models: Met Office, ECMWF, ICON. | Updated Mon 5 Oct, 11:37 · Next update about 17:30 |
+| Home intro (new) | none (title and long paragraph of form links) | **Grip** forecasts whether the sea cliffs of north-east Scotland will be dry enough to climb, hour by hour, for the week ahead. · 1 **Where and when:** the cards and coast panel show the best of today and tomorrow. · 2 **Your crag:** find it below for hour-by-hour detail, why it scores what it does, and how sure Grip is. · 3 **After climbing:** log how the rock felt. Every log makes Grip more accurate. · 4 **Know a crag well?** Send a crag note if Grip has something wrong or missing, such as aspect, seepage or nesting birds. · Like any weather forecast, Grip will only ever be a guide. Check the rock yourself before you commit. · Steve · [Got it] |
+| Intro, closed (new) | none | New here? How to use Grip |
 | Summary (new) | none | Today, Mon 5 Oct · Prime late on, 16:00 to 18:00 · Best from Cove to Newtonhill. 118 of 165 crags reach Grippy. |
 | Coast panel | Coast today / Coast tomorrow | Along the coast [Today / Tomorrow] · Best wall on each stretch, hour by hour. Earlier hours are greyed. |
 | Popular cell | Prime, best 16:00 to 18:00; 4 of 7 daylight hours usable. Low water 02:40, 15:18. | [8] 16:00 to 18:00 · 4 h · LW 15:18 |
@@ -168,6 +170,23 @@ Items marked **(B)** depend on a proposal in group B of the change list. Build t
 - Logo link: `<a href="/" aria-label="Grip, forecast home">` holding the header logo at 36px tall (89 × 36). Use `<picture>` with `grip-logo-dark.svg` for `prefers-color-scheme: dark`.
 - **(B1)** Nav: `<nav aria-label="Main">` with Forecast, Contribute (the three forms), Birds, Method. Barlow Condensed 500, 17px, each link 44px tall, 7px side padding, `white-space: nowrap`. Current page: `aria-current="page"`, 2px underline offset 6px. Fits at 360px; below 340px drop "Method" into the footer.
 - States: default, hover (underline), focus (ring), current.
+
+## 1a. Home intro and how-to
+
+- Sits between the header and the freshness line on home only. No heading; `<section id="how-to" aria-label="How to use Grip">`.
+- Box: card bg, 1px rule, radius 10, padding 12/16/10, max-width 760px. No band or brand colours, no illustration.
+- Opening line 15px/1.4, "Grip" in 600: "**Grip** forecasts whether the sea cliffs of north-east Scotland will be dry enough to climb, hour by hour, for the week ahead."
+- Steps: `<ol>` with no list markers (`role="list"` so the list semantics survive); each `li` is a flex row with the number in Barlow Condensed 600 15px muted (14px wide, `aria-hidden`; the `ol` keeps the semantics) and text 14px/1.35, gap 5px between steps. Each step's lead-in is in 600:
+  1. "**Where and when:** the cards and coast panel show the best of today and tomorrow."
+  2. "**Your crag:** find it below for hour-by-hour detail, why it scores what it does, and how sure Grip is."
+  3. "**After climbing:** log how the rock felt. Every log makes Grip more accurate."
+  4. "**Know a crag well?** Send a crag note if Grip has something wrong or missing, such as aspect, seepage or nesting birds."
+- Closing line 14px: "Like any weather forecast, Grip will only ever be a guide. Check the rock yourself before you commit."
+- Links in ink, underlined, offset 3px: "log how the rock felt" → log page, "Send a crag note" → note page, "nesting birds" → birds page.
+- Foot row, flex space-between: "Steve" (Barlow italic 400 15px, muted, a plain `p`: not a heading or byline) and a secondary "Got it" button (44px, 1px rule, paper bg, 600 15px).
+- Height about 390px at 375px wide, so the summary cards start at about 505px, within the first screen of a 375 × 667 phone.
+- **Behaviour:** rendered open in the HTML. A tiny inline script in `<head>` sets `data-intro="closed"` on `<html>` if `localStorage["grip-intro"] === "closed"`, so returning visitors never see a flash; CSS hides the box and shows the link for that attribute. Storage is read and written inside try/catch: if it fails, the intro simply shows. "Got it" stores the value, hides the box and moves focus to the link. The link "New here? How to use Grip" (14px, ink, underlined, 44px tall, `aria-expanded="false"`) removes the value, reopens the box and moves focus to it. Without JavaScript the box is always shown, the link never shows and the button is hidden (`hidden` attribute removed by script).
+- With the intro closed the freshness line (or the stale notice above it) follows the link with no top margin.
 
 ## 2. Freshness line (home and crag)
 
