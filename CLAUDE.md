@@ -37,6 +37,10 @@ Never run the workflow on any branch other than `main`: the page deploys from wh
 - If a brief references the Claude Design project, check you can read it before writing any code. If you can't, stop and ask Steve to run /design-consent.
 - Read the Design project for reference only. Never copy Design project files into the repository; `docs/design/` changes only when a brief asks for it.
 
+## Personal data
+
+- Never commit personal names (other than Steve's first name), contact details, conversations or private drafts to either repository; personal material lives outside GitHub. Source text from the SMC or UKC that names people stays in grip-private's scraped files only, never copied into tests, comments or notes.
+
 ## Writing
 
 British English, no em dashes, in code, comments, the page, commit messages and reports.
