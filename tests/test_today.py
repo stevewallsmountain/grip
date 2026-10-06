@@ -56,6 +56,12 @@ LINES = [
      "Climbable from 08:00. Best 11:00 to 14:00."),
     ("whole day: 3.5 shows as 4, so every hour counts", [3.5, 5, 6, 8, 8.4, 8, 6, 5, 4, 4], None,
      "Climbable all day. Best 11:00 to 14:00."),
+    ("whole day: Grippy every hour", [6, 6.4, 7, 8, 8.4, 8, 7, 6.5, 6, 5.6], None,
+     "Grippy all day. Best 11:00 to 14:00."),
+    ("whole day: Prime every hour, 7.6 shows as 8", [8, 8.2, 9, 9, 8.6, 8, 8, 8, 8, 7.6], None,
+     "Prime all day. Best 10:00 to 13:00."),
+    ("Grippy every hour, before daylight, 5.5 shows as 6", [5.5, 6, 7, 7, 8, 8, 7, 6, 6, 6], 7,
+     "Grippy all day. Best 11:00 to 14:00."),
 ]
 
 
