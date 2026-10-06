@@ -124,13 +124,32 @@ Google Forms and Sheets are edited through their normal pages. Facebook group fi
 8. Cadence: review when three or more new logs are in, or fortnightly, whichever comes first. Seasonal checkpoints in November, February and May, when the dew-point and seepage mechanics get their real tests.
 9. Record. Every change: version bump, the "How Grip works" table on the page, a Log notes review row, this handbook. Every reviewed day: a Log notes row.
 
-## Where calibration stands, 4 October 2026
+### Bands and thresholds
+
+- The felt bands are words on an ordinal scale and are not expected to be evenly spaced: Prime ("as dry as this coast gets") will be narrow, Grippy wide, the others uneven.
+- Two kinds of error are kept separate: the model ranking days wrongly (the two-day rule, `MODEL_VERSION`), and the band lines sitting in the wrong places (a mapping question, with its own version, for example `BANDS_VERSION`, and no change to the model).
+- Every log review records the score spread per felt band (min, median, max) in the Log notes review row, alongside the per-factor tally. Rank agreement between scores and felt bands is the model's measure; the spread per band is the mapping's.
+- At about 30 logs, fit the cut points that put the most logged days in their felt band, keeping the order, and report the in-band figures under both the fixed and the fitted lines. Expect the Prime line to move first; lower lines move with more care, because "Climbable" on a Soaked day costs a trip.
+- Until then, a run of misses in one band is treated as a mapping question first, not a model one.
+
+## Where calibration stands, 6 October 2026
 
 Twelve logged days from three people, all now scored by the build. In band and within a point count the score as shown on the page; typical miss and average error use the unrounded score. In band 6 of 12, within a point 10 of 12, typical miss 0.8, average error 0.1 above the felt band; correlation with the logged bands r = 0.47, with crag-overall readings about 0.55. In band by model: Met Office 6 of 12, ECMWF 5, ICON 5, actual weather 5; typical miss 0.8 for the Met Office against 1.0 for ECMWF and ICON. The Met Office lead is narrow on this count, so the 2.5/1/1 weights are due a fresh look at the next review.
+
+The bird audit and the facts audit's Group A are applied; Group B is held. Re-scoring the twelve days from today's archive gives 5 in band, 10 within a point and a mean error of -0.01, against the stored 6, 10 and +0.07, because the archive has shifted slightly since the days were first scored (Logie Head on 26 September went from 7.52 to 7.45). The stored figures stand until the next review re-scores everything.
 
 Known misses with no mechanism yet: Brown Band Crag on a calm, grey, humid morning (felt Grippy, model Climbable); Souter Head south wall in July, warm air over a cold sea in an inlet (felt Greasy, model Grippy, ERA5 also Grippy).
 
 Open questions, in the order evidence is likely to arrive: how long inlets hold water; whether the Embankment at Logie Head should keep its sheltered flag; the per-crag seepage rule (Brown Crag, Crazy Band Cliff until May, The Fin, Little O Wall are the candidates); the rock-temperature factor in spring; bird months for the many crags still on the April to July placeholder (only ten crags have documented months).
+
+## Open items
+
+- Crag pages: the "all day" strip line (as in "Grippy all day") should name the lowest band the day reaches.
+- Log responses sheet: hide the empty column left by the deleted question.
+- Phone checks of the log page and the front page.
+- Firefox check of date entry on the log page.
+- Facts audit items held for local knowledge: the South Cove and Yellow Crag inlet flags, Boltsheugh's sea shelter, and the Seals' Caves and Long Haven Craig tidal changes.
+- The SMC approach is pending.
 
 ## Credits and sources
 
