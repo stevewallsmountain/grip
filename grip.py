@@ -564,19 +564,20 @@ def plain_line(hs, now_hour=None, tomorrow=False):
     one short sentence per point: "Grippy now. Best 16:00 to 18:00."
     Today: the band this hour, when it becomes climbable and the best window still to come. A later day (tomorrow=True): the whole day;
     the heading above the strip names the day. When every daylight hour of the day is climbable or better (and none has passed yet),
-    "Climbable all day" takes the place of "Climbable from 08:00"."""
+    "<band> all day", naming the band of the lowest hour as shown ("Grippy all day"), takes the place of "Climbable from 08:00"."""
     rest = hs if tomorrow else [x for x in hs if hour_of(x) >= now_hour]
     if not rest:
         return "No daylight hours left today." if not tomorrow else "No hours scored."
     start = usable_from(rest)
     whole = len(rest) == len(hs) and all(rnd(x["index"]) >= USABLE for x in hs)  # no hour of the day has passed, and every one is climbable
+    all_day = f"{band(min(x['index'] for x in hs))[0].lower()} all day"  # named for the lowest hour of the day
     if tomorrow:
-        parts = ["climbable all day" if whole else f"climbable from {start['t'][11:16]}" if start else "not climbable"]
+        parts = [all_day if whole else f"climbable from {start['t'][11:16]}" if start else "not climbable"]
     else:
         cur = rest[0] if hour_of(rest[0]) == now_hour else None
         parts = [f"{band(cur['index'])[0]} now"] if cur else []
         if not (cur and rnd(cur["index"]) >= USABLE):
-            parts.append("climbable all day" if whole else f"climbable from {start['t'][11:16]}" if start else "not climbable today")
+            parts.append(all_day if whole else f"climbable from {start['t'][11:16]}" if start else "not climbable today")
     bw = best_window(rest)
     if bw:
         parts.append(f"best {bw[1][0]['t'][11:16]} to {end_of(bw[1][-1])}")
