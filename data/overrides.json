@@ -22,7 +22,7 @@
 "Yellow Crag (Back Wall)":{"type":"sport"},
 "Yellow Crag (Sunshine Slabs)":{"type":"sport"},
 "Yellow Crag (Main Face)":{"type":"sport"},
-"Yellow Crag (East Wall)":{"type":"sport"},
+"Yellow Crag (East Wall)":{"type":"sport","tidal":null,"tidal_note":"Non Tidal","note":"The routes are clear of the tide, though a big tide or swell can affect the way in."},
 "The Fin (Low Cave)":{"type":"sport"},
 "The Fin (Main Fin)":{"type":"sport"},
 "The Fin (Right Wall)":{"type":"sport"},
@@ -40,7 +40,14 @@
 "Crazy Band Walls and The Shag’s Hole (Water Worn Wall)":{"seeps":null,"seep_note":"Does not seep badly; dries out for long periods every year (developers' notes, 2020)"},
 "Crazy Band Walls and The Shag’s Hole (North Wall)":{"seeps":null},
 "Crazy Band Walls and The Shag’s Hole (Crazy Band Cliff)":{"seeps":true,"seep_note":"Bad seepage, worst at the left end; usually wet until May, with some holds staying wet beyond that (developers' notes, 2020)","seep_until_month":5,"aspect":"E"},
-"Buchan Walls":{"seep_note":"One corner sometimes carries a wet streak (developers' notes, 2024)"}
+"Buchan Walls":{"seep_note":"One corner sometimes carries a wet streak (developers' notes, 2024)"},
+"Logie Head (Pinnacle)":{"aspect":"NW","note":"The routes climb the pinnacle's western side, so it is scored as NW."},
+"Earnsheugh (Far Wall)":{"aspect":"NW","note":"Faces north-west across the bay, unlike the rest of the crag."},
+"Alligator Ridge (North Wall)":{"aspect":"N","note":"The north side of the ridge, so it faces N, not S."},
+"Altens Haven (Humpback Gulch)":{"tidal":true,"note":"The sea covers the foot of some routes when the tide is in."},
+"The Long Slough (Long Slough Pinnacle)":{"tidal":true,"tidal_note":"Tidal","note":"The pinnacle is reached over flat rocks that the tide covers."},
+"South Cove (Red Hole – Cave Walls)":{"sheltered":true,"note":"Tucked out of the wind, and prone to damp and grease because of it."},
+"Saviours Wall":{"seeps":true,"note":"Gets wet streaks, slow to dry because a cliff to the south keeps the sun off."}
 },
 "drop":[]
 }
