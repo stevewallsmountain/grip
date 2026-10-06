@@ -249,9 +249,11 @@
    "type": "trad",
    "wall": "Long Slough Pinnacle",
    "aspect_note": "east and south",
-   "tidal_note": "Non Tidal",
+   "tidal_note": "Tidal",
    "lat": 57.11793,
-   "lon": -2.05943
+   "lon": -2.05943,
+   "tidal": true,
+   "note": "The pinnacle is reached over flat rocks that the tide covers."
   },
   {
    "name": "The Long Slough",
@@ -398,7 +400,9 @@
    "wall": "Humpback Gulch",
    "lat": 57.11254,
    "lon": -2.06107,
-   "seeps": true
+   "seeps": true,
+   "tidal": true,
+   "note": "The sea covers the foot of some routes when the tide is in."
   },
   {
    "name": "Altens Haven",
@@ -928,6 +932,8 @@
    "lat": 57.09357,
    "lon": -2.07969,
    "inlet": true,
+   "sheltered": true,
+   "note": "Tucked out of the wind, and prone to damp and grease because of it.",
    "birds": {
     "months": [
      4,
@@ -1819,14 +1825,15 @@
    "section": "Findon Crags",
    "smc_id": 4212,
    "smc_crag_id": 4209,
-   "aspect": "NE",
+   "aspect": "NW",
    "rock": "Schist",
    "type": "trad",
    "wall": "Far Wall",
    "tidal_note": "Non Tidal",
    "lat": 57.07344,
    "lon": -2.09696,
-   "sheltered": true
+   "sheltered": true,
+   "note": "Faces north-west across the bay, unlike the rest of the crag."
   },
   {
    "name": "The Pink Band Cliff",
@@ -3414,11 +3421,11 @@
    "rock": "Schist",
    "type": "sport",
    "wall": "East Wall",
-   "tidal": true,
-   "tidal_note": "Partially Tidal",
+   "tidal_note": "Non Tidal",
    "lat": 57.02173,
    "lon": -2.15201,
-   "sheltered": true
+   "sheltered": true,
+   "note": "The routes are clear of the tide, though a big tide or swell can affect the way in."
   },
   {
    "name": "Drab Crag",
@@ -4833,14 +4840,14 @@
    "section": "North Haven to Long Haven Quarries",
    "smc_id": 4408,
    "smc_crag_id": 4406,
-   "aspect": "S",
+   "aspect": "N",
    "rock": "Granite",
    "type": "trad",
    "wall": "North Wall",
-   "aspect_note": "south, east and north",
    "tidal_note": "Non Tidal",
    "lat": 57.43849,
    "lon": -1.81176,
+   "note": "The north side of the ridge, so it faces N, not S.",
    "birds": {
     "months": [
      4,
@@ -5495,6 +5502,8 @@
    "tidal_note": "Non Tidal",
    "lat": 57.45822,
    "lon": -1.78999,
+   "seeps": true,
+   "note": "Gets wet streaks, slow to dry because a cliff to the south keeps the sun off.",
    "birds": {
     "months": [
      4,
@@ -6129,15 +6138,15 @@
    "section": "Logie Head and Portsoy",
    "smc_id": 4509,
    "smc_crag_id": 4501,
-   "aspect": "SE",
+   "aspect": "NW",
    "rock": "Greywacke",
    "type": "trad",
    "wall": "Pinnacle",
-   "aspect_note": "south-east and north-west",
    "tidal": true,
    "tidal_note": "Partially Tidal",
    "lat": 57.69977,
    "lon": -2.79389,
+   "note": "The routes climb the pinnacle's western side, so it is scored as NW.",
    "birds": {
     "months": [
      4,

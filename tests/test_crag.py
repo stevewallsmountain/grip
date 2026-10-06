@@ -143,6 +143,32 @@ class Across(unittest.TestCase):
         self.assertEqual(grip.wall_tags({"aspect": "NW", "tidal_note": "Non Tidal"}, DAYS), ["Faces NW", "Open", "Not tidal"])
         self.assertEqual(grip.wall_tags({"tidal": True, "tidal_note": "Partially Tidal", "inlet": True}, DAYS), ["Aspect not known", "Inlet", "Part tidal"])
 
+    def test_shelter_wording(self):
+        """Inlet wording only for inlet walls; a sheltered wall without the inlet flag reads as the back of a bay."""
+        shelter = lambda c: dict(grip.shapes_items(c, ZONE, DAYS[0], "today", ZN["sea"])).get("Shelter", "")
+        self.assertTrue(shelter({"aspect": "E", "sheltered": True, "inlet": True}).startswith("Narrow inlet."))
+        self.assertTrue(shelter({"aspect": "E", "sheltered": True}).startswith("Back of a bay."))
+        self.assertNotIn("inlet", shelter({"aspect": "E", "sheltered": True}).lower())
+
+    def test_override_aspect_drops_the_inherited_list(self):
+        """A wall whose aspect comes from data/overrides.json carries no inherited aspect_note, so its sun line names only that
+        aspect, unless the override gives its own aspect_note."""
+        with open(os.path.join(ROOT, "data", "overrides.json")) as f:
+            ov = json.load(f)["walls"]
+        with open(os.path.join(ROOT, "crags.json")) as f:
+            walls = {grip.label(c): c for c in json.load(f)["crags"]}
+        checked = 0
+        for lab, o in ov.items():
+            if "aspect" in o and lab in walls:
+                checked += 1
+                self.assertEqual(walls[lab].get("aspect_note"), o.get("aspect_note"), lab)
+        self.assertGreater(checked, 10)
+        for lab, asp in (("Alligator Ridge (North Wall)", "N"), ("Logie Head (Pinnacle)", "NW")):
+            c = walls[lab]
+            self.assertEqual(c["aspect"], asp)
+            self.assertEqual(grip.wall_tags(c, DAYS)[0], f"Faces {asp}")
+            self.assertNotIn("in places", dict(grip.shapes_items(c, ZONE, DAYS[0], "today", ZN["sea"]))["Sun"])
+
 
 def data_notes():
     """Every note text in data/overrides.json and every note string in tools/build_crags.py (data/birds.json's notes are

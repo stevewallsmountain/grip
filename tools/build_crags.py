@@ -195,6 +195,8 @@ for label, ov in overrides.get("walls", {}).items():
         dropped.append((label, "override target not found"))
         continue
     for c in hits:
+        if "aspect" in ov and "aspect_note" not in ov:
+            c.pop("aspect_note", None)  # the override settles the facing, so the inherited list of directions no longer applies
         for k, v in ov.items():
             if v is None:
                 c.pop(k, None)
