@@ -39,7 +39,7 @@ Never run the workflow on any branch other than `main`: the page deploys from wh
 
 ## Personal data
 
-- Never commit personal names (other than Steve's first name), contact details, conversations or private drafts to either repository; personal material lives outside GitHub. Source text from the SMC or UKC that names people stays in grip-private's scraped files only, never copied into tests, comments or notes.
+- Never commit personal names (other than Steve's own name), contact details, conversations or private drafts to either repository; personal material lives outside GitHub. Source text from the SMC or UKC that names people stays in grip-private's scraped files only, never copied into tests, comments or notes.
 
 ## Writing
 
