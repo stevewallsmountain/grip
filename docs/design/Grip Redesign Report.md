@@ -56,7 +56,7 @@ See sections at the end of this file (component spec, then tokens CSS).
 | Home subtitle | Dry-rock forecast for the sea cliffs of north-east Scotland. Updated Mon 5 Oct, 11:37. Models: Met Office, ECMWF, ICON. | Updated Mon 5 Oct, 11:37 · Next update about 17:30 |
 | Home intro (new) | none (title and long paragraph of form links) | **Grip** forecasts whether the sea cliffs of north-east Scotland will be dry enough to climb, hour by hour, for the week ahead. · 1 **Where and when:** the cards and coast panel show the best of today and tomorrow. · 2 **Your crag:** find it below for hour-by-hour detail, why it scores what it does, and how sure Grip is. · 3 **After climbing:** log how the rock felt. Every log makes Grip more accurate. · 4 **Know a crag well?** Send a crag note if Grip has something wrong or missing, such as aspect, seepage or nesting birds. · Like any weather forecast, Grip will only ever be a guide. Check the rock yourself before you commit. · Steve · [Got it] |
 | Intro, closed (new) | none | New here? How to use Grip |
-| Summary (new) | none | Today, Mon 5 Oct · Prime late on, 16:00 to 18:00 · Best from Cove to Newtonhill. 118 of 165 crags reach Grippy. |
+| Summary (new) | none | Today, Mon 5 Oct · Prime late on, 16:00 to 18:00 · Best at Newtonhill North (Back Door Wall), between Portlethen and Newtonhill. 118 of 165 crags reach Grippy. |
 | Coast panel | Coast today / Coast tomorrow | Along the coast [Today / Tomorrow] · Best wall on each stretch, hour by hour. Earlier hours are greyed. |
 | Popular cell | Prime, best 16:00 to 18:00; 4 of 7 daylight hours usable. Low water 02:40, 15:18. | [8] 16:00 to 18:00 · 4 h · LW 15:18 |
 | Hours | usable hours | climbable hours |
@@ -197,10 +197,10 @@ Items marked **(B)** depend on a proposal in group B of the change list. Build t
 ## 3. Summary cards (B2)
 
 - Two cards in a flex row (wrap, basis 300px, gap 12). Card: `--card`, 1px rule, radius 10, padding 14/16, flex with 14px gap.
-- Left: score block XL (56px, number 34px). Right: overline (13px display caps, muted) "Today, Mon 5 Oct"; line (21px display 600) "Prime late on, 16:00 to 18:00"; meta (14px muted) "Best from Cove to Newtonhill. 118 of 165 crags reach Grippy."
-- Generator picks the best stretch by its best wall's score, ties broken by longest window.
-- **After dark:** once today's daylight is over the cards show Tomorrow ("Tomorrow, Tue 6 Oct") and the day after, headed by its date alone ("Wed 7 Oct"), both in the same format as by day: score block, line with the band and best window, best stretch and Grippy count. There is no "Today is over" card. These are the same two days as the Popular crags table and the crag pages.
-- **No good day:** if nothing reaches 4, the line reads "Nowhere climbable. Best is Greasy, 3, at …".
+- Left: score block XL (56px, number 34px). Right: overline (13px display caps, muted) "Today, Mon 5 Oct"; line (21px display 600) "Prime late on, 16:00 to 18:00"; meta (14px muted) "Best at Newtonhill North (Back Door Wall), between Portlethen and Newtonhill. 118 of 165 crags reach Grippy."
+- Generator picks the best wall along the coast: best day score as shown, ties broken by the longest window in that band, then coast order. The meta line names that wall's crag, and the wall where the crag has several, then its stretch (the coast panel's): "between Portlethen and Newtonhill" for a stretch named "X to Y" or "X and Y", "from Stonehaven south" for "Stonehaven and south", "near Rosehearty" for a single place. The crag and wall link to the crag page, opening that wall (`detail/<crag>.html#<wall>`); the link is in ink, underlined.
+- **After dark:** once today's daylight is over the cards show Tomorrow ("Tomorrow, Tue 6 Oct") and the day after, headed by its date alone ("Wed 7 Oct"), both in the same format as by day: score block, line with the band and best window, best crag and stretch and Grippy count. There is no "Today is over" card. These are the same two days as the Popular crags table and the crag pages.
+- **No good day:** if nothing reaches 4, the line reads "Nowhere climbable. Best is Greasy, 3." and the meta line names the crag as by day: "Best at Souter Head (Rainbow Inlet – North Wall), between Nigg Bay and Findon. 0 of 165 crags reach Grippy."
 
 ## 4. Coast panel
 

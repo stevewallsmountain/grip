@@ -1466,6 +1466,7 @@ html[data-intro=closed] .reopen+.fresh,html[data-intro=closed] .reopen+.stale{ma
 .card>div{min-width:0}
 .card .ln{margin:2px 0 0;font:600 21px/1.2 var(--font-display)}
 .card .cm{margin:2px 0 0;font-size:var(--t-meta);color:var(--muted)}
+.card .cm a{color:var(--ink)}
 .num.none{background:var(--sunk);color:var(--muted);box-shadow:inset 0 0 0 1px var(--rule)}
 .top{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s-24) var(--s-32);margin:var(--s-24) 0 0;align-items:start}
 .top h2{margin-top:0}
@@ -4260,9 +4261,9 @@ def when_words(run, day_hrs):
 
 
 def day_summary(results, cfg, day_iso):
-    """The best of a day along the whole coast, for its summary card. The best stretch is the coast panel's stretch (weather point)
-    holding the best wall:
-    the highest day score as shown, ties to the longest run of hours in that band, then coast order.
+    """The best of a day along the whole coast, for its summary card: the best wall, with the highest day score as shown, ties
+    to the longest run of hours in that band, then coast order; its crag, its wall where the crag has several (with a link to
+    that wall's card), and its stretch, the coast panel's stretch (weather point).
     Returns a dict: best (None if nothing is scored), grippy (crags whose day score as shown is 6 or more) and crags (all crags)."""
     zones = cfg["zones"]
     best = None
@@ -4285,7 +4286,36 @@ def day_summary(results, cfg, day_iso):
         c = best["r"]["crag"]
         best["stretch"] = zones[c["zone"]]["name"]
         best["when"] = when_words(best["run"], day_hours(best["r"], day_iso))
+        walls = dict(groups)[c["name"]]
+        best["href"] = f"detail/{slug(c['name'])}.html"
+        best["wall"] = None
+        if len(walls) > 1:  # name the wall, and link to its card, only where the crag has several
+            best["wall"] = wall_name(c)
+            best["href"] += "#" + wall_ids(walls)[next(i for i, r in enumerate(walls) if r is best["r"])]
     return {"best": best, "grippy": grippy, "crags": len(groups)}
+
+
+def stretch_words(name):
+    """A coast panel stretch as it reads after the crag on a summary card: "Portlethen to Newtonhill" and "Cullen and Portsoy"
+    read "between Portlethen and Newtonhill" and "between Cullen and Portsoy", "Stonehaven and south" reads
+    "from Stonehaven south", and a single place, "Rosehearty", reads "near Rosehearty"."""
+    m = re.fullmatch(r"(.+) to (.+)", name)
+    if m:
+        return f"between {m[1]} and {m[2]}"
+    m = re.fullmatch(r"(.+) and (north|south|east|west)", name)
+    if m:
+        return f"from {m[1]} {m[2]}"
+    if " and " in name:
+        return f"between {name}"
+    return f"near {name}"
+
+
+def best_at(b):
+    """The summary card's second line up to the Grippy count: the crag holding the best wall, and the wall where the crag
+    has several, linked to its crag page, then its stretch."""
+    c = b["r"]["crag"]
+    crag = escape(c["name"]) + (f" ({escape(b['wall'])})" if b["wall"] else "")
+    return f'Best at <a href="{b["href"]}">{crag}</a>, {escape(stretch_words(b["stretch"]))}.'
 
 
 def summary_card(title, day, s):
@@ -4303,11 +4333,11 @@ def summary_card(title, day, s):
     n = s["grippy"]
     count = f'{n} of {s["crags"]} crags {"reaches" if n == 1 else "reach"} Grippy.'
     if rnd(d["index"]) < USABLE:
-        line, meta = f'Nowhere climbable. Best is {name}, {fmt(d["index"])}, at {escape(b["r"]["crag"]["name"])}.', count
+        line = f'Nowhere climbable. Best is {name}, {fmt(d["index"])}.'
     else:
         run = b["run"]
         line = f'{name} {b["when"]}, {run[0]["t"][11:16]} to {end_of(run[-1])}'
-        meta = f'Best from {escape(b["stretch"])}. {count}'
+    meta = f'{best_at(b)} {count}'
     return f'<div class="card">{block}<div>{head}<p class="ln">{line}</p><p class="cm">{meta}</p></div></div>'
 
 
