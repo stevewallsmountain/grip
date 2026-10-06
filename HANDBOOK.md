@@ -153,4 +153,4 @@ Open questions, in the order evidence is likely to arrive: how long inlets hold 
 
 ## Credits and sources
 
-Forecasts from Open-Meteo (CC BY 4.0) including Met Office data (CC BY-SA 4.0). Crag details from the SMC routes database and UKC, with local corrections. The original idea was a friend's hand-scored "NERD" table, which still runs as the baseline for comparison in the calibration data.
+Forecasts from Open-Meteo (CC BY 4.0) including Met Office data (CC BY-SA 4.0). Crag details from the SMC routes database and UKC, with local corrections. The original idea came from a friend's hand-scored table, which still runs as a baseline for comparison in the calibration data.
