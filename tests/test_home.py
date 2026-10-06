@@ -40,12 +40,12 @@ def daily(hs):
             "models": []}
 
 
-def result(name, zone, by_day, earlier=None):
+def result(name, zone, by_day, earlier=None, wall=None):
     """A wall result: by_day is {date: hour dicts}; earlier holds today's hours already gone. Its SMC section is
     deliberately unlike its weather point, so a test can tell which one the summary names."""
     hs = [hr for d in sorted(by_day) for hr in by_day[d]]
-    return {"crag": {"name": name, "zone": zone, "section": "SMC section " + zone}, "hours": hs, "earlier": earlier or [],
-            "daily": {d: daily(v) for d, v in by_day.items() if v}}
+    return {"crag": {"name": name, "wall": wall, "zone": zone, "section": "SMC section " + zone}, "hours": hs,
+            "earlier": earlier or [], "daily": {d: daily(v) for d, v in by_day.items() if v}}
 
 
 CFG = {"zones": {"S": {"name": "Weather point"}, "south": {"name": "Nigg Bay to Findon"},
@@ -68,14 +68,17 @@ class Summary(unittest.TestCase):
         self.assertEqual((s["grippy"], s["crags"]), (2, 3))  # A and B reach 6; C does not; B's second wall is not a crag
         card = grip.summary_card("Tomorrow", date(2026, 10, 6), s)
         self.assertIn("Grippy most of the day, 09:00 to 17:00", card)
-        self.assertIn("Best from Cullen and Portsoy. 2 of 3 crags reach Grippy.", card)
+        self.assertIn("Best at <a href=\"detail/b.html#main-face\">B (Main face)</a>, between Cullen and Portsoy. "
+                      "2 of 3 crags reach Grippy.", card)
         self.assertNotIn("SMC section", card)
         self.assertIn("Tomorrow, Tue 6 Oct", card)
 
     def test_tie_on_score_and_run_goes_to_coast_order(self):
         results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])}),
                    result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])})]
-        self.assertEqual(grip.day_summary(results, CFG, TOMORROW)["best"]["stretch"], "First point")
+        s = grip.day_summary(results, CFG, TOMORROW)
+        self.assertEqual(s["best"]["stretch"], "First point")
+        self.assertIn('Best at <a href="detail/a.html">A</a>, near First point.', grip.summary_card("Tomorrow", date(2026, 10, 6), s))
 
     def test_count_uses_the_score_as_shown(self):
         results = [result("A", "S", {TOMORROW: hours(TOMORROW, 9, [5.5, 5.5, 5.5])}),   # shows 6
@@ -88,12 +91,66 @@ class Summary(unittest.TestCase):
         results = [result("Souter Head", "S", {TOMORROW: hours(TOMORROW, 9, [2, 3, 3, 3, 2])}),
                    result("Cove", "S", {TOMORROW: hours(TOMORROW, 9, [1, 1, 2, 1, 1])})]
         card = grip.summary_card("Tomorrow", date(2026, 10, 6), grip.day_summary(results, CFG, TOMORROW))
-        self.assertIn("Nowhere climbable. Best is Greasy, 3, at Souter Head.", card)
-        self.assertIn("0 of 2 crags reach Grippy.", card)
-        self.assertNotIn("Best from", card)
+        self.assertIn('<p class="ln">Nowhere climbable. Best is Greasy, 3.</p>', card)
+        self.assertIn('Best at <a href="detail/souter-head.html">Souter Head</a>, near Weather point. 0 of 2 crags reach Grippy.', card)
         # 3.5 shows as 4, which is climbable
         results = [result("Souter Head", "S", {TOMORROW: hours(TOMORROW, 9, [3.5, 3.5, 3.5])})]
         self.assertNotIn("Nowhere", grip.summary_card("Tomorrow", date(2026, 10, 6), grip.day_summary(results, CFG, TOMORROW)))
+
+    def test_names_the_best_wall_not_the_best_typical_stretch(self):
+        """6 Oct: the card's headline is the single best wall, so the card names that crag and wall, even where another
+        stretch has the better typical wall."""
+        results = [
+            result("Newtonhill North", "newtonhill", {TOMORROW: hours(TOMORROW, 9, [3, 3, 3])}, wall="Harbour Wall"),
+            result("Newtonhill North", "newtonhill", {TOMORROW: hours(TOMORROW, 9, [6, 7, 8, 8, 8, 7])}, wall="Back Door Wall"),
+            result("Newtonhill North", "newtonhill", {TOMORROW: hours(TOMORROW, 9, [2, 2, 2])}, wall="Newtonhill Cave"),
+            result("Longhaven", "collieston", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7, 7])}),
+            result("Red Wall", "collieston", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7, 7])}),
+        ]
+        cfg = {"zones": {"newtonhill": {"name": "Portlethen to Newtonhill"}, "collieston": {"name": "Collieston to Whinnyfold"}}}
+        card = grip.summary_card("Today", date(2026, 10, 6), grip.day_summary(results, cfg, TOMORROW))
+        self.assertIn('<p class="ln">Prime ', card)
+        self.assertIn('Best at <a href="detail/newtonhill-north.html#back-door-wall">Newtonhill North (Back Door Wall)</a>, '
+                      'between Portlethen and Newtonhill. 3 of 3 crags reach Grippy.', card)
+
+    def test_single_wall_crag_named_without_its_wall(self):
+        """A crag with one wall is named alone, even when that wall has a name, and links to the crag page with no hash."""
+        results = [result("The Black Dyke", "mid", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])}, wall="Whisky Cliff"),
+                   result("Cove", "mid", {TOMORROW: hours(TOMORROW, 9, [5, 5, 5])})]
+        card = grip.summary_card("Today", date(2026, 10, 6), grip.day_summary(results, CFG, TOMORROW))
+        self.assertIn('Best at <a href="detail/the-black-dyke.html">The Black Dyke</a>, from Stonehaven south.', card)
+        self.assertNotIn("Whisky Cliff", card)
+
+    def test_wall_ties_go_to_the_longer_window_then_coast_order(self):
+        """Two walls of one crag on the same score: the longer window wins; level on that too, the first in coast order."""
+        results = [result("Cove", "south", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])}, wall="Red Tower"),
+                   result("Cove", "south", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7, 7])}, wall="Amphitheatre"),
+                   result("Cove", "south", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7, 7])}, wall="Amphitheatre")]
+        card = grip.summary_card("Today", date(2026, 10, 6), grip.day_summary(results, CFG, TOMORROW))
+        self.assertIn('Best at <a href="detail/cove.html#amphitheatre">Cove (Amphitheatre)</a>, between Nigg Bay and Findon.', card)
+
+    def test_names_escaped(self):
+        results = [result("Bell's & Co", "S", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])}, wall="A <b>"),
+                   result("Bell's & Co", "S", {TOMORROW: hours(TOMORROW, 9, [5, 5, 5])}, wall="B")]
+        card = grip.summary_card("Today", date(2026, 10, 6), grip.day_summary(results, CFG, TOMORROW))
+        self.assertIn('Best at <a href="detail/bell-s-co.html#a-b">Bell&#x27;s &amp; Co (A &lt;b&gt;)</a>', card)
+
+    def test_stretch_words(self):
+        """Every stretch on the coast panel, as it reads on the card."""
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "crags.json")) as f:
+            zones = json.load(f)["zones"]
+        said = {z["name"]: grip.stretch_words(z["name"]) for z in zones.values()}
+        self.assertEqual(said, {
+            "Nigg Bay to Findon": "between Nigg Bay and Findon",
+            "Portlethen to Newtonhill": "between Portlethen and Newtonhill",
+            "Newtonhill South to Muchalls": "between Newtonhill South and Muchalls",
+            "Stonehaven and south": "from Stonehaven south",
+            "Collieston to Whinnyfold": "between Collieston and Whinnyfold",
+            "Cruden Bay to Boddam": "between Cruden Bay and Boddam",
+            "Macduff to Pennan": "between Macduff and Pennan",
+            "Rosehearty": "near Rosehearty",
+            "Cullen and Portsoy": "between Cullen and Portsoy",
+        })
 
     def test_after_dark(self):
         """Once today's daylight is over: Tomorrow first, then the day after headed by its date alone, in the same format."""
@@ -108,7 +165,7 @@ class Summary(unittest.TestCase):
         self.assertIn('<p class="ovl">Wed 7 Oct</p>', second)
         self.assertIn('class="num sz-xl b4" role="img" aria-label="7, Grippy">7<', second)
         self.assertIn("Grippy around midday, 11:00 to 14:00", second)
-        self.assertIn("Best from Nigg Bay to Findon. 2 of 2 crags reach Grippy.", second)
+        self.assertIn('Best at <a href="detail/a.html">A</a>, between Nigg Bay and Findon. 2 of 2 crags reach Grippy.', second)
         self.assertIn('aria-label="Best tomorrow and the day after"', html)
         for gone_words in ("Today", "Today is over", "past"):
             self.assertNotIn(gone_words, html)
@@ -119,9 +176,9 @@ class Summary(unittest.TestCase):
         html = grip.render_summary(results, datetime(2026, 10, 5, 20, 0, tzinfo=grip.TZ), CFG)
         second = html.split('<div class="card">')[2]
         self.assertIn('<p class="ovl">Wed 7 Oct</p>', second)
-        self.assertIn("Nowhere climbable. Best is Greasy, 3, at Souter Head.", second)
-        self.assertIn("0 of 2 crags reach Grippy.", second)
-        self.assertNotIn("Best from", second)
+        self.assertIn('<p class="ln">Nowhere climbable. Best is Greasy, 3.</p>', second)
+        self.assertIn('Best at <a href="detail/souter-head.html">Souter Head</a>, near Weather point. 0 of 2 crags reach Grippy.',
+                      second)
 
     def test_after_dark_day_after_not_scored(self):
         results = [result("A", "S", {TOMORROW: hours(TOMORROW, 9, [6, 6, 6])})]
