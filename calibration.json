@@ -263,6 +263,31 @@
   "wall": "",
   "wet": 0.0
  },
+ "3.7|Murray Heugh|2026-10-06|11|16|Crisp": {
+  "base": 7.294685990338164,
+  "base_models": {
+   "ECMWF": 7.391304347826088,
+   "ICON": 7.391304347826086,
+   "Met Office": 7.217391304347825
+  },
+  "crag": "Murray Heugh",
+  "date": "2026-10-06",
+  "era": 6.798274069446909,
+  "era_base": 7.565217391304349,
+  "feel": "Crisp",
+  "from": 11,
+  "grip": 6.576349462953104,
+  "models": {
+   "ECMWF": 6.708158439284023,
+   "ICON": 6.59861776629874,
+   "Met Office": 6.514718551082481
+  },
+  "problems": "",
+  "to": 16,
+  "tries": 1,
+  "wall": "Main Face",
+  "wet": 0.0
+ },
  "3.7|Newtonhill (Backdoor Wall)|2026-09-27|9|12|Usable": {
   "base": 4.99194847020934,
   "base_models": {
