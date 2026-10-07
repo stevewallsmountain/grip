@@ -336,5 +336,30 @@
   "tries": 1,
   "wall": "",
   "wet": 0.0
+ },
+ "3.7|The Orchestra Cave|2026-10-06|10|14|Crisp": {
+  "base": 7.946859903381642,
+  "base_models": {
+   "ECMWF": 7.282608695652174,
+   "ICON": 8.369565217391305,
+   "Met Office": 8.043478260869565
+  },
+  "crag": "The Orchestra Cave",
+  "date": "2026-10-06",
+  "era": 7.046143920788963,
+  "era_base": 8.152173913043478,
+  "feel": "Crisp",
+  "from": 10,
+  "grip": 6.805513044834153,
+  "models": {
+   "ECMWF": 6.383280729416626,
+   "ICON": 7.540835147425294,
+   "Met Office": 6.680277129964707
+  },
+  "problems": "Seepage",
+  "to": 14,
+  "tries": 1,
+  "wall": "Back Wall",
+  "wet": 0.0
  }
 }
