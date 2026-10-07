@@ -105,6 +105,7 @@ FEEDBACK_PAGES = {"home": "Home page", "crag": "A crag page", "log": "Log a day"
                   "feedback": "Give feedback", "birds": "Nesting birds", "method": "How Grip works", "": "Somewhere else"}  # ?from= key: the form's option
 DEVICES = ["Phone", "Tablet", "Computer"]  # the feedback form's options; prefilled from the screen width, under 600 px and under 1024 px
 POPULAR_FILE = os.path.join(HERE, "data", "popular.json")  # the crags people climb most, in order, for the front page table
+CRAG_RANK_FILE = os.path.join(HERE, "data", "crag_rank.json")  # crag names by UKC logbook entries, most logged first; breaks ties on the summary cards
 POPULAR_TOP = 5  # how many the table shows before "Show all": of 5 to 8, the one that brings the column closest to the coast panel at 1280 px
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
@@ -4058,6 +4059,22 @@ def load_popular(cfg):
     return [n for n in names if n in known]
 
 
+def load_crag_rank(cfg):
+    """The crag rank from data/crag_rank.json, most logged first, keeping only names that match a crag in crags.json.
+    A missing or unreadable file is an empty rank."""
+    try:
+        with open(CRAG_RANK_FILE, encoding="utf-8") as f:
+            names = json.load(f)["rank"]
+    except Exception as e:  # noqa: BLE001
+        log(f"Warning: cannot read data/crag_rank.json ({e}); the summary cards' ties fall to coast order")
+        return []
+    known = {c["name"] for c in cfg.get("crags", ())}
+    missing = [n for n in names if n not in known]
+    if missing:
+        log(f"Warning: {len(missing)} name(s) in data/crag_rank.json match no crag in crags.json: {', '.join(missing)}")
+    return [n for n in names if n in known]
+
+
 def popular_rows(groups, names, days):
     """One row per popular crag, (name, walls, [(best wall result, its daily entry) for each day]), sorted by the first day's
     score as shown, then its climbable hours, then the list order. A crag with no hours left that day sorts last."""
@@ -4261,12 +4278,14 @@ def when_words(run, day_hrs):
     return "in the morning" if mid < 12 else "around midday" if mid <= 14 else "in the afternoon"
 
 
-def day_summary(results, cfg, day_iso):
+def day_summary(results, cfg, day_iso, rank=()):
     """The best of a day along the whole coast, for its summary card: the best wall, with the highest day score as shown, ties
-    to the longest run of hours in that band, then coast order; its crag, its wall where the crag has several (with a link to
-    that wall's card), and its stretch, the coast panel's stretch (weather point).
+    to the longest run of hours in that band, then the crag's place in rank (crag names, most logged first; a ranked crag
+    beats an unranked one), then coast order; its crag, its wall where the crag has several (with a link to that wall's
+    card), and its stretch, the coast panel's stretch (weather point).
     Returns a dict: best (None if nothing is scored), grippy (crags whose day score as shown is 6 or more) and crags (all crags)."""
     zones = cfg["zones"]
+    ranked = {name: len(rank) - i for i, name in enumerate(rank)}  # higher wins; unranked crags score 0
     best = None
     for i, r in enumerate(results):
         d = r["daily"].get(day_iso)
@@ -4274,7 +4293,7 @@ def day_summary(results, cfg, day_iso):
             continue
         hs = [hr for hr in r["hours"] if hr["t"][:10] == day_iso]
         run = band_run(hs, d)
-        key = (rnd(d["index"]), len(run), -i)
+        key = (rnd(d["index"]), len(run), ranked.get(r["crag"]["name"], 0), -i)
         if best is None or key > best["key"]:
             best = {"key": key, "r": r, "d": d, "run": run}
     groups = groups_of(results)
@@ -4347,8 +4366,9 @@ def render_summary(results, now, cfg):
     the day after headed by its date alone. The same two days as the Popular crags table and the crag pages."""
     day, after_dark, *_rest = coast_view(results, now, cfg)
     later = day + timedelta(days=1)
-    cards = (summary_card("Tomorrow" if after_dark else "Today", day, day_summary(results, cfg, day.isoformat()))
-             + summary_card(None if after_dark else "Tomorrow", later, day_summary(results, cfg, later.isoformat())))
+    rank = load_crag_rank(cfg)
+    cards = (summary_card("Tomorrow" if after_dark else "Today", day, day_summary(results, cfg, day.isoformat(), rank))
+             + summary_card(None if after_dark else "Tomorrow", later, day_summary(results, cfg, later.isoformat(), rank)))
     said = "Best tomorrow and the day after" if after_dark else "Best today and tomorrow"
     return f'<section class="cards" aria-label="{said}">{cards}</section>'
 

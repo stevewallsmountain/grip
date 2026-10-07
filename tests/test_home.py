@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 import unittest
 import unittest.mock
 from datetime import date, datetime, timedelta
@@ -51,6 +52,22 @@ def result(name, zone, by_day, earlier=None, wall=None):
 CFG = {"zones": {"S": {"name": "Weather point"}, "south": {"name": "Nigg Bay to Findon"},
                  "north": {"name": "Cullen and Portsoy"}, "mid": {"name": "Stonehaven and south"},
                  "First": {"name": "First point"}, "Second": {"name": "Second point"}}}
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_RANK_DIR = tempfile.TemporaryDirectory()
+_EMPTY_RANK = os.path.join(_RANK_DIR.name, "crag_rank.json")
+with open(_EMPTY_RANK, "w") as _f:
+    json.dump({"as_of": "2026-10-07", "window": "UKC logbook entries, last 12 months", "rank": []}, _f)
+_RANK_PATCH = unittest.mock.patch.object(grip, "CRAG_RANK_FILE", _EMPTY_RANK)
+
+
+def setUpModule():
+    """The cards' tests run with an empty crag rank, so coast order decides unless a test passes or writes a rank."""
+    _RANK_PATCH.start()
+
+
+def tearDownModule():
+    _RANK_PATCH.stop()
+    _RANK_DIR.cleanup()
 
 
 class Summary(unittest.TestCase):
@@ -207,6 +224,83 @@ class Summary(unittest.TestCase):
         self.assertEqual(grip.when_words(day[5:8], day), "in the afternoon")
         self.assertEqual(grip.when_words(day[1:9], day), "most of the day")
         self.assertEqual(grip.when_words(day, day), "all day")
+
+
+class CragRankTieBreak(unittest.TestCase):
+    """Ties on day score as shown and run length go to the crag rank (data/crag_rank.json), then coast order."""
+
+    def named(self, results, rank):
+        return grip.day_summary(results, CFG, TOMORROW, rank)["best"]["r"]["crag"]["name"]
+
+    def test_ranked_crag_wins_a_tie(self):
+        results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])}),
+                   result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])})]
+        self.assertEqual(self.named(results, ["B"]), "B")
+        self.assertEqual(self.named(results, []), "A")  # no rank: coast order, as before
+
+    def test_higher_ranked_wins_whatever_the_coast_order(self):
+        results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])}),
+                   result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])})]
+        self.assertEqual(self.named(results, ["B", "A"]), "B")
+        self.assertEqual(self.named(results, ["A", "B"]), "A")
+        self.assertEqual(self.named(results[::-1], ["A", "B"]), "A")
+
+    def test_longer_run_beats_the_rank(self):
+        results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])}),
+                   result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7, 7])})]
+        self.assertEqual(self.named(results, ["A"]), "B")
+
+    def test_higher_score_beats_the_rank(self):
+        results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [6, 6, 6, 6, 6])}),
+                   result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])})]
+        self.assertEqual(self.named(results, ["A"]), "B")
+
+    def test_cards_load_the_rank_once_and_use_it_for_both(self):
+        results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7]), LATER: hours(LATER, 9, [6, 6, 6])}),
+                   result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7]), LATER: hours(LATER, 9, [6, 6, 6])})]
+        with unittest.mock.patch.object(grip, "load_crag_rank", return_value=["B"]) as loader:
+            html = grip.render_summary(results, datetime(2026, 10, 5, 20, 0, tzinfo=grip.TZ), CFG)
+        self.assertEqual(loader.call_count, 1)
+        first, second = html.split('<div class="card">')[1:]
+        self.assertIn('Best at <a href="detail/b.html">B</a>', first)
+        self.assertIn('Best at <a href="detail/b.html">B</a>', second)
+
+    def test_unknown_name_warns_and_is_ignored(self):
+        cfg = {"crags": [{"name": "Logie Head"}, {"name": "Yellow Crag"}]}
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "r.json")
+            with open(p, "w") as f:
+                json.dump({"as_of": "2026-10-07", "window": "w", "rank": ["Logie Head", "Nowhere Crag", "Yellow Crag"]}, f)
+            with unittest.mock.patch.object(grip, "CRAG_RANK_FILE", p), unittest.mock.patch.object(grip, "log") as lg:
+                self.assertEqual(grip.load_crag_rank(cfg), ["Logie Head", "Yellow Crag"])
+            self.assertIn("Nowhere Crag", lg.call_args[0][0])
+
+    def test_missing_or_unreadable_file_is_an_empty_rank(self):
+        cfg = {"crags": [{"name": "Logie Head"}]}
+        with tempfile.TemporaryDirectory() as d:
+            bad = os.path.join(d, "bad.json")
+            with open(bad, "w") as f:
+                f.write("not json")
+            for path in (os.path.join(d, "missing.json"), bad):
+                with unittest.mock.patch.object(grip, "CRAG_RANK_FILE", path), unittest.mock.patch.object(grip, "log") as lg:
+                    self.assertEqual(grip.load_crag_rank(cfg), [])
+                self.assertIn("cannot read data/crag_rank.json", lg.call_args[0][0])
+
+    def test_committed_rank(self):
+        """data/crag_rank.json: every name a crag in crags.json, no repeats, no counts, and nothing else in the file."""
+        with open(os.path.join(ROOT, "data", "crag_rank.json"), encoding="utf-8") as f:
+            data = json.load(f)
+        with open(os.path.join(ROOT, "crags.json"), encoding="utf-8") as f:
+            cfg = json.load(f)
+        self.assertEqual(set(data), {"as_of", "window", "rank"})
+        self.assertRegex(data["as_of"], r"^\d{4}-\d{2}-\d{2}$")
+        self.assertRegex(data["window"], r"^UKC logbook entries, last \d+ months$")
+        self.assertTrue(all(isinstance(n, str) for n in data["rank"]))
+        self.assertEqual(len(set(data["rank"])), len(data["rank"]))
+        with unittest.mock.patch.object(grip, "CRAG_RANK_FILE", os.path.join(ROOT, "data", "crag_rank.json")), \
+                unittest.mock.patch.object(grip, "log") as lg:
+            self.assertEqual(grip.load_crag_rank(cfg), data["rank"])
+        lg.assert_not_called()
 
 
 class SearchAndPopular(unittest.TestCase):
