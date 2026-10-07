@@ -130,27 +130,33 @@ class Popular(unittest.TestCase):
         self.assertNotIn("Low water", grip.popular_cell(r, r["daily"]["2026-10-05"], "2026-10-05", tides))
         self.assertIn("No daylight hours left", grip.popular_cell(None, None, "2026-10-05", tides))
 
-    def test_every_popular_name_is_a_crag(self):
-        with open(os.path.join(ROOT, "data", "popular.json")) as f:
-            names = json.load(f)
+    def test_popular_crags_are_the_top_of_the_committed_rank(self):
+        """The table lists the first POPULAR_COUNT crags of data/crag_rank.json: 15 names, no repeats, every one a crag."""
+        with open(os.path.join(ROOT, "data", "crag_rank.json"), encoding="utf-8") as f:
+            names = json.load(f)["rank"][:grip.POPULAR_COUNT]
         with open(os.path.join(ROOT, "crags.json")) as f:
             cfg = json.load(f)
         known = {c["name"] for c in cfg["crags"]}
+        self.assertEqual(grip.POPULAR_COUNT, 15)
         self.assertEqual(len(names), 15)
         self.assertEqual(len(set(names)), 15)
         self.assertEqual([n for n in names if n not in known], [])
-        self.assertEqual(grip.load_popular(cfg), names)
+        with mock.patch.object(grip, "CRAG_RANK_FILE", os.path.join(ROOT, "data", "crag_rank.json")):
+            self.assertEqual(grip.load_crag_rank(cfg)[:grip.POPULAR_COUNT], names)
 
     def test_unknown_name_warns_and_is_left_out(self):
-        cfg = {"crags": [{"name": "Logie Head"}]}
+        cfg = {"crags": [{"name": "Logie Head"}], "zones": {"z": {"name": "Point"}}}
+        results = [wall("Logie Head", d2026_10_05=(6, 4))]
         with tempfile.TemporaryDirectory() as d:
-            p = os.path.join(d, "p.json")
+            p = os.path.join(d, "r.json")
             with open(p, "w") as f:
-                json.dump(["Logie Head", "Nowhere Crag"], f)
-            with mock.patch.object(grip, "POPULAR_FILE", p), mock.patch.object(grip, "log") as lg:
-                self.assertEqual(grip.load_popular(cfg), ["Logie Head"])
+                json.dump({"as_of": "2026-10-07", "window": "w", "rank": ["Nowhere Crag", "Logie Head"]}, f)
+            with mock.patch.object(grip, "CRAG_RANK_FILE", p), mock.patch.object(grip, "log") as lg, \
+                    mock.patch.object(grip, "coast_view", return_value=(D1, False, None, None, None)):
+                html = grip.render_popular(results, {}, None, cfg)
             self.assertIn("Nowhere Crag", lg.call_args[0][0])
-
+        self.assertIn('<a href="detail/logie-head.html">Logie Head</a>', html)
+        self.assertNotIn("Nowhere Crag", html)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

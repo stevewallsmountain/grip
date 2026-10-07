@@ -104,9 +104,9 @@ FEEDBACK_ENTRIES = {"trying": "entry.1944115557", "worked": "entry.2066085876", 
 FEEDBACK_PAGES = {"home": "Home page", "crag": "A crag page", "log": "Log a day", "note": "Send a crag note",
                   "feedback": "Give feedback", "birds": "Nesting birds", "method": "How Grip works", "": "Somewhere else"}  # ?from= key: the form's option
 DEVICES = ["Phone", "Tablet", "Computer"]  # the feedback form's options; prefilled from the screen width, under 600 px and under 1024 px
-POPULAR_FILE = os.path.join(HERE, "data", "popular.json")  # the crags people climb most, in order, for the front page table
-CRAG_RANK_FILE = os.path.join(HERE, "data", "crag_rank.json")  # crag names by UKC logbook entries, most logged first; breaks ties on the summary cards
+CRAG_RANK_FILE = os.path.join(HERE, "data", "crag_rank.json")  # crag names by UKC logbook entries, most logged first; the Popular crags table and the summary cards' tie-break
 POPULAR_TOP = 5  # how many the table shows before "Show all": of 5 to 8, the one that brings the column closest to the coast panel at 1280 px
+POPULAR_COUNT = 15  # how many crags from the top of the crag rank the Popular crags table lists
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
 MODEL_VERSION = "3.7"  # bump when the scoring or crag details change; logged days are then re-scored
@@ -4044,21 +4044,6 @@ def next_view(results, view):
     return day, sorted({hour_of(hr) for r in results for hr in day_hours(r, day.isoformat())})
 
 
-def load_popular(cfg):
-    """The popular crags from data/popular.json, in the file's order, keeping only names that match a crag in crags.json."""
-    try:
-        with open(POPULAR_FILE) as f:
-            names = json.load(f)
-    except Exception as e:  # noqa: BLE001
-        log(f"Warning: cannot read data/popular.json ({e}); the popular crags table will be empty")
-        return []
-    known = {c["name"] for c in cfg["crags"]}
-    missing = [n for n in names if n not in known]
-    if missing:
-        log(f"Warning: {len(missing)} name(s) in data/popular.json match no crag in crags.json: {', '.join(missing)}")
-    return [n for n in names if n in known]
-
-
 def load_crag_rank(cfg):
     """The crag rank from data/crag_rank.json, most logged first, keeping only names that match a crag in crags.json.
     A missing or unreadable file is an empty rank."""
@@ -4066,7 +4051,7 @@ def load_crag_rank(cfg):
         with open(CRAG_RANK_FILE, encoding="utf-8") as f:
             names = json.load(f)["rank"]
     except Exception as e:  # noqa: BLE001
-        log(f"Warning: cannot read data/crag_rank.json ({e}); the summary cards' ties fall to coast order")
+        log(f"Warning: cannot read data/crag_rank.json ({e}); the popular crags table will be empty and the summary cards' ties fall to coast order")
         return []
     known = {c["name"] for c in cfg.get("crags", ())}
     missing = [n for n in names if n not in known]
@@ -4104,13 +4089,16 @@ def popular_cell(r, d, day_iso, tides):
             + (f'<small>Low water {", ".join(lw)}</small>' if lw else "") + "</span></td>")
 
 
-def render_popular(results, tides, now, cfg):
-    """The popular crags table: today and tomorrow side by side (tomorrow and the day after once today's daylight is over).
+def render_popular(results, tides, now, cfg, rank=None):
+    """The popular crags table: the first POPULAR_COUNT crags of the crag rank (loaded here unless given), today and tomorrow
+    side by side (tomorrow and the day after once today's daylight is over).
     The best POPULAR_TOP rows show; the rest are one tap away, and without JavaScript every row shows."""
     day, tomorrow, _now_hour, _rows, _cols = coast_view(results, now, cfg)
     days = (day, day + timedelta(days=1))
     titles = ("Tomorrow", "Day after") if tomorrow else ("Today", "Tomorrow")
-    rows = popular_rows(groups_of(results), load_popular(cfg), days)
+    if rank is None:
+        rank = load_crag_rank(cfg)
+    rows = popular_rows(groups_of(results), rank[:POPULAR_COUNT], days)
     out = []
     w = out.append
     w('<section aria-labelledby="pop-h"><h2 id="pop-h">Popular crags</h2>'
@@ -4367,12 +4355,14 @@ def summary_card(title, day, s):
     return f'<div class="card">{block}<div>{head}<p class="ln">{line}</p><p class="cm">{meta}</p></div></div>'
 
 
-def render_summary(results, now, cfg):
+def render_summary(results, now, cfg, rank=None):
     """The two cards at the top of home: Today and Tomorrow, or once today's daylight is over, Tomorrow and the day after,
-    the day after headed by its date alone. The same two days as the Popular crags table and the crag pages."""
+    the day after headed by its date alone. The same two days as the Popular crags table and the crag pages.
+    Ties go to the crag rank, loaded here unless given."""
     day, after_dark, *_rest = coast_view(results, now, cfg)
     later = day + timedelta(days=1)
-    rank = load_crag_rank(cfg)
+    if rank is None:
+        rank = load_crag_rank(cfg)
     cards = (summary_card("Tomorrow" if after_dark else "Today", day, day_summary(results, cfg, day.isoformat(), rank))
              + summary_card(None if after_dark else "Tomorrow", later, day_summary(results, cfg, later.isoformat(), rank)))
     said = "Best tomorrow and the day after" if after_dark else "Best today and tomorrow"
@@ -4572,6 +4562,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     all_days = [d for d in all_days if date.fromisoformat(d) >= today][:7]
 
     groups = groups_of(results)
+    rank = load_crag_rank(cfg)  # once per build, for the summary cards and the Popular crags table, so any warning is logged once
 
     out = []
     w = out.append
@@ -4585,7 +4576,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     w('<h1 class="vh">Grip, dry-rock forecast for the north-east sea cliffs</h1>')
     w(render_intro())
     w(fresh_line(now))
-    w(render_summary(results, now, cfg))
+    w(render_summary(results, now, cfg, rank))
     w('<div class="top"><div>')
     w(render_coast(results, now, cfg))
     w('<div class="scale" aria-label="Grip scale">')
@@ -4593,7 +4584,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
         w(f'<div><b class="kc {css}">{rng}</b><span>{name}: {note}</span></div>')
     w('<div><i class="smp risk" aria-hidden="true"></i><span>Wet-rock risk</span></div>'
       '<div><i class="smp unsure" aria-hidden="true"></i><span>Models disagree</span></div></div></div>')
-    w(render_popular(results, tides, now, cfg))
+    w(render_popular(results, tides, now, cfg, rank))
     w("</div>")
     w(render_help())
 
