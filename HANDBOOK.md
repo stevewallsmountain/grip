@@ -110,7 +110,7 @@ Never run the workflow on any branch other than `main`: the page deploys from wh
 
 Fallback when Claude Code is unavailable: the Grip chat edits through GitHub's web editor in Claude in Chrome (line edits checked by SHA-1 before and after), commits to a new branch with a PR using the commit dialog's pull request option, and Steve merges as usual. The same confirmation and testing rules apply, with the targeted test run in the chat's sandbox.
 
-Google Forms and Sheets are edited through their normal pages. Facebook group files need a real click to download.
+The Google Sheets (responses, Log notes, calibration tracker) are read and written through the Google Sheets connector in the Grip chat. The Google Forms are edited through their normal pages in the browser signed into the account that owns them. Facebook group files need a real click to download.
 
 ## Calibration procedure
 
