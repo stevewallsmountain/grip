@@ -348,18 +348,18 @@ class SearchAndPopular(unittest.TestCase):
     def test_all_crags_link(self):
         results = [result("A", "S", {TODAY: hours(TODAY, 14, [6, 6, 6])}), result("A", "S", {TODAY: hours(TODAY, 14, [5, 5, 5])}),
                    result("B", "S", {TODAY: hours(TODAY, 14, [6, 6, 6])})]
-        with unittest.mock.patch.object(grip, "load_popular", return_value=["A"]):
-            html = grip.render_popular(results, {}, datetime(2026, 10, 5, 14, 5, tzinfo=grip.TZ), CFG)
+        html = grip.render_popular(results, {}, datetime(2026, 10, 5, 14, 5, tzinfo=grip.TZ), CFG, ["A"])
         self.assertIn('<a class="all" href="#week-h">All 2 crags, next 7 days</a></div></section>', html)
 
 
 class PopularTop(unittest.TestCase):
-    """The Popular crags table shows the best POPULAR_TOP rows, ranked as before, and folds the rest behind a button."""
+    """The Popular crags table lists the first POPULAR_COUNT crags of the crag rank, shows the best POPULAR_TOP rows, ranked
+    as before, and folds the rest behind a button."""
 
     def render(self, results, names, now, top=5):
-        with unittest.mock.patch.object(grip, "load_popular", return_value=names), \
-                unittest.mock.patch.object(grip, "POPULAR_TOP", top):
-            return grip.render_popular(results, {}, now, CFG)
+        """The table driven from a test rank, names, given to render_popular as the build gives it."""
+        with unittest.mock.patch.object(grip, "POPULAR_TOP", top):
+            return grip.render_popular(results, {}, now, CFG, names)
 
     @staticmethod
     def shown(html):
@@ -405,6 +405,50 @@ class PopularTop(unittest.TestCase):
 
     def test_default_top(self):
         self.assertEqual(grip.POPULAR_TOP, 5)
+        self.assertEqual(grip.POPULAR_COUNT, 15)
+
+    def test_first_ranked_crags_in_rank_order(self):
+        """From a rank file of 20 crags, all scoring alike: the first POPULAR_COUNT, in rank order, the rest left out."""
+        names = [f"Crag {c}" for c in "TSRQPONMLKJIHGFEDCBA"]  # rank order unlike the alphabet and the coast order below
+        results = [result(n, "S", {TODAY: hours(TODAY, 12, [6, 6, 6])}) for n in sorted(names)]
+        cfg = dict(CFG, crags=[{"name": n} for n in sorted(names)])
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "r.json")
+            with open(p, "w") as f:
+                json.dump({"as_of": "2026-10-07", "window": "w", "rank": names}, f)
+            with unittest.mock.patch.object(grip, "CRAG_RANK_FILE", p):
+                html = grip.render_popular(results, {}, datetime(2026, 10, 5, 11, 5, tzinfo=grip.TZ), cfg)
+        order, folded = self.shown(html)
+        self.assertEqual(order, names[:grip.POPULAR_COUNT])
+        self.assertEqual(folded, names[grip.POPULAR_TOP:grip.POPULAR_COUNT])
+        self.assertIn(f"Show all {grip.POPULAR_COUNT} popular crags</button>", html)
+
+    def test_empty_rank_lists_no_crags(self):
+        results = [result(n, "S", {TODAY: hours(TODAY, 12, [6, 6, 6])}) for n in "AB"]
+        now = datetime(2026, 10, 5, 11, 5, tzinfo=grip.TZ)
+        for html in (self.render(results, [], now), grip.render_popular(results, {}, now, CFG)):  # given, and from the empty rank file
+            self.assertIn('<p class="sub">No popular crags listed.</p></section>', html)
+            self.assertEqual(self.shown(html), ([], []))
+            self.assertNotIn("<table", html)
+
+    def test_page_loads_the_rank_once(self):
+        """The home page reads the rank once for the summary cards and the table, so a name that matches no crag warns once."""
+        with open(os.path.join(ROOT, "crags.json")) as f:
+            cfg = json.load(f)
+        cfg["crags"] = [c for c in cfg["crags"] if c["name"] in {"Logie Head", "Souter Head"}]
+        models, marine = grip.fake_data(cfg["zones"])
+        results, tides, now = grip.build(cfg, models, marine)
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "r.json")
+            with open(p, "w") as f:
+                json.dump({"as_of": "2026-10-07", "window": "w", "rank": ["Souter Head", "Nowhere Crag", "Logie Head"]}, f)
+            with unittest.mock.patch.object(grip, "CRAG_RANK_FILE", p), unittest.mock.patch.object(grip, "log") as lg:
+                html = grip.render(results, tides, now, cfg, ["Met Office", "ECMWF", "ICON"], None)
+        warned = [c[0][0] for c in lg.call_args_list if "crag_rank.json" in c[0][0]]
+        self.assertEqual(len(warned), 1)
+        self.assertIn("Nowhere Crag", warned[0])
+        table = html[html.index('<section aria-labelledby="pop-h">'):]
+        self.assertEqual(sorted(self.shown(table)[0]), ["Logie Head", "Souter Head"])
 
 
 class Stale(unittest.TestCase):
