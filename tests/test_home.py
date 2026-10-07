@@ -227,7 +227,8 @@ class Summary(unittest.TestCase):
 
 
 class CragRankTieBreak(unittest.TestCase):
-    """Ties on day score as shown and run length go to the crag rank (data/crag_rank.json), then coast order."""
+    """Among the walls on the day's top score as shown whose run is within an hour of the longest, the crag rank
+    (data/crag_rank.json) decides, then the longer run, then coast order."""
 
     def named(self, results, rank):
         return grip.day_summary(results, CFG, TOMORROW, rank)["best"]["r"]["crag"]["name"]
@@ -246,14 +247,51 @@ class CragRankTieBreak(unittest.TestCase):
         self.assertEqual(self.named(results[::-1], ["A", "B"]), "A")
 
     def test_longer_run_beats_the_rank(self):
+        """A ranked crag two hours shorter than an unranked one on the same score: the longer run wins."""
         results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])}),
-                   result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7, 7])})]
+                   result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7, 7, 7])})]
         self.assertEqual(self.named(results, ["A"]), "B")
+
+    def test_ranked_crag_an_hour_shorter_is_named(self):
+        """7 Oct: a ranked crag one hour shorter than an unranked one on the same score is named."""
+        results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7, 7])}),
+                   result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])})]
+        self.assertEqual(self.named(results, ["B"]), "B")
+        self.assertEqual(self.named(results, []), "A")  # no rank: the longer run, as before
+
+    def test_higher_ranked_beats_a_lower_ranked_an_hour_longer(self):
+        results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7, 7])}),
+                   result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])})]
+        self.assertEqual(self.named(results, ["B", "A"]), "B")
+        self.assertEqual(self.named(results, ["A", "B"]), "A")
+
+    def test_candidates_measured_from_the_longest_run(self):
+        """Only runs within an hour of the longest count: a ranked crag two hours short is out even when a third wall
+        sits between them."""
+        results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])}),
+                   result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7, 7])}),
+                   result("C", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7, 7, 7])})]
+        self.assertEqual(self.named(results, ["A"]), "C")
+        self.assertEqual(self.named(results, ["A", "B"]), "B")
 
     def test_higher_score_beats_the_rank(self):
         results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [6, 6, 6, 6, 6])}),
                    result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7])})]
         self.assertEqual(self.named(results, ["A"]), "B")
+
+    def test_ranked_crag_scoring_lower_loses_whatever_its_run(self):
+        results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [6] * 9)}),
+                   result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [7, 7])})]
+        self.assertEqual(self.named(results, ["A"]), "B")
+        results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [6.4] * 9)}),   # shows 6
+                   result("B", "Second", {TOMORROW: hours(TOMORROW, 9, [6.5] * 3)})]  # shows 7
+        self.assertEqual(self.named(results, ["A"]), "B")
+
+    def test_longest_run_of_one_lets_every_wall_in(self):
+        """L = 1: every wall on the top score is a candidate, so the rank decides; with no rank, coast order."""
+        results = [result(n, "First", {TOMORROW: hours(TOMORROW, 9, [3, 7, 3])}) for n in "ABC"]
+        self.assertEqual(self.named(results, ["C"]), "C")
+        self.assertEqual(self.named(results, []), "A")
 
     def test_cards_load_the_rank_once_and_use_it_for_both(self):
         results = [result("A", "First", {TOMORROW: hours(TOMORROW, 9, [7, 7, 7]), LATER: hours(LATER, 9, [6, 6, 6])}),

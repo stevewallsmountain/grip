@@ -4279,23 +4279,29 @@ def when_words(run, day_hrs):
 
 
 def day_summary(results, cfg, day_iso, rank=()):
-    """The best of a day along the whole coast, for its summary card: the best wall, with the highest day score as shown, ties
-    to the longest run of hours in that band, then the crag's place in rank (crag names, most logged first; a ranked crag
-    beats an unranked one), then coast order; its crag, its wall where the crag has several (with a link to that wall's
-    card), and its stretch, the coast panel's stretch (weather point).
+    """The best of a day along the whole coast, for its summary card: the best wall, among the walls with the highest day
+    score as shown and a run of hours in that band within an hour of the longest such run, the one whose crag stands highest
+    in rank (crag names, most logged first; a ranked crag beats an unranked one), then the longer run, then coast order; its
+    crag, its wall where the crag has several (with a link to that wall's card), and its stretch, the coast panel's stretch
+    (weather point).
     Returns a dict: best (None if nothing is scored), grippy (crags whose day score as shown is 6 or more) and crags (all crags)."""
     zones = cfg["zones"]
     ranked = {name: len(rank) - i for i, name in enumerate(rank)}  # higher wins; unranked crags score 0
-    best = None
+    scored = []
     for i, r in enumerate(results):
         d = r["daily"].get(day_iso)
         if not d:
             continue
         hs = [hr for hr in r["hours"] if hr["t"][:10] == day_iso]
-        run = band_run(hs, d)
-        key = (rnd(d["index"]), len(run), ranked.get(r["crag"]["name"], 0), -i)
-        if best is None or key > best["key"]:
-            best = {"key": key, "r": r, "d": d, "run": run}
+        scored.append({"i": i, "r": r, "d": d, "run": band_run(hs, d)})
+    best = None
+    if scored:
+        top = max(rnd(w["d"]["index"]) for w in scored)
+        scored = [w for w in scored if rnd(w["d"]["index"]) == top]
+        longest = max(len(w["run"]) for w in scored)
+        scored = [w for w in scored if len(w["run"]) >= longest - 1]  # runs within an hour of the longest count as tied
+        w = max(scored, key=lambda x: (ranked.get(x["r"]["crag"]["name"], 0), len(x["run"]), -x["i"]))
+        best = {"r": w["r"], "d": w["d"], "run": w["run"]}
     groups = groups_of(results)
     grippy = 0
     for _n, walls in groups:
