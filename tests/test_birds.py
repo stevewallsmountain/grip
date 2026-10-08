@@ -100,7 +100,8 @@ class Register(unittest.TestCase):
         self.assertIn(intro + caution, h)  # directly under the intro, and never in a <details>
         self.assertIn("Updated Mon 5 Oct, 16:51 &middot; In season now: none. The season here runs roughly March to August.", h)
         self.assertEqual(h.count("<details"), 0)
-        foot = '<p class="foot">Sources: the SMC routes database, UKClimbing and climbers’ reports, reworded by Grip.</p>'
+        foot = ('<div class="sf-src"><p>Sources: the SMC routes database, UKClimbing and climbers’ reports, reworded by Grip.</p>'
+                '</div></div></footer>')  # in the footer
         self.assertIn(foot, h)
         self.assertNotRegex(h.replace(foot, ""), r"\b(?:SMC|UKC|UKClimbing)\b")  # sources named only in the foot line
         self.assertNotIn("\u2014", h)  # no em dashes

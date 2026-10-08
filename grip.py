@@ -107,6 +107,7 @@ DEVICES = ["Phone", "Tablet", "Computer"]  # the feedback form's options; prefil
 CRAG_RANK_FILE = os.path.join(HERE, "data", "crag_rank.json")  # crag names by UKC logbook entries, most logged first; the Popular crags table and the summary cards' tie-break
 POPULAR_TOP = 5  # how many the table shows before "Show all": of 5 to 8, the one that brings the column closest to the coast panel at 1280 px
 POPULAR_COUNT = 15  # how many crags from the top of the crag rank the Popular crags table lists
+BIG_SEA_M = 1.5  # a crag page shows the big-sea notice for a day whose highest daylight sea at the weather point, as shown, is this or more; display only, never scored
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
 MODEL_VERSION = "3.7"  # bump when the scoring or crag details change; logged days are then re-scored
@@ -146,6 +147,7 @@ BANDS = [
     (0, "Soaked", "Wet rock", "b1", "0 to 1"),
 ]
 USABLE = 4  # index at or above this counts as a climbable hour
+DAYLIGHT_EL = 5  # an hour is daylight when the sun is this many degrees up or more at the weather point: only daylight hours are scored
 
 
 # ---------------------------------------------------------------- utilities
@@ -680,7 +682,7 @@ def score_crag(zones, crag, models, marine, now, since=None, trace=None):
             if dt + timedelta(hours=1) <= cutoff:
                 continue
             sun_pts, sun_note, az, el = suns[i]
-            if el < 5 or (RH[i] is None and WS[i] is None):
+            if el < DAYLIGHT_EL or (RH[i] is None and WS[i] is None):
                 continue
             past = [v for v in T[max(0, i - 24):i] if v is not None]
             tmean = sum(past) / len(past) if len(past) >= 12 else None
@@ -835,18 +837,37 @@ def snapshot_row(hr, crag):
             int((f.get("fog") or 0) < 0), r(ws, 1), int("on the face" in (d.get("sun") or "")), f.get("sea")]
 
 
-def snapshot(results, now):
-    """Today's forecast for every wall's daylight hours, as the log page compares it with a logged day."""
+def snapshot_sea(results, now, here):
+    """The big-sea notice as the crag pages showed it at this run, per weather point: for each day the pages show (today and
+    tomorrow, or after dark tomorrow and the day after), the highest daylight sea as shown and whether it named that day, and
+    whether the notice showed at all. {zone: {"notice": bool, "days": {date: {"high": 2.1 or None, "big": bool}}}}.
+    The notice is crag-level and the same for every crag at a weather point, so a crag's count comes from its zone."""
+    day, tomorrow = coast_day(results, now)
+    days = [day, day + timedelta(days=1)]
+    out = {}
+    for zk, z in here.items():
+        highs = {d.isoformat(): shown_high(z.get("sea"), d) for d in days}
+        per = {d: {"high": high, "big": is_big(high)} for d, high in highs.items()}
+        out[zk] = {"notice": big_sea_text(z.get("sea"), days, tomorrow) is not None, "days": per}
+    return out
+
+
+def snapshot(results, now, here=None):
+    """Today's forecast for every wall's daylight hours, as the log page compares it with a logged day, and, given here
+    (zone_now()), the big-sea notice by weather point (snapshot_sea()), a display record only."""
     day = now.date().isoformat()
     walls = {}
     for r in results:
         hs = day_hours(r, day)
         if hs:
             walls[label(r["crag"])] = [snapshot_row(hr, r["crag"]) for hr in hs]
-    return {"date": day, "run": now.strftime("%Y-%m-%d %H:%M"), "model": MODEL_VERSION, "cols": SNAPSHOT_COLS, "walls": walls}
+    snap = {"date": day, "run": now.strftime("%Y-%m-%d %H:%M"), "model": MODEL_VERSION, "cols": SNAPSHOT_COLS, "walls": walls}
+    if here is not None:
+        snap["sea"] = snapshot_sea(results, now, here)
+    return snap
 
 
-def save_snapshot(results, now, folder=None):
+def save_snapshot(results, now, folder=None, here=None):
     """Write today's snapshot into the history folder when this run is the one nearest 07:00 so far. Returns the file written, or None."""
     folder = folder or HISTORY_DIR
     path = os.path.join(folder, now.date().isoformat() + ".json")
@@ -860,7 +881,7 @@ def save_snapshot(results, now, folder=None):
         log(f"Snapshot {path} unreadable ({e}); replacing it")
     if not snapshot_due(prev, now):
         return None
-    snap = snapshot(results, now)
+    snap = snapshot(results, now, here)
     if not snap["walls"]:
         return None
     os.makedirs(folder, exist_ok=True)
@@ -1331,9 +1352,18 @@ dialog button:focus-visible{box-shadow:inset 0 0 0 1px var(--rule),var(--focus-r
 .bar nav a[aria-current=page]{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:6px}
 @media (hover:hover){.bar nav a:hover{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:6px}}
 @media (max-width:400px){.bar>div{gap:var(--s-4)}.bar nav a{padding:0 5px}}
-.sitefoot{display:none;max-width:var(--page-max);margin:0 auto;padding:0 var(--page-pad) var(--s-24)}
-.sitefoot a{display:inline-flex;align-items:center;min-height:var(--tap);font-weight:500}
-@media (max-width:339px){.bar nav a.nm{display:none}.sitefoot{display:block}}
+.sitefoot{background:var(--paper);border-top:1px solid var(--rule)}
+.sf{display:flex;flex-wrap:wrap;gap:var(--s-12) var(--s-48);align-items:flex-start;max-width:var(--page-max);margin:0 auto;padding:var(--s-20) var(--page-pad) var(--s-32)}
+.sf-note{flex:1 1 340px;max-width:62ch;margin:0;font-size:var(--t-meta);line-height:1.5;color:var(--ink)}
+.sf-src{flex:1 1 300px;max-width:60ch;display:flex;flex-direction:column;gap:var(--s-6);font-size:var(--t-small);line-height:1.45;color:var(--muted)}
+.sf-src p{margin:0}
+.sf-src a{color:var(--ink)}
+.sf-m{display:none;flex:1 1 100%;margin:0}
+.sf-m a{display:inline-flex;align-items:center;min-height:var(--tap);font-weight:500}
+@media (max-width:339px){.bar nav a.nm{display:none}.sf-m{display:block}}
+.caution{display:flex;gap:var(--s-12);align-items:flex-start;max-width:680px;margin:14px 0 0;padding:var(--s-12) 14px;border:2px solid var(--ink);border-radius:var(--r-l);background:var(--card)}
+.caution i{flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--paper);font:700 15px/1 var(--font-body);font-style:normal}
+.caution p{margin:0;font:600 var(--t-body)/1.35 var(--font-body)}
 """
 
 # The logo pack (Claude Design G2): logo files go to site/assets/, favicons to the site root.
@@ -1390,9 +1420,17 @@ def header_bar(root="", current=None):
             f'<nav aria-label="Main">{links}</nav></div></header>')
 
 
-def site_foot(root=""):
-    """The foot of every page: below 340 px the nav drops Method, and this carries it instead."""
-    return f'<footer class="sitefoot"><a href="{root}method.html">Method</a></footer>'
+FOOT_NOTICE = ("Grip forecasts how dry the rock is likely to be. It does not tell you whether a crag, route or sea is safe. "
+               "Climbing is dangerous: check the rock, the sea and the tide yourself, and climb at your own risk.")
+
+
+def site_foot(root="", sources=()):
+    """The foot of every page: the notice that Grip forecasts dry rock, not safety, never hidden; beside it from about 700 px
+    (below it on phones) the page's sources lines, given as HTML, 13 px muted. Below 340 px the nav drops Method, and the
+    foot carries it, ahead of the notice."""
+    src = f'<div class="sf-src">{"".join(f"<p>{x}</p>" for x in sources)}</div>' if sources else ""
+    return (f'<footer class="sitefoot"><div class="sf"><p class="sf-m"><a href="{root}method.html">Method</a></p>'
+            f'<p class="sf-note">{FOOT_NOTICE}</p>{src}</div></footer>')
 
 COAST_CSS = """
 .coast{max-width:52rem}
@@ -1535,8 +1573,10 @@ dialog p#d-ms{margin:var(--s-2) 0 var(--s-8)}
 """
 
 METHOD_CSS = """
-.foot{color:var(--muted);font-size:var(--t-small);margin-top:var(--s-32);padding-top:var(--s-12);border-top:1px solid var(--rule);max-width:72ch}
-.foot p{margin:0 0 var(--s-8)}
+.notell{display:flex;flex-direction:column;gap:10px;margin:var(--s-24) 0 0;padding-top:var(--s-20);border-top:1px solid var(--rule)}
+.notell h2{margin:0}
+.notell>p{margin:0;max-width:64ch}
+.notell .caution{margin:0}
 """
 
 MATCH_JS = r"""
@@ -1878,9 +1918,15 @@ def rain_totals(h, now):
     return tuple(sum(v for v in pr[i - n:i] if v is not None) if i >= n else None for n in (24, 72))
 
 
+def daylight(t, zone):
+    """Whether the hour starting at t (local, "YYYY-MM-DDTHH:00") is daylight at the weather point: the window the scoring uses."""
+    dt = datetime.fromisoformat(t).replace(tzinfo=TZ)
+    return sun_position(dt.astimezone(timezone.utc), zone["lat"], zone["lon"])[1] >= DAYLIGHT_EL
+
+
 def zone_now(cfg, models, marine, now):
     """Per weather point, the rain behind the current hour (first model with data) and the sea now, with its highest wave
-    today ("max") and on each day of the forecast ("maxes", by date)."""
+    in today's daylight hours ("max") and in each day's daylight hours ("maxes", by date); the sea at night never counts."""
     out = {}
     key = now.strftime("%Y-%m-%dT%H:00")
     for zk in cfg["zones"]:
@@ -1899,7 +1945,7 @@ def zone_now(cfg, models, marine, now):
             hs = series(m, "wave_height")
             maxes = {}
             for t, v in zip(times, hs):
-                if v is not None:
+                if v is not None and daylight(t, cfg["zones"][zk]):
                     maxes[t[:10]] = max(v, maxes.get(t[:10], v))
             z["sea"] = {"h": hs[i], "dir": series(m, "wave_direction")[i], "period": series(m, "wave_period")[i],
                         "max": maxes.get(key[:10]), "maxes": maxes}
@@ -2105,6 +2151,35 @@ def across_facts(walls, zone, zn, tides, days, labels):
     return across, per_wall
 
 
+BIG_SEA_TAIL = "A big sea can reach walls that are not marked tidal. Check the sea and the weather on the day before you commit to a route."
+
+
+def shown_high(sea, day):
+    """A day's highest daylight sea at the weather point as the page shows it, to one decimal place, or None."""
+    top = ((sea or {}).get("maxes") or {}).get(day.isoformat())
+    return None if top is None else float(f"{top:.1f}")
+
+
+def is_big(high):
+    """Whether a shown daylight high triggers the big-sea notice: on the figure as shown, so the notice and the Sea line never disagree."""
+    return high is not None and high >= BIG_SEA_M
+
+
+def big_sea_text(sea, days, tomorrow):
+    """The crag page's big-sea notice, or None: the days the page shows whose highest daylight sea at the weather point, as shown
+    to one decimal place, is BIG_SEA_M or more, in the page's day words ("today" and "tomorrow"; after dark "tomorrow" and the
+    weekday). The same for every wall; wall tags play no part."""
+    words = ["tomorrow", "on " + days[1].strftime("%A")] if tomorrow else ["today", "tomorrow"]
+    hits = []
+    for d, word in zip(days, words):
+        top = shown_high(sea, d)
+        if is_big(top):
+            hits.append(f"{top:.1f} m {word}")
+    if not hits:
+        return None
+    return f"Big sea: up to {' and '.join(hits)}. {BIG_SEA_TAIL}"
+
+
 def wall_sea_text(sea, c):
     """The sea against one wall, in the wording table's form: where it comes from against the face, how much of it Grip counts,
     and the height at the wall. "Onto the face, counted in full: 1.1 m at the wall." """
@@ -2297,6 +2372,7 @@ main.crag h1{margin:0}
 .meta{margin:var(--s-6) 0 0;font-size:var(--t-meta);color:var(--muted)}
 .acts{display:flex;flex-wrap:wrap;gap:var(--s-8);margin:0}
 .acts .btn{margin:0}
+.caution.sea{margin:0 0 var(--s-16)}
 .cols{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s-16) var(--s-32);align-items:start}
 @media (min-width:900px){.cols{grid-template-columns:minmax(0,320px) minmax(0,1fr)}}
 .side>*+*,.body>*+*{margin-top:var(--s-16)}
@@ -2391,7 +2467,6 @@ details.hb[hidden]{display:none}
 .hours td.pts{color:var(--muted)}
 .cal td small{color:var(--muted)}
 .body .cal{width:100%;min-width:420px}
-.foot{color:var(--muted);font-size:var(--t-small);margin-top:var(--s-32);padding-top:var(--s-12);border-top:1px solid var(--rule)}
 """
 
 CRAG_JS = r"""
@@ -2468,6 +2543,9 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
     log_c = c0 if not multi else {"name": gname}
     w(f'<p class="acts"><a class="btn" href="{escape(log_link(log_c, today.isoformat(), "../"))}">Log a day here</a>'
       f'<a class="btn alt" href="{escape(note_link(log_c, "../"))}">Send a crag note</a></p></div>')
+    big = big_sea_text(zn.get("sea"), days, tomorrow)
+    if big:  # one notice for the whole crag, never on wall cards or rows; nothing at all when no day triggers
+        w(f'<div class="caution sea" role="note"><i aria-hidden="true">!</i><p>{escape(big)}</p></div>')
     w('<div class="cols"><div class="side">')
 
     if multi:
@@ -2578,17 +2656,14 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
               f'<td>{escape(FEEL_NAME[v["feel"]])}</td><td>{chip(v["grip"])} {band(v["grip"])[0]}</td><td>{chip(v.get("era"))}</td></tr>')
         w("</table></div>")
     w("</section>")
-    w(f'<p class="foot">Crag facts from the <a href="https://routes.smc.org.uk/crag/{int(c0["smc_crag_id"])}">SMC routes database</a>, '
-      "climbers' reports and local developers' notes, reworded by Grip.</p>")
-    w(f"</div></div><script>{CRAG_JS}</script></main>{site_foot('../')}</body></html>")
+    src = (f'Crag facts from the <a href="https://routes.smc.org.uk/crag/{int(c0["smc_crag_id"])}">SMC routes database</a>, '
+           "climbers' reports and local developers' notes, reworded by Grip.")
+    w(f"</div></div><script>{CRAG_JS}</script></main>{site_foot('../', [src])}</body></html>")
     return "".join(out)
 
 
 BIRDS_CSS = """
 .intro{margin:0;max-width:64ch}
-.caution{display:flex;gap:var(--s-12);align-items:flex-start;max-width:680px;margin:14px 0 0;padding:var(--s-12) 14px;border:2px solid var(--ink);border-radius:var(--r-l);background:var(--card)}
-.caution i{flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--paper);font:700 15px/1 var(--font-body);font-style:normal}
-.caution p{margin:0;font:600 var(--t-body)/1.35 var(--font-body)}
 .season{margin:10px 0 0;font-size:var(--t-meta);color:var(--muted)}
 .bctl{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--s-12) var(--s-20);margin:18px 0 0}
 .bctl[hidden]{display:none}
@@ -2652,7 +2727,6 @@ BIRDS_CSS = """
 .none-box[hidden]{display:none}
 .none-box p{margin:0 0 var(--s-4)}
 .none-box button{min-height:var(--tap);padding:0;border:0;background:none;color:var(--ink);font:600 var(--t-body)/1.2 var(--font-body);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.foot{color:var(--muted);font-size:var(--t-small);margin-top:28px;padding-top:var(--s-12);border-top:1px solid var(--rule);max-width:72ch}
 """
 
 BIRDS_JS = r"""
@@ -2902,8 +2976,7 @@ def render_birds(cfg, now):
         w("</div></section>")
     w('<div class="none-box" id="bempty" hidden><p>No crags match. Clear the search or pick All.</p>'
       '<button type="button" id="bclear">Clear</button></div>')
-    w(f'<p class="foot">{BIRD_SOURCES}</p>')
-    w(f"<script>{MATCH_JS}{BIRDS_JS}</script></main>{site_foot()}</body></html>")
+    w(f"<script>{MATCH_JS}{BIRDS_JS}</script></main>{site_foot(sources=[BIRD_SOURCES])}</body></html>")
     return "".join(out)
 
 
@@ -4709,6 +4782,26 @@ def render(results, tides, now, cfg, models_ok, cal=None):
     return "".join(out)
 
 
+INDEPENDENT = "Grip is independent and not affiliated with the SMC or UKClimbing."  # the last line of the Method page's foot, and on no other page
+
+
+def render_not_told():
+    """What Grip does not tell you: the Method page's second section, straight after the opening explanation."""
+    return ('<section class="notell" aria-labelledby="not-h"><h2 id="not-h">What Grip does not tell you</h2>'
+            "<p>Grip scores friction: how dry and grippy the rock is likely to be, from weather and sea forecasts. "
+            "It is a guide, not a guarantee, and it can be wrong.</p>"
+            "<p>It does not tell you whether the sea is safe, and it does not cover freak waves, tide times, loose rock or rockfall, "
+            "access, how hard a route is, or your own ability. Nesting birds are covered only as far as the "
+            '<a href="birds.html">bird register</a> goes, and it is not a definitive record.</p>'
+            "<p>Crag facts such as aspect, tide, shelter and birds come from guidebooks and climbers’ reports. They may be out of date "
+            'or wrong. If you find one that is, <a href="note.html">send a crag note</a>.</p>'
+            '<div class="caution" role="note"><i aria-hidden="true">!</i><p>Climbing and moving around sea cliffs carry a risk of '
+            "serious injury or death. You are responsible for your own decisions: look at the rock and the sea when you arrive, "
+            "check the tide times, and turn back if in doubt.</p></div>"
+            "<p>Grip is a free, non-commercial project, provided as is, with no promise that it is accurate or always available. "
+            "Use it at your own risk.</p></section>")
+
+
 def render_method(cal, now, models_ok):
     """The Method page: how Grip works, the weather models in the latest run, and the full calibration against logged days."""
     out = []
@@ -4723,7 +4816,9 @@ def render_method(cal, now, models_ok):
       "water on the surface, from rain, spray, sea salt drawing moisture out of damp air, or condensation on rock colder than the air's dew point; "
       "and how fast the air, wind and sun can dry it again. Each daylight hour collects points from the factors below, which are turned into a "
       "0 to 10 index. The three weather models are scored separately and blended, with the Met Office 2 km model weighted highest for the first two days. "
-      "A day's score is its best three-hour window; the number of climbable hours and the wet-rock risk are shown alongside.</p>")
+      "A day's score is its best three-hour window; the number of climbable hours and the wet-rock risk are shown alongside.</p></div>")
+    w(render_not_told())
+    w('<h2 id="factors">Scoring factors</h2><div class="method">')
     w('<table class="factors"><tr><th>Factor</th><th>Points</th><th>Why</th></tr>'
       "<tr><td>Air moisture</td><td>+1 for every 4% below 76% humidity (up to +4 at 60%) and -1 for every 5% above (down to -4), with an extra -1 once humidity passes 75%. The penalties count in full when the rock is within 2&deg;C of the dew point and at half when it is 4&deg;C or more clear</td>"
       "<td>Sea salt on the rock starts drawing water out of the air at about 75% humidity. Humid air greases rock through condensation, so the penalty is tied to how close the rock is to the dew point: logged days showed dry rock in 80% air climbing well. Below 76% the reward was steepened after logged days showed the rock keeps improving as the air dries.</td></tr>"
@@ -4787,13 +4882,12 @@ def render_method(cal, now, models_ok):
               f'<td>{chip(v["grip"])} {band(v["grip"])[0]}</td>{cells}</tr>')
         w("</table></div>")  # in its own scrolling box, like the crag pages' logged days, so the page never scrolls sideways
     w("</div>")
-    w('<footer class="foot"><p>Forecast data: <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0), from the Met Office '
-      "(UK Met Office data, CC BY-SA 4.0), ECMWF and the Deutscher Wetterdienst (ICON). The actual-weather column is scored from the ERA5 "
-      "reanalysis of the Copernicus Climate Change Service, also through Open-Meteo. "
-      "Crag details, aspects and tidal status from published crag information, with local corrections; "
-      "nesting birds from published crag information, access notes and climbers' reports.</p>"
-      "<p>Grip is independent and not affiliated with the SMC or UKClimbing.</p></footer>")
-    w(f"</main>{site_foot()}</body></html>")
+    credits = ('Forecast data: <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0), from the Met Office '
+               "(UK Met Office data, CC BY-SA 4.0), ECMWF and the Deutscher Wetterdienst (ICON). The actual-weather column is scored from the ERA5 "
+               "reanalysis of the Copernicus Climate Change Service, also through Open-Meteo. "
+               "Crag details, aspects and tidal status from published crag information, with local corrections; "
+               "nesting birds from published crag information, access notes and climbers' reports.")
+    w(f"</main>{site_foot(sources=[credits, INDEPENDENT])}</body></html>")
     return "".join(out)
 
 
@@ -4853,8 +4947,9 @@ def main():
         log("No forecast data at all; leaving the previous page in place.")
         sys.exit(1)
     results, tides, now = build(cfg, models, marine)
+    here = zone_now(cfg, models, marine, now)
     try:
-        save_snapshot(results, now)
+        save_snapshot(results, now, here=here)
     except Exception as e:  # noqa: BLE001
         log(f"Snapshot not saved: {e}")
     try:
@@ -4877,7 +4972,7 @@ def main():
     with open(os.path.join(SITE_DIR, "feedback.html"), "w") as f:
         f.write(render_feedback())
     os.makedirs(os.path.join(SITE_DIR, "detail"), exist_ok=True)
-    view, here, logged = coast_view(results, now, cfg), zone_now(cfg, models, marine, now), logged_days(cfg)
+    view, logged = coast_view(results, now, cfg), logged_days(cfg)
     nxt = next_view(results, view)
     for gname, walls in groups_of(results):
         with open(os.path.join(SITE_DIR, "detail", slug(gname) + ".html"), "w") as f:

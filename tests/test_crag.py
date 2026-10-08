@@ -97,9 +97,9 @@ class Across(unittest.TestCase):
         heights = [0.5] * 20 + [1.4, None, 0.6, 0.6] + [0.8] * 12 + [1.04] + [0.2] * 11
         marine = {"z": {"time": times, "wave_height": heights, "wave_direction": [90] * 48, "wave_period": [7] * 48}}
         now = datetime(2026, 10, 5, 20, 10, tzinfo=grip.TZ)
-        sea = grip.zone_now({"zones": {"z": {}}}, {}, marine, now)["z"]["sea"]
-        self.assertEqual((sea["h"], sea["max"]), (1.4, 1.4))
-        self.assertEqual(sea["maxes"], {TODAY: 1.4, TOMORROW: 1.04})
+        sea = grip.zone_now({"zones": {"z": ZONE}}, {}, marine, now)["z"]["sea"]
+        self.assertEqual((sea["h"], sea["max"]), (1.4, 0.5))  # 1.4 m at 20:00 is the sea now, but after dark: never the day's high
+        self.assertEqual(sea["maxes"], {TODAY: 0.5, TOMORROW: 1.04})
 
     def test_a_differing_wall_carries_its_own_rock(self):
         across, per_wall = self.facts([0, 0.3, 0])
@@ -431,7 +431,7 @@ class Page(unittest.TestCase):
             self.assertNotRegex(html, r"\((?:SMC|UKC|developers)", gname)
             self.assertEqual(html.count("Crag facts from the "), 1)
             self.assertIn("reworded by Grip.", html)
-            foot = re.search(r'<p class="foot">Crag facts from the .*?</p>', html).group(0)
+            foot = re.search(r'<div class="sf-src"><p>Crag facts from the .*?</p></div></div></footer>', html).group(0)  # in the footer
             self.assertNotRegex(html.replace(foot, ""), r"\b(?:SMC|UKC|UKClimbing)\b", gname)  # sources named only in the foot line
 
     def test_best_wall_open_by_default(self):
