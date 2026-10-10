@@ -191,6 +191,31 @@
   "wall": "",
   "wet": 0.6666666666666666
  },
+ "3.7|Johnsheugh|2026-10-10|12|16|Usable": {
+  "base": 8.21256038647343,
+  "base_models": {
+   "ECMWF": 8.586956521739129,
+   "ICON": 8.26086956521739,
+   "Met Office": 8.043478260869565
+  },
+  "crag": "Johnsheugh",
+  "date": "2026-10-10",
+  "era": 7.99895334885796,
+  "era_base": 8.695652173913043,
+  "feel": "Usable",
+  "from": 12,
+  "grip": 7.705476983228156,
+  "models": {
+   "ECMWF": 7.9368339225243405,
+   "ICON": 7.833418040502041,
+   "Met Office": 7.561757784600128
+  },
+  "problems": "Greasy or sweating",
+  "to": 16,
+  "tries": 1,
+  "wall": "",
+  "wet": 0.0
+ },
  "3.7|Logie Head|2026-09-19|11|17|Crisp": {
   "base": 8.752012882447666,
   "base_models": {
