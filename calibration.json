@@ -288,6 +288,31 @@
   "wall": "",
   "wet": 0.0
  },
+ "3.7|Meikle Partans|2026-10-11|15|18|Usable": {
+  "base": 6.602254428341385,
+  "base_models": {
+   "ECMWF": 7.246376811594203,
+   "ICON": 7.246376811594203,
+   "Met Office": 6.08695652173913
+  },
+  "crag": "Meikle Partans",
+  "date": "2026-10-11",
+  "era": 1.7969597675491489,
+  "era_base": 5.507246376811594,
+  "feel": "Usable",
+  "from": 15,
+  "grip": 3.405972044990275,
+  "models": {
+   "ECMWF": 3.685701438452419,
+   "ICON": 6.177629185662865,
+   "Met Office": 2.1854174313363814
+  },
+  "problems": "Wet from rain",
+  "to": 18,
+  "tries": 1,
+  "wall": "",
+  "wet": 0.6666666666666666
+ },
  "3.7|Murray Heugh|2026-10-06|11|16|Crisp": {
   "base": 7.294685990338164,
   "base_models": {
@@ -411,5 +436,30 @@
   "tries": 1,
   "wall": "Back Wall",
   "wet": 0.0
+ },
+ "3.7|The Round Tower|2026-10-11|11|12|Crisp": {
+  "base": 5.120772946859905,
+  "base_models": {
+   "ECMWF": 6.086956521739131,
+   "ICON": 6.086956521739131,
+   "Met Office": 4.3478260869565215
+  },
+  "crag": "The Round Tower",
+  "date": "2026-10-11",
+  "era": 3.1162700923257742,
+  "era_base": 6.086956521739131,
+  "feel": "Crisp",
+  "from": 11,
+  "grip": 2.1848459498459536,
+  "models": {
+   "ECMWF": 3.195289742400797,
+   "ICON": 6.636517031905994,
+   "Met Office": 0.0
+  },
+  "problems": "Seepage",
+  "to": 12,
+  "tries": 1,
+  "wall": "",
+  "wet": 0.6666666666666666
  }
 }
