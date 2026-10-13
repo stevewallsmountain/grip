@@ -1,4 +1,29 @@
 {
+ "3.7|Boltsheugh|2026-10-13|11|13|Crisp": {
+  "base": 8.429951690821255,
+  "base_models": {
+   "ECMWF": 8.26086956521739,
+   "ICON": 8.478260869565217,
+   "Met Office": 8.478260869565217
+  },
+  "crag": "Boltsheugh",
+  "date": "2026-10-13",
+  "era": 4.1882115624029765,
+  "era_base": 8.043478260869565,
+  "feel": "Crisp",
+  "from": 11,
+  "grip": 4.6850076097699365,
+  "models": {
+   "ECMWF": 4.399832167357986,
+   "ICON": 4.74767784796995,
+   "Met Office": 4.774009691454711
+  },
+  "problems": "",
+  "to": 13,
+  "tries": 1,
+  "wall": "Boltsheugh Upper",
+  "wet": 1.0
+ },
  "3.7|Brown Band Crag|2026-09-13|9|11|Crisp": {
   "base": 4.855072463768115,
   "base_models": {
