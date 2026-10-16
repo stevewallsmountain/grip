@@ -48,6 +48,31 @@
   "wall": "",
   "wet": 0.0
  },
+ "3.7|Brown Band Crag|2026-10-16|12|17|Prime": {
+  "base": 8.26086956521739,
+  "base_models": {
+   "ECMWF": 8.695652173913043,
+   "ICON": 8.26086956521739,
+   "Met Office": 8.086956521739129
+  },
+  "crag": "Brown Band Crag",
+  "date": "2026-10-16",
+  "era": 8.16430235806888,
+  "era_base": 8.782608695652174,
+  "feel": "Prime",
+  "from": 12,
+  "grip": 7.791412588802385,
+  "models": {
+   "ECMWF": 8.14056525630927,
+   "ICON": 7.968736841371721,
+   "Met Office": 7.580821820771897
+  },
+  "problems": "",
+  "to": 17,
+  "tries": 1,
+  "wall": "",
+  "wet": 0.0
+ },
  "3.7|Brown Crag|2026-09-13|10|15|Usable": {
   "base": 6.599033816425122,
   "base_models": {
