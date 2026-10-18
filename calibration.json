@@ -1,4 +1,29 @@
 {
+ "3.8|Boltsheugh|2026-10-13|11|13|Crisp": {
+  "base": 8.429951690821255,
+  "base_models": {
+   "ECMWF": 8.26086956521739,
+   "ICON": 8.478260869565217,
+   "Met Office": 8.478260869565217
+  },
+  "crag": "Boltsheugh",
+  "date": "2026-10-13",
+  "era": 4.1882115624029765,
+  "era_base": 8.043478260869565,
+  "feel": "Crisp",
+  "from": 11,
+  "grip": 4.6850076097699365,
+  "models": {
+   "ECMWF": 4.399832167357986,
+   "ICON": 4.74767784796995,
+   "Met Office": 4.774009691454711
+  },
+  "problems": "",
+  "to": 13,
+  "tries": 1,
+  "wall": "Boltsheugh Upper",
+  "wet": 1.0
+ },
  "3.8|Brown Band Crag|2026-09-13|9|11|Crisp": {
   "base": 4.879227053140097,
   "base_models": {
@@ -199,6 +224,31 @@
   "wall": "",
   "wet": 0.6666666666666666
  },
+ "3.8|Johnsheugh|2026-10-10|12|16|Usable": {
+  "base": 8.21256038647343,
+  "base_models": {
+   "ECMWF": 8.586956521739129,
+   "ICON": 8.26086956521739,
+   "Met Office": 8.043478260869565
+  },
+  "crag": "Johnsheugh",
+  "date": "2026-10-10",
+  "era": 7.99895334885796,
+  "era_base": 8.695652173913043,
+  "feel": "Usable",
+  "from": 12,
+  "grip": 7.705476983228156,
+  "models": {
+   "ECMWF": 7.9368339225243405,
+   "ICON": 7.833418040502041,
+   "Met Office": 7.561757784600128
+  },
+  "problems": "Greasy or sweating",
+  "to": 16,
+  "tries": 1,
+  "wall": "",
+  "wet": 0.0
+ },
  "3.8|Logie Head|2026-09-19|11|17|Crisp": {
   "base": 8.711755233494364,
   "base_models": {
@@ -274,6 +324,31 @@
   "wall": "",
   "wet": 0.0
  },
+ "3.8|Meikle Partans|2026-10-11|15|18|Usable": {
+  "base": 6.602254428341385,
+  "base_models": {
+   "ECMWF": 7.246376811594203,
+   "ICON": 7.246376811594203,
+   "Met Office": 6.08695652173913
+  },
+  "crag": "Meikle Partans",
+  "date": "2026-10-11",
+  "era": 1.7969597675491489,
+  "era_base": 5.507246376811594,
+  "feel": "Usable",
+  "from": 15,
+  "grip": 3.396514411456092,
+  "models": {
+   "ECMWF": 3.643142087548597,
+   "ICON": 6.177629185662865,
+   "Met Office": 2.1854174313363814
+  },
+  "problems": "Wet from rain",
+  "to": 18,
+  "tries": 1,
+  "wall": "",
+  "wet": 0.6666666666666666
+ },
  "3.8|Murray Heugh|2026-10-06|11|16|Crisp": {
   "base": 7.294685990338164,
   "base_models": {
@@ -298,6 +373,31 @@
   "tries": 1,
   "wall": "Main Face",
   "wet": 0.0
+ },
+ "3.8|Murray Heugh|2026-10-10|14|18|Usable": {
+  "base": 8.055555555555555,
+  "base_models": {
+   "ECMWF": 8.26086956521739,
+   "ICON": 8.152173913043478,
+   "Met Office": 7.934782608695652
+  },
+  "crag": "Murray Heugh",
+  "date": "2026-10-10",
+  "era": 6.264388206937216,
+  "era_base": 8.26086956521739,
+  "feel": "Usable",
+  "from": 14,
+  "grip": 6.895546047773763,
+  "models": {
+   "ECMWF": 6.4053176426793845,
+   "ICON": 7.165177153086998,
+   "Met Office": 6.98378496768622
+  },
+  "problems": "Greasy or sweating",
+  "to": 18,
+  "tries": 1,
+  "wall": "Main Face",
+  "wet": 0.08333333333333333
  },
  "3.8|Newtonhill (Backdoor Wall)|2026-09-27|9|12|Usable": {
   "base": 4.9275362318840585,
@@ -373,5 +473,30 @@
   "tries": 1,
   "wall": "Back Wall",
   "wet": 0.0
+ },
+ "3.8|The Round Tower|2026-10-11|11|12|Crisp": {
+  "base": 5.120772946859905,
+  "base_models": {
+   "ECMWF": 6.086956521739131,
+   "ICON": 6.086956521739131,
+   "Met Office": 4.3478260869565215
+  },
+  "crag": "The Round Tower",
+  "date": "2026-10-11",
+  "era": 3.1162700923257742,
+  "era_base": 6.086956521739131,
+  "feel": "Crisp",
+  "from": 11,
+  "grip": 2.1848459498459536,
+  "models": {
+   "ECMWF": 3.195289742400797,
+   "ICON": 6.636517031905994,
+   "Met Office": 0.0
+  },
+  "problems": "Seepage",
+  "to": 12,
+  "tries": 1,
+  "wall": "",
+  "wet": 0.6666666666666666
  }
 }
