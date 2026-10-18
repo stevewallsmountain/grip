@@ -179,7 +179,7 @@ class LogParsing(unittest.TestCase):
     def test_existing_entries_unchanged(self):
         self.assertEqual({k: grip.FORM_ENTRIES[k] for k in OLD_ENTRIES}, OLD_ENTRIES)
         self.assertEqual({k: v for k, v in grip.FORM_ENTRIES.items() if k not in OLD_ENTRIES}, NEW_ENTRIES)
-        self.assertEqual(grip.MODEL_VERSION, "3.7")
+        self.assertEqual(grip.MODEL_VERSION, "3.8")
 
 
 class Page(unittest.TestCase):

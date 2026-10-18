@@ -110,7 +110,7 @@ POPULAR_COUNT = 15  # how many crags from the top of the crag rank the Popular c
 BIG_SEA_M = 1.5  # a crag page shows the big-sea notice for a day whose highest daylight sea at the weather point, as shown, is this or more; display only, never scored
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
 CAL_FILE = os.path.join(HERE, "calibration.json")
-MODEL_VERSION = "3.7"  # bump when the scoring or crag details change; logged days are then re-scored
+MODEL_VERSION = "3.8"  # bump when the scoring or crag details change; logged days are then re-scored
 CAL_CSV = os.path.join(HERE, "calibration.csv")
 FEEL = {"Soaked": 0.5, "Greasy": 2.5, "Usable": 4.5, "Crisp": 6.5, "Prime": 8.5}  # band centres, used only to order the bands
 LABEL_ALIASES = {  # names used in logs before the crag list was rebuilt from the SMC database

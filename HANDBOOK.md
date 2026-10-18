@@ -24,9 +24,11 @@ Grip is a dry-rock forecast for the sea cliffs of north-east Scotland, Girdle Ne
 - Calibration tracker (Steve's private sheet, imports calibration.csv): 1ccLcrGu4ZGQ_XVjk0Lx6vpKC0IcqJC3PZ87zHKGrJUg.
 - Data: Open-Meteo. Met Office UKV 2 km (`ukmo_seamless`), ECMWF (`ecmwf_ifs025`), ICON (`icon_seamless`), marine API for waves, sea temperature and sea level, ERA5 archive for back-scoring finished days.
 
-## The model, version 3.7
+## The model, version 3.8
 
 Each wall, each hour: points from the factors below are summed; index = 3 + points/2, held to 0 to 10. A day's score is its best three consecutive daylight hours (sun 5 degrees up or more). Bands: 0 to 1 Soaked, 2 to 3 Greasy, 4 to 5 Climbable, 6 to 7 Grippy, 8 to 10 Prime. Climbable and Grippy were called Usable and Crisp until October 2026: logs before then use the old names, and the code and `calibration.json` still key the two bands as "Usable" and "Crisp" (`FEEL_NAME` maps them to the names shown). Three models are scored separately and blended: Met Office 2.5 (1 beyond 48 h), ECMWF 1, ICON 1.
+
+3.8 (18 Oct 2026): no change to the model; version bumped so every logged day is re-scored under the 2.5/1/1 blend introduced on 4 Oct without a bump.
 
 | Factor | Points | Notes |
 |---|---|---|
