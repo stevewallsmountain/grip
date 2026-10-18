@@ -873,7 +873,7 @@ def save_snapshot(results, now, folder=None, here=None):
     path = os.path.join(folder, now.date().isoformat() + ".json")
     prev = None
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             prev = json.load(f).get("run")
     except FileNotFoundError:
         pass
@@ -885,7 +885,7 @@ def save_snapshot(results, now, folder=None, here=None):
     if not snap["walls"]:
         return None
     os.makedirs(folder, exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(snap, f, separators=(",", ":"), ensure_ascii=False)
     log(f"Saved the forecast snapshot for {snap['date']} from the {snap['run'][11:]} run" + (f", replacing the {prev[11:]} one" if prev else ""))
     return path
@@ -1085,7 +1085,7 @@ def write_calibration_csv(cache):
     import csv
     labs = [lab for _m, lab, _d, _w in MODELS]
     rows = sorted((v for v in cache.values() if v.get("grip") is not None), key=lambda v: (v["date"], v["crag"]))
-    with open(CAL_CSV, "w", newline="") as f:
+    with open(CAL_CSV, "w", newline="", encoding="utf-8") as f:
         wr = csv.writer(f)
         wr.writerow(["date", "crag", "from", "to", "felt", "felt_low", "felt_high", "grip", "grip_miss"]
                     + [f"grip_{lab.lower().replace(' ', '_')}" for lab in labs]
@@ -1136,7 +1136,7 @@ def calibrate(cfg, limit=5):
     if os.environ.get("GRIP_FAKE"):
         return None
     try:
-        with open(CAL_FILE) as f:
+        with open(CAL_FILE, encoding="utf-8") as f:
             cache = json.load(f)
     except Exception:  # noqa: BLE001
         cache = {}
@@ -1165,7 +1165,7 @@ def calibrate(cfg, limit=5):
                       "tries": 1 if res else (c.get("tries", 1) + 1 if c else 1)}
     cache = {k: v for k, v in cache.items() if k.startswith(MODEL_VERSION + "|")}
     if done:
-        with open(CAL_FILE, "w") as f:
+        with open(CAL_FILE, "w", encoding="utf-8", newline="\n") as f:
             json.dump(cache, f, indent=1, sort_keys=True)
             f.write("\n")
     write_calibration_csv(cache)
@@ -1643,6 +1643,11 @@ def fmt(idx):
     return f"{rnd(idx):d}"
 
 
+def dfmt(d, form):
+    """d.strftime(form), with "%-d" as the day of the month without a leading zero on every platform (Windows has no "%-d")."""
+    return d.strftime(form.replace("%-d", str(d.day)))
+
+
 def pct(x):
     return f"{round(100 * x):d}%"
 
@@ -1956,7 +1961,7 @@ def zone_now(cfg, models, marine, now):
 def logged_days(cfg):
     """Every scored logged day, merged as on the front page, with the wall it was matched to: [(row, wall)]."""
     try:
-        with open(CAL_FILE) as f:
+        with open(CAL_FILE, encoding="utf-8") as f:
             cache = json.load(f)
     except Exception:  # noqa: BLE001
         return []
@@ -2269,7 +2274,7 @@ def week_html(r, today):
         v = r["daily"][d]
         name, _note, css = band(v["index"])
         dd = date.fromisoformat(d)
-        cells.append(f'<div role="listitem" aria-label="{dd.strftime("%A %-d %B")}: {fmt(v["index"])}, {name}, best {v["start"]} to {v["end"]}, '
+        cells.append(f'<div role="listitem" aria-label="{dfmt(dd, "%A %-d %B")}: {fmt(v["index"])}, {name}, best {v["start"]} to {v["end"]}, '
                      f'{v["usable"]} of {v["hours"]} daylight hours climbable"><span class="dn">{dd.strftime("%a")}</span><b class="num {css}">{fmt(v["index"])}</b>'
                      f'<span>{v["start"][:2]}–{v["end"][:2]}</span><span>{v["usable"]} h</span></div>')
     return '<div class="week" role="list">' + "".join(cells) + "</div>"
@@ -2539,7 +2544,7 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
     w(f'<nav class="crumb" aria-label="Breadcrumb"><a href="../">Forecast</a> / {escape(zone["name"])}</nav>')
     w(f'<div class="tb"><div><h1>{escape(gname)}</h1>')
     w(f'<p class="meta">{len(walls)} wall{"s" if multi else ""} &middot; Weather from the {escape(zone["name"])} point &middot; '
-      f'Updated {now.strftime("%a %-d %b, %H:%M")}</p></div>')
+      f'Updated {dfmt(now, "%a %-d %b, %H:%M")}</p></div>')
     log_c = c0 if not multi else {"name": gname}
     w(f'<p class="acts"><a class="btn" href="{escape(log_link(log_c, today.isoformat(), "../"))}">Log a day here</a>'
       f'<a class="btn alt" href="{escape(note_link(log_c, "../"))}">Send a crag note</a></p></div>')
@@ -2597,12 +2602,12 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
         w(f'<div class="tr"><ul class="tags" aria-label="About this wall">{tags}</ul>{lg}</div>')
         hs = day_hours(r, di)
         vals = {hour_of(hr): hr["index"] for hr in hs}
-        w(f'<div class="today"><div class="dayline"><h3>{labels[0]}, {day.strftime("%a %-d")}</h3>'
+        w(f'<div class="today"><div class="dayline"><h3>{labels[0]}, {dfmt(day, "%a %-d")}</h3>'
           f'<p class="line">{escape(plain_line(hs, now_hour, tomorrow))}</p></div>'
           + (strip_html(cols, vals, now_hour) + hours_head(cols) if cols else "") + "</div>")
         nhs = day_hours(r, nday.isoformat())
         nvals = {hour_of(hr): hr["index"] for hr in nhs}
-        w(f'<div class="today next"><div class="dayline"><h3>{labels[1]}, {nday.strftime("%a %-d")}</h3>'
+        w(f'<div class="today next"><div class="dayline"><h3>{labels[1]}, {dfmt(nday, "%a %-d")}</h3>'
           f'<p class="line">{escape(plain_line(nhs, None, True))}</p></div>'
           + (strip_html(ncols, nvals, -1) + hours_head(ncols) if ncols else "") + "</div>")
         w(f'<div class="why"><h3>Why</h3><p>{escape(why_text(hs, now_hour, tomorrow))}</p></div>')
@@ -2623,15 +2628,15 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
         w('<label for="hb-wall">Wall<select id="hb-wall">' + "".join(f'<option value="{i}">{escape(wall_name(r["crag"]))}</option>' for i, r in enumerate(walls))
           + "</select></label>")
     w('<div class="tabs" role="tablist" aria-label="Day">' + "".join(
-        f'<button type="button" role="tab" id="hb-t{j}" aria-selected="false">{date.fromisoformat(d).strftime("%a %-d")}</button>'
+        f'<button type="button" role="tab" id="hb-t{j}" aria-selected="false">{dfmt(date.fromisoformat(d), "%a %-d")}</button>'
         for j, d in enumerate(hb_days)) + "</div></div>")
     for i, r in enumerate(walls):
         for j, d in enumerate(hb_days):
             hs = [hr for hr in r["hours"] if hr["t"][:10] == d]
             lt = tides.get(r["crag"]["zone"], {}).get(d, [])
             dd = date.fromisoformat(d)
-            cap = dd.strftime("%A %-d %B") + (f" · low water {', '.join(lt)}" if lt else "")
-            name = (wall_name(r["crag"]) + ", " if multi else "") + dd.strftime("%a %-d %b")
+            cap = dfmt(dd, "%A %-d %B") + (f" · low water {', '.join(lt)}" if lt else "")
+            name = (wall_name(r["crag"]) + ", " if multi else "") + dfmt(dd, "%a %-d %b")
             w(f'<details class="hb" id="hb-{i}-{j}" data-w="{i}" data-d="{j}" open><summary>{escape(name)}</summary>')
             if hs:
                 w(f'<div class="wrap" tabindex="0" role="region" aria-label="{escape(name)}, hour by hour">{hours_table(hs, cap)}</div>')
@@ -2652,7 +2657,7 @@ def render_detail(gname, walls, tides, now, today, cfg, view, here, logged, nxt=
         w('<div class="wrap" tabindex="0" role="region" aria-label="Logged days here"><table class="cal"><tr><th>Date</th><th>Wall</th><th>Felt</th><th>Grip said</th><th>Actual weather</th></tr>')
         for v, c in mine:
             n = f' <small>({v["n_logs"]} logs)</small>' if v.get("n_logs", 1) > 1 else ""
-            w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(wall_name(c))}{n}</td>'
+            w(f'<tr><td>{dfmt(date.fromisoformat(v["date"]), "%-d %b %Y")}</td><td>{escape(wall_name(c))}{n}</td>'
               f'<td>{escape(FEEL_NAME[v["feel"]])}</td><td>{chip(v["grip"])} {band(v["grip"])[0]}</td><td>{chip(v.get("era"))}</td></tr>')
         w("</table></div>")
     w("</section>")
@@ -2941,7 +2946,7 @@ def render_birds(cfg, now):
       '<a href="note.html">send a crag note</a>.</p>')
     w('<div class="caution" role="note"><i aria-hidden="true">!</i><p>Not a definitive record. Check local guidance and look before '
       "you climb in the nesting season.</p></div>")
-    w(f'<p class="season">Updated {now.strftime("%a %-d %b, %H:%M")} &middot; {escape(season_line(cfg, now.month))}</p>')
+    w(f'<p class="season">Updated {dfmt(now, "%a %-d %b, %H:%M")} &middot; {escape(season_line(cfg, now.month))}</p>')
     w('<div class="bctl" id="bctl" hidden><div class="find" role="search"><label for="bfind">Find a crag'
       '<input id="bfind" type="search" placeholder="Start typing a name" autocomplete="off" autocapitalize="off" autocorrect="off" '
       'spellcheck="false" aria-describedby="bcount"></label></div><div class="chips" role="group" aria-label="Show">'
@@ -3807,7 +3812,7 @@ if(typeof document!=='undefined'){(function(){
 
 def form_crag_options(elsewhere):
     """A form's crag options in order: the crag names in data/form_crags.json, then that form's own last option."""
-    with open(FORM_CRAGS_FILE) as f:
+    with open(FORM_CRAGS_FILE, encoding="utf-8") as f:
         names = json.load(f)
     return [n for n in names if n != FORM_ELSEWHERE] + [elsewhere]
 
@@ -3819,7 +3824,7 @@ def form_walls(cfg, elsewhere=FORM_ELSEWHERE, form="log form"):
     try:
         known = set(form_crag_options(elsewhere))
         if form == "log form":
-            with open(FORM_CRAGS_FILE) as f:
+            with open(FORM_CRAGS_FILE, encoding="utf-8") as f:
                 if FORM_ELSEWHERE not in json.load(f):
                     log(f"Warning: '{FORM_ELSEWHERE}' is not in data/form_crags.json")
     except Exception as e:  # noqa: BLE001
@@ -4181,7 +4186,7 @@ def render_popular(results, tides, now, cfg, rank=None):
         w('<p class="sub">No popular crags listed.</p></section>')
         return "".join(out)
     w('<div class="wrap popw"><table class="pop" role="table"><thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Crag</th>'
-      + "".join(f'<th scope="col" role="columnheader">{t} <small>{d.strftime("%a %-d %b")}</small></th>' for t, d in zip(titles, days))
+      + "".join(f'<th scope="col" role="columnheader">{t} <small>{dfmt(d, "%a %-d %b")}</small></th>' for t, d in zip(titles, days))
       + '</tr></thead><tbody role="rowgroup" id="pop-rows">')  # the rows are laid out as a grid, so the table roles are stated outright
     for i, (n, _walls, cells) in enumerate(rows):
         more = ' class="more"' if i >= POPULAR_TOP else ""
@@ -4230,8 +4235,8 @@ def render_coast(results, now, cfg):
         w(f'<button type="button" role="radio" aria-checked="{"true" if on else "false"}" tabindex="{0 if on else -1}" aria-controls="cp{i}">{title}</button>')
     w('</div></div><p class="hint">Typical score across the walls on each stretch, hour by hour. Earlier hours are greyed.</p>')
     for i, (title, day, rows, cols, now_hour, on) in enumerate(panels):
-        w(f'<div class="cp" id="cp{i}" role="group" aria-label="{title}, {day.strftime("%a %-d %b")}">'
-          f'<p class="ovl pday" aria-hidden="true">{title}, {day.strftime("%a %-d %b")}</p>')
+        w(f'<div class="cp" id="cp{i}" role="group" aria-label="{title}, {dfmt(day, "%a %-d %b")}">'
+          f'<p class="ovl pday" aria-hidden="true">{title}, {dfmt(day, "%a %-d %b")}</p>')
         if not cols:
             w('<p class="sub">No hours scored.</p>')
         else:
@@ -4291,7 +4296,7 @@ STALE_JS = r"""
 def fresh_line(now):
     """When the page was made, and when the next run is due. Runs are hourly but often late, so no clock time is promised."""
     return (f'<p class="fresh" id="fresh" data-run="{now.isoformat(timespec="seconds")}">'
-            f'Updated {now.strftime("%a %-d %b, %H:%M")} &middot; Next update within the hour</p>')
+            f'Updated {dfmt(now, "%a %-d %b, %H:%M")} &middot; Next update within the hour</p>')
 
 
 def band_floor(index):
@@ -4407,7 +4412,7 @@ def best_at(b):
 
 def summary_card(title, day, s):
     """One summary card. title: "Today" or "Tomorrow", or None for a card headed by its date alone; s: day_summary()."""
-    head = f'<p class="ovl">{title + ", " if title else ""}{day.strftime("%a %-d %b")}</p>'
+    head = f'<p class="ovl">{title + ", " if title else ""}{dfmt(day, "%a %-d %b")}</p>'
     b = s["best"]
     if not b:
         return f'<div class="card"><span class="num sz-xl none" aria-hidden="true">-</span><div>{head}<p class="ln">No hours scored.</p></div></div>'
@@ -4705,7 +4710,7 @@ def render(results, tides, now, cfg, models_ok, cal=None):
                         if wd:
                             parts.append(f'{wr["crag"].get("wall") or "Main face"}~{wd["index"]:.1f}~{wd["start"]} to {wd["end"]}~{wd["usable"]} of {wd["hours"]}~{pct(wd["wet"])}')
                     wl = "|".join(parts)
-                dd = date.fromisoformat(d).strftime("%a %-d %b")
+                dd = dfmt(date.fromisoformat(d), "%a %-d %b")
                 said = "".join(models_sentence(r, d, v, date.fromisoformat(d) == today))  # its kind, then the sentence
                 said = said_at.setdefault(said, len(said_at))  # each distinct sentence goes in the page once
                 w(f'<td><button type="button" class="cell {cls}" data-crag="{escape(gname)}" data-wall="{escape(c.get("wall") or "")}" data-day="{dd}" data-ms="{said}" '
@@ -4849,7 +4854,7 @@ def render_method(cal, now, models_ok):
       "The weightings are a first estimate and are being checked against real days; expect them to change.</p>")
     w("</div>")
     w('<h2 id="models">Weather models</h2><div class="method">'
-      f'<p>Models in the latest run, {now.strftime("%a %-d %b, %H:%M")}: {escape(", ".join(models_ok)) or "none available"}.</p></div>')
+      f'<p>Models in the latest run, {dfmt(now, "%a %-d %b, %H:%M")}: {escape(", ".join(models_ok)) or "none available"}.</p></div>')
     w('<h2 id="days">Checking Grip against real days</h2><div class="method">')
     if cal is None:
         w("<p>Logged days are scored against the archived forecasts once the day is over, and the results appear here.</p>")
@@ -4878,7 +4883,7 @@ def render_method(cal, now, models_ok):
             cells = "".join(f'<td>{chip(v.get("models", {}).get(lab))}</td>' for _m, lab, _d, _w in MODELS) + f'<td>{chip(v.get("era"))}</td>'
             lo, hi = FEEL_RANGE[v["feel"]]
             times = f' <small>({v["n_logs"]} logs)</small>' if v.get("n_logs", 1) > 1 else ""
-            w(f'<tr><td>{date.fromisoformat(v["date"]).strftime("%-d %b %Y")}</td><td>{escape(v["crag"])}{times}</td><td>{escape(FEEL_NAME[v["feel"]])} ({lo:g} to {min(hi - 1, 10):g})</td>'
+            w(f'<tr><td>{dfmt(date.fromisoformat(v["date"]), "%-d %b %Y")}</td><td>{escape(v["crag"])}{times}</td><td>{escape(FEEL_NAME[v["feel"]])} ({lo:g} to {min(hi - 1, 10):g})</td>'
               f'<td>{chip(v["grip"])} {band(v["grip"])[0]}</td>{cells}</tr>')
         w("</table></div>")  # in its own scrolling box, like the crag pages' logged days, so the page never scrolls sideways
     w("</div>")
@@ -4894,14 +4899,14 @@ def render_method(cal, now, models_ok):
 # ---------------------------------------------------------------- ntfy
 def load_state():
     try:
-        with open(STATE_FILE) as f:
+        with open(STATE_FILE, encoding="utf-8") as f:
             return json.load(f)
     except Exception:  # noqa: BLE001
         return {}
 
 
 def save_state(st):
-    with open(STATE_FILE, "w") as f:
+    with open(STATE_FILE, "w", encoding="utf-8", newline="\n") as f:
         json.dump(st, f, indent=2, sort_keys=True)
         f.write("\n")
 
@@ -4935,7 +4940,7 @@ def send_ntfy(topic, text, click):
 
 # ---------------------------------------------------------------- main
 def main():
-    with open(os.path.join(HERE, "crags.json")) as f:
+    with open(os.path.join(HERE, "crags.json"), encoding="utf-8") as f:
         cfg = json.load(f)
     if os.environ.get("GRIP_FAKE"):
         models, marine = fake_data(cfg["zones"])
@@ -4959,23 +4964,23 @@ def main():
         cal = None
     os.makedirs(SITE_DIR, exist_ok=True)
     html = render(results, tides, now, cfg, models_ok, cal)
-    with open(os.path.join(SITE_DIR, "index.html"), "w") as f:
+    with open(os.path.join(SITE_DIR, "index.html"), "w", encoding="utf-8", newline="\n") as f:
         f.write(html)
-    with open(os.path.join(SITE_DIR, "method.html"), "w") as f:
+    with open(os.path.join(SITE_DIR, "method.html"), "w", encoding="utf-8", newline="\n") as f:
         f.write(render_method(cal, now, models_ok))
-    with open(os.path.join(SITE_DIR, "birds.html"), "w") as f:
+    with open(os.path.join(SITE_DIR, "birds.html"), "w", encoding="utf-8", newline="\n") as f:
         f.write(render_birds(cfg, now))
-    with open(os.path.join(SITE_DIR, "log.html"), "w") as f:
+    with open(os.path.join(SITE_DIR, "log.html"), "w", encoding="utf-8", newline="\n") as f:
         f.write(render_log(cfg, cal))
-    with open(os.path.join(SITE_DIR, "note.html"), "w") as f:
+    with open(os.path.join(SITE_DIR, "note.html"), "w", encoding="utf-8", newline="\n") as f:
         f.write(render_note(cfg))
-    with open(os.path.join(SITE_DIR, "feedback.html"), "w") as f:
+    with open(os.path.join(SITE_DIR, "feedback.html"), "w", encoding="utf-8", newline="\n") as f:
         f.write(render_feedback())
     os.makedirs(os.path.join(SITE_DIR, "detail"), exist_ok=True)
     view, logged = coast_view(results, now, cfg), logged_days(cfg)
     nxt = next_view(results, view)
     for gname, walls in groups_of(results):
-        with open(os.path.join(SITE_DIR, "detail", slug(gname) + ".html"), "w") as f:
+        with open(os.path.join(SITE_DIR, "detail", slug(gname) + ".html"), "w", encoding="utf-8", newline="\n") as f:
             f.write(render_detail(gname, walls, tides, now, now.date(), cfg, view, here, logged, nxt))
     os.makedirs(os.path.join(SITE_DIR, "assets"), exist_ok=True)
     for n in LOGO_FILES:
@@ -4985,7 +4990,7 @@ def main():
     os.makedirs(os.path.join(SITE_DIR, "assets", "fonts"), exist_ok=True)
     for n in sorted(os.listdir(FONTS_DIR)):
         shutil.copyfile(os.path.join(FONTS_DIR, n), os.path.join(SITE_DIR, "assets", "fonts", n))
-    with open(os.path.join(SITE_DIR, ".nojekyll"), "w") as f:
+    with open(os.path.join(SITE_DIR, ".nojekyll"), "w", encoding="utf-8", newline="\n") as f:
         f.write("")
     log(f"Published {publish_history(SITE_DIR)} forecast snapshot(s) to site/history/")
     log(f"Wrote page ({len(html) // 1024} KB), models: {', '.join(models_ok)}")

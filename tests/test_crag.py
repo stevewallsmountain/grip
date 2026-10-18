@@ -153,9 +153,9 @@ class Across(unittest.TestCase):
     def test_override_aspect_drops_the_inherited_list(self):
         """A wall whose aspect comes from data/overrides.json carries no inherited aspect_note, so its sun line names only that
         aspect, unless the override gives its own aspect_note."""
-        with open(os.path.join(ROOT, "data", "overrides.json")) as f:
+        with open(os.path.join(ROOT, "data", "overrides.json"), encoding="utf-8") as f:
             ov = json.load(f)["walls"]
-        with open(os.path.join(ROOT, "crags.json")) as f:
+        with open(os.path.join(ROOT, "crags.json"), encoding="utf-8") as f:
             walls = {grip.label(c): c for c in json.load(f)["crags"]}
         checked = 0
         for lab, o in ov.items():
@@ -173,7 +173,7 @@ class Across(unittest.TestCase):
 def data_notes():
     """Every note text in data/overrides.json and every note string in tools/build_crags.py (data/birds.json's notes are
     Grip's own words without tags; Birds.test_bird_notes_have_no_tags checks them)."""
-    with open(os.path.join(ROOT, "data", "overrides.json")) as f:
+    with open(os.path.join(ROOT, "data", "overrides.json"), encoding="utf-8") as f:
         ov = json.load(f)
     out = []
 
@@ -187,7 +187,7 @@ def data_notes():
         elif isinstance(x, str) and key in ("note", "seep_note", "aspect_note", "tidal_note"):
             out.append(x)
     walk(ov)
-    with open(os.path.join(ROOT, "tools", "build_crags.py")) as f:
+    with open(os.path.join(ROOT, "tools", "build_crags.py"), encoding="utf-8") as f:
         out += re.findall(r'"note": "([^"]+)"', f.read())
     return out
 
@@ -268,7 +268,7 @@ class Birds(unittest.TestCase):
         self.assertEqual(grip.birds_line({"months": [], "level": "possible", "note": ""}), "Reported nesting, months not known.")
 
     def test_every_wall_in_the_crag_list(self):
-        with open(os.path.join(ROOT, "crags.json")) as f:
+        with open(os.path.join(ROOT, "crags.json"), encoding="utf-8") as f:
             crags = json.load(f)["crags"]
         for c in crags:
             b = c.get("birds")
@@ -298,7 +298,7 @@ class Birds(unittest.TestCase):
                          "None reported. The neighbouring Storm Wall can be nested.")
 
     def test_bird_notes_have_no_tags(self):
-        with open(os.path.join(ROOT, "data", "birds.json")) as f:
+        with open(os.path.join(ROOT, "data", "birds.json"), encoding="utf-8") as f:
             for k, b in json.load(f)["walls"].items():
                 self.assertEqual(grip.strip_sources(b["note"] or ""), b["note"] or "", k)
 
@@ -401,7 +401,7 @@ class Page(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        with open(os.path.join(ROOT, "crags.json")) as f:
+        with open(os.path.join(ROOT, "crags.json"), encoding="utf-8") as f:
             cfg = json.load(f)
         names = {"Logie Head", "Crazy Band Walls and The Shag’s Hole", "Buchan Walls"}
         cfg["crags"] = [c for c in cfg["crags"] if c["name"] in names]

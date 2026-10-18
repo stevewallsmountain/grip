@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import grip  # noqa: E402
 
 NODE = shutil.which("node")
-with open(os.path.join(os.path.dirname(grip.FORM_CRAGS_FILE), "..", "crags.json")) as f:
+with open(os.path.join(os.path.dirname(grip.FORM_CRAGS_FILE), "..", "crags.json"), encoding="utf-8") as f:
     CRAGS = json.load(f)
 LABELS = ["Logie Head (Tidal Zone)", "Logie Head (Star Zone)", "Souter Head (Aitken’s Pinnacle)", "South Cove (Kettle Walls)",
           "The Red Cliff", "Earnsheugh (Right Wall)", "The Graip"]
@@ -46,10 +46,10 @@ def script():
 def run_js(calls, pre=""):
     """Run the log page's script under Node and return each call's result; G is GripLog. The script goes in a file: it is long."""
     body = script() + "\nvar G=GripLog;\n" + pre + "\nprocess.stdout.write(JSON.stringify([" + ",".join(calls) + "]));"
-    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as f:
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
         f.write(body)
     try:
-        out = subprocess.run([NODE, f.name], capture_output=True, text=True, check=True)
+        out = subprocess.run([NODE, f.name], capture_output=True, encoding="utf-8", check=True)
     finally:
         os.unlink(f.name)
     return json.loads(out.stdout)
@@ -133,7 +133,7 @@ class SnapshotFile(unittest.TestCase):
                 again = grip.save_snapshot(self.results, now, folder)  # the same run is not nearer
             self.assertEqual(os.path.basename(path), now.date().isoformat() + ".json")
             self.assertIsNone(again)
-            with open(path) as f:
+            with open(path, encoding="utf-8") as f:
                 snap = json.load(f)
             self.assertEqual(snap["cols"], ["h", "s", "water", "seep", "dew", "air", "haar", "wind", "sun", "sea"])
             self.assertEqual(snap["run"], now.strftime("%Y-%m-%d %H:%M"))
@@ -148,7 +148,7 @@ class SnapshotFile(unittest.TestCase):
                 self.assertTrue(grip.save_snapshot(self.results, now.replace(hour=5, minute=10, second=0), night))
                 self.assertTrue(grip.save_snapshot(self.results, now.replace(hour=6, minute=20, second=0), night))
                 self.assertIsNone(grip.save_snapshot(self.results, now.replace(hour=5, minute=40, second=0), night))
-            open(os.path.join(folder, "notes.txt"), "w").close()
+            open(os.path.join(folder, "notes.txt"), "w", encoding="utf-8").close()
             self.assertEqual(grip.publish_history(site, folder), 1)
             self.assertEqual(os.listdir(os.path.join(site, "history")), [os.path.basename(path)])
 

@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from contextlib import redirect_stderr
 from urllib.parse import parse_qsl
@@ -18,7 +19,7 @@ from urllib.parse import parse_qsl
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import grip  # noqa: E402
 
-with open(grip.FORM_CRAGS_FILE) as f:
+with open(grip.FORM_CRAGS_FILE, encoding="utf-8") as f:
     FORM_CRAGS = json.load(f)
 NODE = shutil.which("node")
 CFG = {"crags": [{"name": "Bridge of One Hair", "wall": "East Wall"}, {"name": "Bridge of One Hair", "wall": "West Wall"},
@@ -26,9 +27,15 @@ CFG = {"crags": [{"name": "Bridge of One Hair", "wall": "East Wall"}, {"name": "
 
 
 def run_js(script, export, calls):
-    """Run a form script under Node and return the result of each call, given as a JavaScript expression on `G`."""
+    """Run a form script under Node and return the result of each call, given as a JavaScript expression on `G`.
+    The script goes in a file: it is too long for the Windows command line."""
     body = script + f"\nvar G={export};\nprocess.stdout.write(JSON.stringify([" + ",".join(calls) + "]));"
-    out = subprocess.run([NODE, "-e", body], capture_output=True, text=True, check=True)
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
+        f.write(body)
+    try:
+        out = subprocess.run([NODE, f.name], capture_output=True, encoding="utf-8", check=True)
+    finally:
+        os.unlink(f.name)
     return json.loads(out.stdout)
 
 
@@ -45,7 +52,7 @@ class CragLists(unittest.TestCase):
         self.assertEqual(grip.form_crag_options(grip.NOTES_ELSEWHERE), names + ["A crag that is not on the list yet"])
 
     def test_every_crag_in_crags_json_is_an_option(self):
-        with open(os.path.join(os.path.dirname(grip.FORM_CRAGS_FILE), "..", "crags.json")) as f:
+        with open(os.path.join(os.path.dirname(grip.FORM_CRAGS_FILE), "..", "crags.json"), encoding="utf-8") as f:
             cfg = json.load(f)
         buf = io.StringIO()
         with redirect_stderr(buf):

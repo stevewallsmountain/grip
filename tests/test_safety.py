@@ -22,7 +22,7 @@ DAY_TIME, NIGHT_TIME = "2026-10-05T11:37", "2026-10-05T20:10"  # a Monday: today
 
 
 def load_cfg(names):
-    with open(os.path.join(ROOT, "crags.json")) as f:
+    with open(os.path.join(ROOT, "crags.json"), encoding="utf-8") as f:
         cfg = json.load(f)
     cfg["crags"] = [c for c in cfg["crags"] if c["name"] in names]
     return cfg
@@ -282,7 +282,7 @@ class Snapshot(unittest.TestCase):
         cfg, results, now, here, zone, _s = self.snap(DAY_TIME, {"2026-10-05": 2.1})
         with tempfile.TemporaryDirectory() as folder:
             path = grip.save_snapshot(results, now, folder, here=here)
-            with open(path) as f:
+            with open(path, encoding="utf-8") as f:
                 saved = json.load(f)
         self.assertEqual(saved["sea"][zone]["days"]["2026-10-05"], {"high": 2.1, "big": True})
         self.assertEqual(saved["cols"], grip.SNAPSHOT_COLS)

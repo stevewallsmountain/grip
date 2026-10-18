@@ -8,9 +8,9 @@ OVR = sys.argv[2] if len(sys.argv) > 2 else "data/overrides.json"
 OUT = sys.argv[3] if len(sys.argv) > 3 else "crags.json"
 BIRDS = sys.argv[4] if len(sys.argv) > 4 else os.path.join(os.path.dirname(os.path.abspath(OVR)), "birds.json")
 
-d = json.load(open(SRC)); R = {r["id"]: r for r in d["records"]}
+d = json.load(open(SRC, encoding="utf-8")); R = {r["id"]: r for r in d["records"]}
 try:
-    overrides = json.load(open(OVR))
+    overrides = json.load(open(OVR, encoding="utf-8"))
 except FileNotFoundError:
     overrides = {"walls": {}, "drop": []}
 kids = collections.defaultdict(list)
@@ -229,7 +229,7 @@ def bird_entry(b):
 
 
 try:
-    bird_data = json.load(open(BIRDS))["walls"]
+    bird_data = json.load(open(BIRDS, encoding="utf-8"))["walls"]
 except FileNotFoundError:
     bird_data = {}
     print(f"warning: {BIRDS} not found; no wall has bird information")
@@ -247,7 +247,7 @@ if missing:
 
 
 out = {"zones": ZONES, "crags": crags, "source": "Crag details from the SMC routes database (routes.smc.org.uk), with local corrections"}
-json.dump(out, open(OUT, "w"), indent=1, ensure_ascii=False)
+json.dump(out, open(OUT, "w", encoding="utf-8", newline="\n"), indent=1, ensure_ascii=False)
 print(f"{len(crags)} walls across {len({c['name'] for c in crags})} crags in {len({c['section'] for c in crags})} sections; dropped {len(dropped)}")
 for x in dropped[:20]:
     print("  dropped:", x)
