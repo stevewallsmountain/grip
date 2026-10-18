@@ -9,7 +9,7 @@ import os
 import sys
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, datetime
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -84,7 +84,7 @@ class Names(unittest.TestCase):
                  for i, k in enumerate(grip.FEEL_RANGE, 1)}
         with tempfile.TemporaryDirectory() as d, mock.patch.object(grip, "CAL_CSV", os.path.join(d, "c.csv")):
             grip.write_calibration_csv(cache)
-            with open(grip.CAL_CSV) as f:
+            with open(grip.CAL_CSV, encoding="utf-8") as f:
                 felt = [r["felt"] for r in csv.DictReader(f)]
         self.assertEqual(felt, ["Soaked", "Greasy", "Climbable", "Grippy", "Prime"])
 
@@ -134,7 +134,7 @@ class Popular(unittest.TestCase):
         """The table lists the first POPULAR_COUNT crags of data/crag_rank.json: 15 names, no repeats, every one a crag."""
         with open(os.path.join(ROOT, "data", "crag_rank.json"), encoding="utf-8") as f:
             names = json.load(f)["rank"][:grip.POPULAR_COUNT]
-        with open(os.path.join(ROOT, "crags.json")) as f:
+        with open(os.path.join(ROOT, "crags.json"), encoding="utf-8") as f:
             cfg = json.load(f)
         known = {c["name"] for c in cfg["crags"]}
         self.assertEqual(grip.POPULAR_COUNT, 15)
@@ -149,7 +149,7 @@ class Popular(unittest.TestCase):
         results = [wall("Logie Head", d2026_10_05=(6, 4))]
         with tempfile.TemporaryDirectory() as d:
             p = os.path.join(d, "r.json")
-            with open(p, "w") as f:
+            with open(p, "w", encoding="utf-8") as f:
                 json.dump({"as_of": "2026-10-07", "window": "w", "rank": ["Nowhere Crag", "Logie Head"]}, f)
             with mock.patch.object(grip, "CRAG_RANK_FILE", p), mock.patch.object(grip, "log") as lg, \
                     mock.patch.object(grip, "coast_view", return_value=(D1, False, None, None, None)):
@@ -157,6 +157,19 @@ class Popular(unittest.TestCase):
             self.assertIn("Nowhere Crag", lg.call_args[0][0])
         self.assertIn('<a href="detail/logie-head.html">Logie Head</a>', html)
         self.assertNotIn("Nowhere Crag", html)
+
+class DateFormats(unittest.TestCase):
+    def test_day_without_leading_zero(self):
+        """dfmt gives the day without a leading zero for every "%-d" format grip.py uses, on any platform."""
+        oct6, oct31 = date(2026, 10, 6), date(2026, 10, 31)
+        for d, form, want in ((oct6, "%a %-d %b", "Tue 6 Oct"), (oct6, "%A %-d %B", "Tuesday 6 October"),
+                              (oct6, "%-d %b %Y", "6 Oct 2026"), (oct6, "%a %-d", "Tue 6"),
+                              (oct31, "%a %-d %b", "Sat 31 Oct"), (oct31, "%A %-d %B", "Saturday 31 October"),
+                              (oct31, "%-d %b %Y", "31 Oct 2026"), (oct31, "%a %-d", "Sat 31"),
+                              (datetime(2026, 10, 6, 7, 5, tzinfo=grip.TZ), "%a %-d %b, %H:%M", "Tue 6 Oct, 07:05")):
+            with self.subTest(form=form, d=d):
+                self.assertEqual(grip.dfmt(d, form), want)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

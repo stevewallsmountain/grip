@@ -25,7 +25,7 @@ UNSPECIFIED = "Nesting reported at this crag; the walls aren't specified"
 
 
 def load():
-    with open(os.path.join(ROOT, "crags.json")) as f:
+    with open(os.path.join(ROOT, "crags.json"), encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -255,7 +255,7 @@ class Register(unittest.TestCase):
         self.assertIn("GripMatch", self.html)  # the shared matching code
 
     def test_the_build_no_longer_writes_a_stock_note(self):
-        with open(os.path.join(ROOT, "tools", "build_crags.py")) as f:
+        with open(os.path.join(ROOT, "tools", "build_crags.py"), encoding="utf-8") as f:
             src = f.read()
         self.assertNotIn(STOCK, src)
         self.assertNotIn('f.get("birds")', src)  # the SMC keyword flag is never read
@@ -271,17 +271,17 @@ def build(tmp, smc=None, overrides=None, birds=None):
         if alt is None:
             shutil.copy(os.path.join(ROOT, "data", name), path)
         else:
-            with open(path, "w") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 json.dump(alt, f, ensure_ascii=False)
     out = os.path.join(tmp, "crags.json")
     subprocess.run([sys.executable, os.path.join(ROOT, "tools", "build_crags.py"), os.path.join(tmp, "smc_coast.json"),
                     os.path.join(tmp, "overrides.json"), out], check=True, capture_output=True, cwd=tmp)
-    with open(out) as f:
+    with open(out, encoding="utf-8") as f:
         return {grip.label(c): c for c in json.load(f)["crags"]}
 
 
 def data(name):
-    with open(os.path.join(ROOT, "data", name)) as f:
+    with open(os.path.join(ROOT, "data", name), encoding="utf-8") as f:
         return json.load(f)
 
 

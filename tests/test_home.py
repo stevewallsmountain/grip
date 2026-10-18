@@ -55,7 +55,7 @@ CFG = {"zones": {"S": {"name": "Weather point"}, "south": {"name": "Nigg Bay to 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _RANK_DIR = tempfile.TemporaryDirectory()
 _EMPTY_RANK = os.path.join(_RANK_DIR.name, "crag_rank.json")
-with open(_EMPTY_RANK, "w") as _f:
+with open(_EMPTY_RANK, "w", encoding="utf-8") as _f:
     json.dump({"as_of": "2026-10-07", "window": "UKC logbook entries, last 12 months", "rank": []}, _f)
 _RANK_PATCH = unittest.mock.patch.object(grip, "CRAG_RANK_FILE", _EMPTY_RANK)
 
@@ -154,7 +154,7 @@ class Summary(unittest.TestCase):
 
     def test_stretch_words(self):
         """Every stretch on the coast panel, as it reads on the card."""
-        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "crags.json")) as f:
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "crags.json"), encoding="utf-8") as f:
             zones = json.load(f)["zones"]
         said = {z["name"]: grip.stretch_words(z["name"]) for z in zones.values()}
         self.assertEqual(said, {
@@ -307,7 +307,7 @@ class CragRankTieBreak(unittest.TestCase):
         cfg = {"crags": [{"name": "Logie Head"}, {"name": "Yellow Crag"}]}
         with tempfile.TemporaryDirectory() as d:
             p = os.path.join(d, "r.json")
-            with open(p, "w") as f:
+            with open(p, "w", encoding="utf-8") as f:
                 json.dump({"as_of": "2026-10-07", "window": "w", "rank": ["Logie Head", "Nowhere Crag", "Yellow Crag"]}, f)
             with unittest.mock.patch.object(grip, "CRAG_RANK_FILE", p), unittest.mock.patch.object(grip, "log") as lg:
                 self.assertEqual(grip.load_crag_rank(cfg), ["Logie Head", "Yellow Crag"])
@@ -317,7 +317,7 @@ class CragRankTieBreak(unittest.TestCase):
         cfg = {"crags": [{"name": "Logie Head"}]}
         with tempfile.TemporaryDirectory() as d:
             bad = os.path.join(d, "bad.json")
-            with open(bad, "w") as f:
+            with open(bad, "w", encoding="utf-8") as f:
                 f.write("not json")
             for path in (os.path.join(d, "missing.json"), bad):
                 with unittest.mock.patch.object(grip, "CRAG_RANK_FILE", path), unittest.mock.patch.object(grip, "log") as lg:
@@ -414,7 +414,7 @@ class PopularTop(unittest.TestCase):
         cfg = dict(CFG, crags=[{"name": n} for n in sorted(names)])
         with tempfile.TemporaryDirectory() as d:
             p = os.path.join(d, "r.json")
-            with open(p, "w") as f:
+            with open(p, "w", encoding="utf-8") as f:
                 json.dump({"as_of": "2026-10-07", "window": "w", "rank": names}, f)
             with unittest.mock.patch.object(grip, "CRAG_RANK_FILE", p):
                 html = grip.render_popular(results, {}, datetime(2026, 10, 5, 11, 5, tzinfo=grip.TZ), cfg)
@@ -433,14 +433,14 @@ class PopularTop(unittest.TestCase):
 
     def test_page_loads_the_rank_once(self):
         """The home page reads the rank once for the summary cards and the table, so a name that matches no crag warns once."""
-        with open(os.path.join(ROOT, "crags.json")) as f:
+        with open(os.path.join(ROOT, "crags.json"), encoding="utf-8") as f:
             cfg = json.load(f)
         cfg["crags"] = [c for c in cfg["crags"] if c["name"] in {"Logie Head", "Souter Head"}]
         models, marine = grip.fake_data(cfg["zones"])
         results, tides, now = grip.build(cfg, models, marine)
         with tempfile.TemporaryDirectory() as d:
             p = os.path.join(d, "r.json")
-            with open(p, "w") as f:
+            with open(p, "w", encoding="utf-8") as f:
                 json.dump({"as_of": "2026-10-07", "window": "w", "rank": ["Souter Head", "Nowhere Crag", "Logie Head"]}, f)
             with unittest.mock.patch.object(grip, "CRAG_RANK_FILE", p), unittest.mock.patch.object(grip, "log") as lg:
                 html = grip.render(results, tides, now, cfg, ["Met Office", "ECMWF", "ICON"], None)
@@ -612,7 +612,7 @@ class Intro(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        with open(os.path.join(root, "crags.json")) as f:
+        with open(os.path.join(root, "crags.json"), encoding="utf-8") as f:
             cfg = json.load(f)
         cfg["crags"] = [c for c in cfg["crags"] if c["name"] in {"Logie Head", "Souter Head"}]
         models, marine = grip.fake_data(cfg["zones"])
