@@ -548,5 +548,30 @@
   "tries": 1,
   "wall": "Main Face",
   "wet": 0.0
+ },
+ "3.8|Yellow Crag|2026-10-30|11|14|Usable": {
+  "base": 4.750402576489533,
+  "base_models": {
+   "ECMWF": 5.362318840579711,
+   "ICON": 4.782608695652174,
+   "Met Office": 4.492753623188405
+  },
+  "crag": "Yellow Crag",
+  "date": "2026-10-30",
+  "era": 2.7220452507985446,
+  "era_base": 4.927536231884058,
+  "feel": "Usable",
+  "from": 11,
+  "grip": 3.459368120386832,
+  "models": {
+   "ECMWF": 4.141498217756285,
+   "ICON": 3.3778248331707044,
+   "Met Office": 3.219133396325502
+  },
+  "problems": "Wet from rain, Seepage",
+  "to": 14,
+  "tries": 1,
+  "wall": "Back Wall",
+  "wet": 0.0
  }
 }
