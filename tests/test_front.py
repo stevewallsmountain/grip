@@ -6,6 +6,7 @@ import csv
 import io
 import json
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -66,6 +67,216 @@ class Feels(unittest.TestCase):
         with mock.patch.object(grip.urllib.request, "urlopen", return_value=Reply(buf.getvalue().encode())):
             got = grip.fetch_log()
         self.assertEqual([e["feel"] for e in got], [k for _t, k in FEELS])
+
+
+class Reply(io.BytesIO):
+    """A urlopen reply that works as a context manager."""
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+SHEET_HEAD = ["Timestamp", "Crag or wall", "Date", "On the rock from", "On the rock until", "How did the rock feel overall?",
+              "If it was poor, what was the problem? Tick any that apply", "Initials (optional)", "Wall or sector, if you know it (optional)"]
+SHEET_ROWS = [
+    ["10/4/2026 11:04:48", "Crag A", "10/3/2026", "11:00:00 AM", "3:00:00 PM", "Grippy: good friction", "", "", ""],
+    ["11/2/2026 22:25:39", "Crag B", "11/2/2026", "1:24:00 PM", "10:24:00 PM", "Climbable: fine with care", "", "", ""],
+    ["11/3/2026 9:43:31", "Crag C", "11/1/2026", "10:00:00 AM", "1:00:00 PM", "Climbable: fine with care", "", "", ""],
+]
+EXCLUDE_B = {"timestamp": "11/2/2026 22:25:39", "date": "2026-11-02", "crag": "Crag B", "reason": "Doubtful: a test."}
+
+
+class LogExclusions(unittest.TestCase):
+    """data/log_exclusions.json: an excluded log is skipped by fetch_log() and disappears from the calibration everywhere."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.dir.cleanup)
+        self.excl = os.path.join(self.dir.name, "log_exclusions.json")
+        p = mock.patch.object(grip, "LOG_EXCLUSIONS_FILE", self.excl)
+        p.start()
+        self.addCleanup(p.stop)
+
+    def exclude(self, *logs):
+        with open(self.excl, "w", encoding="utf-8") as f:
+            json.dump({"logs": list(logs)}, f)
+
+    def fetch(self, rows=SHEET_ROWS):
+        """fetch_log() on the synthetic Public tab, and the warnings it logged."""
+        buf = io.StringIO()
+        csv.writer(buf).writerows([SHEET_HEAD] + rows)
+        with mock.patch.object(grip.urllib.request, "urlopen", return_value=Reply(buf.getvalue().encode())), \
+                mock.patch.object(grip, "log") as lg:
+            got = grip.fetch_log()
+        return got, [" ".join(map(str, c.args)) for c in lg.call_args_list if str(c.args[0]).startswith("Warning")]
+
+    def test_excluded_row_is_skipped(self):
+        self.exclude(EXCLUDE_B)
+        got, warns = self.fetch()
+        self.assertEqual([(e["crag"], e["date"]) for e in got], [("Crag A", "2026-10-03"), ("Crag C", "2026-11-01")])
+        self.assertEqual(warns, [])
+
+    def test_missing_file_excludes_nothing(self):
+        got, warns = self.fetch()  # no file written
+        self.assertEqual([e["crag"] for e in got], ["Crag A", "Crag B", "Crag C"])
+        self.assertEqual(len(warns), 1)
+        self.assertIn("cannot read data/log_exclusions.json", warns[0])
+
+    def test_unreadable_file_excludes_nothing(self):
+        with open(self.excl, "w", encoding="utf-8") as f:
+            f.write("{not json")
+        got, warns = self.fetch()
+        self.assertEqual(len(got), 3)
+        self.assertEqual(len(warns), 1)
+
+    def test_no_matching_row_warns_once(self):
+        self.exclude(EXCLUDE_B, {"timestamp": "1/1/2026 0:00:00", "date": "2025-12-31", "crag": "Crag Z", "reason": "Doubtful: a test."})
+        got, warns = self.fetch()
+        self.assertEqual(len(got), 2)
+        self.assertEqual(len(warns), 1)
+        self.assertIn("1/1/2026 0:00:00", warns[0])
+        self.assertIn("matches no row", warns[0])
+
+    def test_date_or_crag_differing_warns_once_and_still_excludes(self):
+        self.exclude({**EXCLUDE_B, "date": "2026-11-01"})
+        got, warns = self.fetch(SHEET_ROWS + [SHEET_ROWS[1]])  # the same row twice still warns once
+        self.assertEqual([e["crag"] for e in got], ["Crag A", "Crag C"])
+        self.assertEqual(len(warns), 1)
+        self.assertIn("but its row is Crag B on 2026-11-02", warns[0])
+        self.exclude({**EXCLUDE_B, "crag": "Crag Q"})
+        got, warns = self.fetch()
+        self.assertEqual(len(got), 2)
+        self.assertEqual(len(warns), 1)
+        self.assertIn("Crag Q", warns[0])
+
+    def scored_cache(self):
+        """A cache holding fully scored entries for all three logs, keyed as the build keys them."""
+        self.exclude()
+        entries, _w = self.fetch()
+        self.assertEqual(len(entries), 3)
+        return {grip.log_key(e): {**e, "grip": 5.0, "wet": 0.0, "models": {"Met Office": 5.0}, "base": 5.0, "base_models": {},
+                                  "era": 5.0, "era_base": 5.0, "tries": 1} for e in entries}
+
+    def calibrate(self, cache, rows=SHEET_ROWS, fail=False):
+        """calibrate() on the given cache and sheet; returns the summary, the CSV's rows and the cache file as written.
+        The warnings it logged are left in self.warns."""
+        cal_file, cal_csv = os.path.join(self.dir.name, "calibration.json"), os.path.join(self.dir.name, "calibration.csv")
+        with open(cal_file, "w", encoding="utf-8") as f:
+            json.dump(cache, f)
+        buf = io.StringIO()
+        csv.writer(buf).writerows([SHEET_HEAD] + rows)
+        reply = OSError("offline") if fail else None
+        with mock.patch.object(grip, "CAL_FILE", cal_file), mock.patch.object(grip, "CAL_CSV", cal_csv), \
+                mock.patch.object(grip.urllib.request, "urlopen", side_effect=reply, return_value=Reply(buf.getvalue().encode())), \
+                mock.patch.object(grip, "backscore", side_effect=AssertionError("nothing should be scored")), \
+                mock.patch.object(grip, "log") as lg, mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("GRIP_FAKE", None)
+            cal = grip.calibrate({"crags": [], "zones": {}})
+        self.warns = [" ".join(map(str, c.args)) for c in lg.call_args_list if str(c.args[0]).startswith("Warning")]
+        with open(cal_csv, encoding="utf-8") as f:
+            csv_rows = list(csv.DictReader(f))
+        with open(cal_file, encoding="utf-8") as f:
+            written = json.load(f)
+        return cal, csv_rows, written
+
+    def test_scored_excluded_log_leaves_calibration(self):
+        cache = self.scored_cache()
+        self.exclude(EXCLUDE_B)
+        cal, csv_rows, written = self.calibrate(cache)  # backscore raises if called: the excluded log is never scored again
+        self.assertEqual(cal["n"], 2)
+        self.assertEqual(cal["pending"], 0)
+        self.assertEqual(sorted(v["crag"] for v in cal["rows"]), ["Crag A", "Crag C"])
+        self.assertEqual([(r["date"], r["crag"]) for r in csv_rows], [("2026-10-03", "Crag A"), ("2026-11-01", "Crag C")])
+        self.assertEqual(sorted(v["crag"] for v in written.values()), ["Crag A", "Crag C"])
+        self.assertEqual({k: v for k, v in cache.items() if v["crag"] != "Crag B"}, written)  # the others unchanged
+        html = grip.render_sure(cal)
+        self.assertEqual(len(re.findall(r'<i class="(in|near|out)"></i>', html.split('class="sql"')[0])), 2)
+        self.assertIn("2 days have been logged", html)
+
+    def test_logged_days_follow_the_written_cache(self):
+        cache = self.scored_cache()
+        self.exclude(EXCLUDE_B)
+        _cal, _rows, written = self.calibrate(cache)
+        with mock.patch.object(grip, "CAL_FILE", os.path.join(self.dir.name, "calibration.json")):
+            self.assertEqual(sorted(v["crag"] for v, _w in grip.logged_days({"crags": []})), ["Crag A", "Crag C"])
+
+    def test_failed_fetch_keeps_the_cache(self):
+        cache = self.scored_cache()
+        cal, csv_rows, written = self.calibrate(cache, fail=True)
+        self.assertEqual(cal["n"], 3)
+        self.assertEqual(len(csv_rows), 3)
+        self.assertEqual(written, cache)
+
+    def test_without_exclusions_nothing_changes(self):
+        cache = self.scored_cache()
+        cal, csv_rows, written = self.calibrate(cache)
+        self.assertEqual(cal["n"], 3)
+        self.assertEqual(len(csv_rows), 3)
+        self.assertEqual(written, cache)
+
+    def with_orphans(self, cache, n):
+        """The cache with n scored entries whose logs have no row in the sheet (edited or deleted), and their keys."""
+        orphans = {}
+        for i in range(n):
+            e = {"crag": f"Gone {i}", "wall": "", "date": f"2026-09-0{i + 1}", "from": 10, "to": 12, "feel": "Crisp", "problems": ""}
+            orphans[grip.log_key(e)] = {**e, "grip": 6.0, "wet": 0.0, "models": {}, "base": 6.0, "base_models": {}, "era": 6.0,
+                                        "era_base": 6.0, "tries": 1}
+        return {**cache, **orphans}, set(orphans)
+
+    def test_four_orphans_are_kept_with_one_warning(self):
+        cache, orphans = self.with_orphans(self.scored_cache(), 4)
+        self.exclude(EXCLUDE_B)
+        cal, csv_rows, written = self.calibrate(cache)
+        self.assertEqual(set(written), set(cache) - {k for k, v in cache.items() if v["crag"] == "Crag B"})  # the exclusion still applies
+        self.assertTrue(orphans <= set(written))
+        self.assertEqual(cal["n"], 6)
+        self.assertEqual(len(csv_rows), 6)
+        self.assertEqual(len(self.warns), 1)
+        self.assertIn("4 scored logs have no current row", self.warns[0])
+        for i in range(4):
+            self.assertIn(f"Gone {i} on 2026-09-0{i + 1}, 10:00 to 12:00", self.warns[0])
+        self.assertNotIn("Crag B", self.warns[0])
+
+    def test_up_to_three_orphans_are_pruned(self):
+        for n in (1, 3):
+            with self.subTest(n=n):
+                base = self.scored_cache()
+                cache, orphans = self.with_orphans(base, n)
+                self.exclude(EXCLUDE_B)
+                cal, csv_rows, written = self.calibrate(cache)
+                self.assertFalse(orphans & set(written))
+                self.assertEqual(sorted(v["crag"] for v in written.values()), ["Crag A", "Crag C"])
+                self.assertEqual(cal["n"], 2)
+                self.assertEqual(len(csv_rows), 2)
+                self.assertEqual(self.warns, [])
+
+    def test_excluded_logs_do_not_count_as_orphans(self):
+        """Four excluded logs, all scored, all go: the limit is for logs with no row, not for exclusions."""
+        rows = [[f"11/2/2026 22:0{i}:00", f"Crag {i}", "11/1/2026", "10:00:00 AM", "1:00:00 PM", "Grippy: good friction", "", "", ""]
+                for i in range(4)] + [SHEET_ROWS[0]]
+        self.exclude()
+        entries, _w = self.fetch(rows)
+        cache = {grip.log_key(e): {**e, "grip": 5.0, "wet": 0.0, "models": {}, "base": 5.0, "base_models": {}, "era": 5.0,
+                                   "era_base": 5.0, "tries": 1} for e in entries}
+        self.exclude(*({"timestamp": r[0], "date": "2026-11-01", "crag": r[1], "reason": "Doubtful: a test."} for r in rows[:4]))
+        cal, csv_rows, written = self.calibrate(cache, rows)
+        self.assertEqual([v["crag"] for v in written.values()], ["Crag A"])
+        self.assertEqual(cal["n"], 1)
+        self.assertEqual(self.warns, [])
+
+    def test_committed_file(self):
+        with open(os.path.join(ROOT, "data", "log_exclusions.json"), encoding="utf-8") as f:
+            logs = json.load(f)["logs"]
+        self.assertTrue(logs)
+        for x in logs:
+            with self.subTest(x["timestamp"]):
+                self.assertEqual(set(x), {"timestamp", "date", "crag", "reason"})
+                self.assertIsNotNone(grip.parse_date(x["date"]))
+                datetime.strptime(x["timestamp"], "%m/%d/%Y %H:%M:%S")
+                self.assertTrue(x["reason"].startswith("Doubtful"))
+                self.assertNotIn("\u2014", x["reason"])
 
 
 class Names(unittest.TestCase):

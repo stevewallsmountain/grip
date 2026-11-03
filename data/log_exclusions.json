@@ -1,0 +1,16 @@
+{
+ "logs": [
+  {
+   "timestamp": "11/2/2026 22:25:39",
+   "date": "2026-11-02",
+   "crag": "Floors Craig",
+   "reason": "Doubtful: Grip's forecast view did not load and the end time is the time the log was sent, after dark."
+  },
+  {
+   "timestamp": "11/2/2026 22:26:24",
+   "date": "2026-11-01",
+   "crag": "Floors Craig",
+   "reason": "Doubtful: sent with the doubtful log of 2 November, and the logger cannot be asked."
+  }
+ ]
+}

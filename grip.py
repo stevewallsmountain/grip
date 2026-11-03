@@ -109,6 +109,8 @@ POPULAR_TOP = 5  # how many the table shows before "Show all": of 5 to 8, the on
 POPULAR_COUNT = 15  # how many crags from the top of the crag rank the Popular crags table lists
 BIG_SEA_M = 1.5  # a crag page shows the big-sea notice for a day whose highest daylight sea at the weather point, as shown, is this or more; display only, never scored
 LOG_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJvP_UEtYosrIGLGEKbwuYLZn64xxAUlsedFZoAk5iESNDN9MBM2bgpkyYODvse42nNa-1JIuqZBDf/pub?output=csv"
+LOG_EXCLUSIONS_FILE = os.path.join(HERE, "data", "log_exclusions.json")  # logs ruled doubtful, by the Public tab's Timestamp; never scored or shown
+ORPHAN_LIMIT = 3  # more scored logs than this with no current row in one run are all kept, with a warning; excluded logs always go
 CAL_FILE = os.path.join(HERE, "calibration.json")
 MODEL_VERSION = "3.8"  # bump when the scoring or crag details change; logged days are then re-scored
 CAL_CSV = os.path.join(HERE, "calibration.csv")
@@ -905,8 +907,26 @@ def publish_history(site, folder=None):
 
 
 # ---------------------------------------------------------------- calibration against logged days
-def fetch_log():
-    """Logged days from the published response sheet. Returns a list of dicts, or [] on any failure."""
+def load_log_exclusions():
+    """The excluded logs in data/log_exclusions.json, {timestamp: entry}, keyed by the Public tab's Timestamp exactly as it
+    appears there. A missing or unreadable file excludes nothing, with a warning."""
+    try:
+        with open(LOG_EXCLUSIONS_FILE, encoding="utf-8") as f:
+            logs = json.load(f)["logs"]
+        return {str(x["timestamp"]).strip(): x for x in logs}
+    except Exception as e:  # noqa: BLE001
+        log(f"Warning: cannot read data/log_exclusions.json ({e}); no logs are excluded")
+        return {}
+
+
+def log_key(e):
+    """The calibration cache key of a logged day."""
+    return f'{MODEL_VERSION}|{e["crag"]}|{e["date"]}|{e["from"]}|{e["to"]}|{e["feel"]}'
+
+
+def fetch_log(excluded_keys=None):
+    """Logged days from the published response sheet, leaving out the logs in data/log_exclusions.json.
+    Returns a list of dicts, or [] on any failure. If excluded_keys is a set, the cache keys of the excluded rows are added to it."""
     import csv
     import io
     try:
@@ -928,22 +948,50 @@ def fetch_log():
         return None
 
     ic, idate, ifrom, ito, ifeel, iprob, iwall = (col(x) for x in ("crag", "date", "on the rock from", "on the rock until", "how did", "if it was poor", "wall or sector"))
-    out = []
-    for r in rows[1:]:
+    its = col("timestamp")
+    excluded = load_log_exclusions()
+    matched, warned = set(), set()
+    def entry(r):
+        """The logged day in a row, or None if it cannot be read."""
         try:
             crag = r[ic].strip()
             d = parse_date(r[idate])
             t1, t2 = parse_time(r[ifrom]), parse_time(r[ito])
             feel = parse_feel(r[ifeel])
             if not crag or d is None or t1 is None or t2 is None or feel is None:
-                continue
+                return None
             if t2 <= t1:
                 t2 = t1 + 1
             wall = r[iwall].strip() if iwall is not None and iwall < len(r) else ""
-            out.append({"crag": crag, "wall": wall, "date": d.isoformat(), "from": t1, "to": t2, "feel": feel,
-                        "problems": r[iprob].strip() if iprob is not None and iprob < len(r) else ""})
+            return {"crag": crag, "wall": wall, "date": d.isoformat(), "from": t1, "to": t2, "feel": feel,
+                    "problems": r[iprob].strip() if iprob is not None and iprob < len(r) else ""}
         except Exception:  # noqa: BLE001
-            continue
+            return None
+
+    out = []
+    for r in rows[1:]:
+        ts = r[its].strip() if its is not None and its < len(r) else ""
+        if ts and ts in excluded:
+            matched.add(ts)
+            x = excluded[ts]
+            crag = r[ic].strip() if ic is not None and ic < len(r) else ""
+            raw = r[idate].strip() if idate is not None and idate < len(r) else ""
+            d = parse_date(raw)
+            d = d.isoformat() if d else raw
+            if (x.get("date") != d or x.get("crag") != crag) and ts not in warned:
+                warned.add(ts)
+                log(f"Warning: the excluded log {ts} in data/log_exclusions.json says {x.get('crag')} on {x.get('date')}, "
+                    f"but its row is {crag} on {d}; it is still excluded")
+            e = entry(r)
+            if e is not None and excluded_keys is not None:
+                excluded_keys.add(log_key(e))
+            continue  # an excluded log is never scored or shown
+        e = entry(r)
+        if e is not None:
+            out.append(e)
+    for ts in excluded:
+        if ts not in matched:
+            log(f"Warning: the excluded log {ts} in data/log_exclusions.json matches no row of the log sheet")
     return out
 
 
@@ -1140,10 +1188,12 @@ def calibrate(cfg, limit=5):
             cache = json.load(f)
     except Exception:  # noqa: BLE001
         cache = {}
-    entries = fetch_log()
+    before = set(cache)
+    excluded = set()
+    entries = fetch_log(excluded)
     done = 0
     for e in entries:
-        key = f'{MODEL_VERSION}|{e["crag"]}|{e["date"]}|{e["from"]}|{e["to"]}|{e["feel"]}'
+        key = log_key(e)
         age = (datetime.now(TZ).date() - date.fromisoformat(e["date"])).days
         c = cache.get(key)
         if c and (c.get("era") is not None or (c.get("grip") is None and c.get("tries", 1) >= 3)):
@@ -1164,13 +1214,23 @@ def calibrate(cfg, limit=5):
                       "era": res["era"] if res else None, "era_base": res["era_base"] if res else None,
                       "tries": 1 if res else (c.get("tries", 1) + 1 if c else 1)}
     cache = {k: v for k, v in cache.items() if k.startswith(MODEL_VERSION + "|")}
-    if done:
+    if entries:  # keep only days that belong to a current, non-excluded log; a failed or empty fetch leaves the cache as it was
+        current = {log_key(e) for e in entries}
+        orphans = sorted(k for k in cache if k not in current and k not in excluded)  # no current row, and not excluded
+        keep = set()
+        if len(orphans) > ORPHAN_LIMIT:  # more at once looks like a sheet problem, not edited or deleted logs: keep them all
+            keep = set(orphans)
+            log(f"Warning: {len(orphans)} scored logs have no current row in the log sheet, more than {ORPHAN_LIMIT} in one run, "
+                f"so none of them is dropped: " + "; ".join(f'{cache[k]["crag"]} on {cache[k]["date"]}, {cache[k]["from"]:02d}:00 to {cache[k]["to"]:02d}:00'
+                                                         for k in orphans))
+        cache = {k: v for k, v in cache.items() if k in current or k in keep}
+    if done or set(cache) != before:
         with open(CAL_FILE, "w", encoding="utf-8", newline="\n") as f:
             json.dump(cache, f, indent=1, sort_keys=True)
             f.write("\n")
     write_calibration_csv(cache)
     scored = merge_days([v for v in cache.values() if v.get("grip") is not None])
-    pending = [e for e in entries if f'{MODEL_VERSION}|{e["crag"]}|{e["date"]}|{e["from"]}|{e["to"]}|{e["feel"]}' not in cache]
+    pending = [e for e in entries if log_key(e) not in cache]
     if not scored:
         return {"n": 0, "pending": len(pending), "rows": []}
     errs = [band_miss(v["grip"], v["feel"]) for v in scored]  # unrounded: typical miss and average error
