@@ -3078,6 +3078,18 @@ FORM_CSS = """
 .pair .field{flex:1 1 0;min-width:0}
 .pair #f-date{flex:1 0 100%}
 @media (min-width:600px){.pair #f-date{flex:1.6 1 150px}}
+.pair .tf{flex:1 1 228px}
+.tp{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-6) var(--s-12)}
+.tsel{display:flex;align-items:center;gap:var(--s-4)}
+.tsel label{display:block}
+.gform select.ts{width:76px;height:48px;min-height:48px;padding:0 30px 0 14px;font-variant-numeric:tabular-nums;cursor:pointer}
+.tc{font-weight:600;font-size:18px;line-height:1}
+.tn{font-size:var(--t-meta);font-weight:500;color:var(--muted)}
+.tf:not(.unset) .tn{display:none}
+.tf.unset select.ts{border-style:dashed;border-color:var(--muted);color:var(--muted);background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%)}
+.tf.unset .tc{color:var(--muted)}
+.tf.bad select.ts{border-style:solid;border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.tf select.ts:focus{border-style:solid;border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink),var(--focus-ring)}
 .combo{position:relative}
 .combo ul{position:absolute;left:0;right:0;top:100%;z-index:5;margin:var(--s-4) 0 0;padding:0;list-style:none;max-height:min(20rem,45vh);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--card);border:1px solid var(--rule);border-radius:var(--r-m);box-shadow:var(--shadow-overlay)}
 .combo li{display:flex;align-items:center;min-height:var(--tap);padding:var(--s-8) var(--s-12);cursor:pointer;border-bottom:1px solid var(--rule)}
@@ -3335,7 +3347,7 @@ if(typeof document!=='undefined'){var GripUI=(function(){  // the page parts the
   function mark(field,msg){
     var box=$('f-'+field), err=$(field+'-err');
     if(err){err.textContent=msg;}
-    if(box){box.classList.toggle('bad',!!msg);}
+    if(box){box.classList.toggle('bad',!!msg);box.querySelectorAll('select.ts').forEach(function(s){if(msg){s.setAttribute('aria-invalid','true');}else{s.removeAttribute('aria-invalid');}});}
   }
   function sent(rows,lead,next,link){  // the form gives way to the sent card, which takes focus; lead: lines under the heading, next: what happens next, link: [href, text]
     var dl=$('done-sum'), box=$('done-lead');
@@ -3411,15 +3423,15 @@ var GripLog=(function(){
   function rank(b){return BANDS.length-1-BANDS.indexOf(b);}  // Soaked 0 to Prime 4
   function feelName(feel){return (feel||'').split(':')[0];}
   function obsDone(obs){var n=0;OBS.forEach(function(q){if(obs&&obs[q[0]]){n++;}});return n;}
+  function isSet(t){return /^\d{2}:\d{2}/.test(t||'')&&t.slice(0,2)!=='00';}  // From or Until, "HH:MM": not set while the hour is 00, whatever the minutes
   function validate(f, now){  // f: {wall: index or -1, date, from, until, feel, obs: {key: answer}, ...}; returns [[field, message], ...]
     var bad=[];
     if(!(f.wall>=0&&f.wall<WALLS.length)){bad.push(['wall','Pick a crag and wall from the list.']);}
     if(!/^\d{4}-\d{2}-\d{2}$/.test(f.date||'')){bad.push(['date','Enter the date.']);}
     else if(f.date>(now||today())){bad.push(['date','The date cannot be in the future.']);}
-    var t=/^\d{2}:\d{2}/;
-    if(!t.test(f.from||'')){bad.push(['from','Enter when you got on the rock.']);}
-    if(!t.test(f.until||'')){bad.push(['until','Enter when you came off the rock.']);}
-    else if(t.test(f.from||'')&&f.until.slice(0,5)<=f.from.slice(0,5)){bad.push(['until','This must be later than the start time.']);}
+    if(!isSet(f.from)){bad.push(['from','Set when you got on the rock.']);}
+    if(!isSet(f.until)){bad.push(['until','Set when you came off the rock.']);}
+    else if(isSet(f.from)&&f.until.slice(0,5)<=f.from.slice(0,5)){bad.push(['until','This must be later than the start time.']);}
     if(!f.feel){bad.push(['feel','Choose how the rock felt.']);}
     if(obsDone(f.obs)<OBS.length){bad.push(['obs','Answer all seven. Not sure is fine.']);}
     return bad;
@@ -3609,7 +3621,7 @@ var GripLog=(function(){
     return {status:st, tag:T[0], text:T[1], months:m, conf:conf, now:now, said:m.length?'Nesting '+span_:''};
   }
   return {WALLS:WALLS,list:L,POST:POST,OBS:OBS,NS:NS,BANDS:BANDS,TIMING:TIMING,BIRD_OPTS:BIRD_OPTS,PAGES:PAGES,ELSEWHERE:ELSEWHERE,
-    filter:L.filter,find:L.find,today:today,validate:validate,ready:ready,obsDone:obsDone,span:span,hoursOf:hoursOf,average:average,waterWord:waterWord,
+    filter:L.filter,find:L.find,today:today,isSet:isSet,validate:validate,ready:ready,obsDone:obsDone,span:span,hoursOf:hoursOf,average:average,waterWord:waterWord,
     windWord:windWord,gripSaw:gripSaw,verdict:verdict,timing:timing,shape:shape,view:view,notesLabel:notesLabel,bandLine:bandLine,
     timingQ:timingQ,timingShown:timingShown,shownLine:shownLine,problems:problems,payload:payload,summary:summary,birdsHave:birdsHave,
     bandOf:bandOf,bandNamed:bandNamed,feelName:feelName,hh:hh};
@@ -3619,10 +3631,20 @@ if(typeof document!=='undefined'){(function(){
   var dt=$('date'), hold=$('gv-hold'), gv=$('gv'), bh=$('birds-have');
   var snaps={}, revealed=false, first=null, timingAns=-1, lastView=null, drawn='';
   function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function hhmm(k){return $(k+'-h').value+':'+$(k+'-m').value;}
+  function times(f){  // From and Until: "Not set" beside a pair while its hour is 00; an error shown on Send is updated, and cleared once the time is fixed
+    var bad=G.validate(f);
+    ['from','until'].forEach(function(k){
+      var box=$('f-'+k), set=G.isSet(f[k]), d=(set?'':k+'-note ')+k+'-err';
+      box.classList.toggle('unset',!set);
+      [$(k+'-h'),$(k+'-m')].forEach(function(s){s.setAttribute('aria-describedby',d);});
+      if(box.classList.contains('bad')){var e=bad.filter(function(b){return b[0]===k;})[0];U.mark(k,e?e[1]:'');}
+    });
+  }
   function obs(){var o={};G.OBS.forEach(function(q){var x=form.querySelector('input[name="obs-'+q[0]+'"]:checked');if(x){o[q[0]]=x.value;}});return o;}
   function values(){
     var feel=form.querySelector('input[name=feel]:checked'), birds=form.querySelector('input[name=birds]:checked');
-    return {wall:chosen(), date:dt.value, from:$('from').value, until:$('until').value, feel:feel?feel.value:'', obs:obs(),
+    return {wall:chosen(), date:dt.value, from:hhmm('from'), until:hhmm('until'), feel:feel?feel.value:'', obs:obs(),
       first:first, timing:timingAns, birds:birds?birds.value:'', initials:$('initials').value, other:$('other').value, contact:$('contact').value};
   }
   function load(date){  // the day's snapshot, fetched only once a band and all seven observations are in
@@ -3691,6 +3713,7 @@ if(typeof document!=='undefined'){(function(){
   }
   function update(){
     var f=values(), n=G.obsDone(f.obs), ready=G.ready(f);
+    times(f);
     $('obs-count').textContent=n+' of '+G.OBS.length;
     if(ready&&!revealed){revealed=true;first=f.feel;}
     var v=null;
@@ -3703,7 +3726,7 @@ if(typeof document!=='undefined'){(function(){
     if(v){draw(v,f);gv.hidden=false;hold.hidden=true;}
     else{
       gv.hidden=true;hold.hidden=false;
-      var range=/^\d{2}:\d{2}/.test(f.from)&&/^\d{2}:\d{2}/.test(f.until)&&f.until>f.from?f.from.slice(0,5)+' to '+f.until.slice(0,5):'your hours';
+      var range=G.isSet(f.from)&&G.isSet(f.until)&&f.until>f.from?f.from.slice(0,5)+' to '+f.until.slice(0,5):'your hours';
       $('gv-hold-text').textContent='Grip’s forecast for '+range+' appears here once you have chosen a band and answered what you saw. Your answers come first, so they stay your own.';
       $('gv-hold-count').textContent=(f.feel?'Band chosen. ':'No band yet. ')+n+' of '+G.OBS.length+' answered.'+(f.feel&&n===G.OBS.length?' Add the crag, date and hours above to see it.':'');
     }
@@ -3726,6 +3749,7 @@ if(typeof document!=='undefined'){(function(){
     payload:function(f){return G.payload(f,lastView);}, summary:function(f){return G.summary(f,lastView);}, values:values,
     first:function(x){
       if(x==='feel'){return form.querySelector('input[name=feel]');}
+      if(x==='from'||x==='until'){return $(x+'-h');}
       if(x==='obs'){var o=values().obs;for(var i=0;i<G.OBS.length;i++){if(!o[G.OBS[i][0]]){return form.querySelector('input[name="obs-'+G.OBS[i][0]+'"]');}}}
       return null;
     },
@@ -3963,6 +3987,22 @@ def opt():
     return ' <span class="opt">Optional</span>'
 
 
+TIME_HOURS = [f"{h:02d}" for h in range(24)]
+TIME_MINUTES = ["00", "15", "30", "45"]
+
+
+def time_field(key, legend):
+    """From or Until on the log page: an hour and a minutes dropdown, both starting at 00. A time is not set while its hour is 00,
+    whatever the minutes; the script shows "Not set" beside the pair until it is. The page still sends "HH:MM"."""
+    def select(part, name, opts):
+        options = "".join(f'<option value="{o}"{" selected" if o == "00" else ""}>{o}</option>' for o in opts)
+        return (f'<label><span class="vh">{legend}, {name}</span><select class="ts" id="{key}-{part}" '
+                f'aria-describedby="{key}-note {key}-err">{options}</select></label>')
+    return (f'<fieldset class="field tf unset" id="f-{key}"><legend>{legend}</legend><div class="tp"><span class="tsel">'
+            f'{select("h", "hour", TIME_HOURS)}<span class="tc" aria-hidden="true">:</span>{select("m", "minutes", TIME_MINUTES)}</span>'
+            f'<span class="tn" id="{key}-note">Not set</span></div><p class="err" id="{key}-err"></p></fieldset>')
+
+
 def combo_field(pre_hint=False):
     """The crag and wall box the log and note forms share. With pre_hint, the hint for a box filled from a crag page
     replaces the usual one when the page was opened with ?wall=."""
@@ -4043,8 +4083,7 @@ def render_log(cfg, cal=None):
     show Grip's view beside their answers. Submits into the Google Form, so the responses sheet keeps its columns."""
     w = [combo_field()]
     w.append('<div class="pair"><div class="field" id="f-date"><label for="date">Date</label><input id="date" type="date" required aria-describedby="date-err"><p class="err" id="date-err"></p></div>'
-             '<div class="field" id="f-from"><label for="from">From</label><input id="from" type="time" step="60" required aria-describedby="from-err"><p class="err" id="from-err"></p></div>'
-             '<div class="field" id="f-until"><label for="until">Until</label><input id="until" type="time" step="60" required aria-describedby="until-err"><p class="err" id="until-err"></p></div></div>')
+             f'{time_field("from", "From")}{time_field("until", "Until")}</div>')
     w.append('<fieldset class="field" id="f-feel" aria-describedby="feel-desc feel-err"><legend>How did the rock feel overall?</legend>'
              '<p class="desc" id="feel-desc">Most of the rock, across your session. Grip’s forecast appears once you have answered this and what you saw.</p>')
     ranges = {name: (css, rng) for _lo, name, _note, css, rng in BANDS}

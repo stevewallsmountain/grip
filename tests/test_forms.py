@@ -130,6 +130,26 @@ class Pages(unittest.TestCase):
         self.assertEqual(re.findall(r'name="months" value="(\w+)"', html), grip.MONTHS[1:])
         self.assertIn("Filled in from the crag page. Change it if needed.", html)
 
+    def test_log_from_and_until(self):
+        """From and Until: a fieldset each, two selects (hour 00 to 23, minutes 00, 15, 30, 45) starting at 00, no time input."""
+        html = grip.render_log(CFG)
+        self.assertNotRegex(html, r'<input[^>]*type="?time')
+        sets = re.findall(r'<fieldset class="field tf unset" id="f-(\w+)"><legend>(\w+)</legend>(.*?)</fieldset>', html)
+        self.assertEqual([(k, legend) for k, legend, _b in sets], [("from", "From"), ("until", "Until")])
+        hours = [f"{h:02d}" for h in range(24)]
+        for k, legend, body in sets:
+            with self.subTest(legend):
+                selects = re.findall(r'<label><span class="vh">([^<]+)</span><select class="ts" id="([\w-]+)" aria-describedby="([^"]+)">(.*?)</select></label>', body)
+                self.assertEqual([(t, i, d) for t, i, d, _o in selects],
+                                 [(f"{legend}, hour", f"{k}-h", f"{k}-note {k}-err"), (f"{legend}, minutes", f"{k}-m", f"{k}-note {k}-err")])
+                for (_t, _i, _d, options), want in zip(selects, (hours, ["00", "15", "30", "45"])):
+                    self.assertEqual(re.findall(r'<option value="(\d\d)"[^>]*>\1</option>', options), want)
+                    self.assertEqual(re.findall(r'<option value="(\d\d)" selected>', options), ["00"])
+                self.assertIn('<span class="tc" aria-hidden="true">:</span>', body)
+                self.assertIn(f'<span class="tn" id="{k}-note">Not set</span>', body)
+                self.assertIn(f'<p class="err" id="{k}-err"></p>', body)
+        self.assertEqual(html.count("<select"), 4)
+
     def test_log_aside_tally(self):
         self.assertIn("12 days logged so far; Grip landed in the felt band on 6.", grip.render_log(CFG, {"n": 12, "bands_right": 6}))
         self.assertNotIn("logged so far", grip.render_log(CFG))

@@ -175,9 +175,12 @@ All three are on-site pages (`log.html`, `note.html`, `feedback.html`) built fro
 ### Field parts
 
 - Label 16px 600 above; hint 14px muted under the label; optional fields say "Optional" in 400 muted after the label. Required fields are not starred; the few required ones (crag, date, feel) are validated on Send.
-- Text, date, time inputs: 48px tall, radius 8, 1px rule, card bg, 16px text. Focus: 2px ink border + focus ring. Error: 2px ink border plus a message under the field in 14px 600 ink starting "Pick a crag from the list" etc. (no red: red is Soaked).
+- Text and date inputs: 48px tall, radius 8, 1px rule, card bg, 16px text. Focus: 2px ink border + focus ring. Error: 2px ink border plus a message under the field in 14px 600 ink starting "Pick a crag from the list" etc. (no red: red is Soaked).
 - Crag combobox: `role="combobox"`, listbox of up to 8 options, 44px rows, matches word starts; Esc closes; the chosen value reads "Logie Head (Embankment One)".
-- Date, From, Until on one row ≥ 600px (date basis 150, times 90).
+- **From and Until:** each a `fieldset` (`legend` From / Until) holding two native `select`s, hour 00 to 23 and minutes 00, 15, 30, 45, each in a `label` with visually hidden text ("From, hour", "From, minutes" etc.); the colon between them is `aria-hidden`. Selects 76 × 48px, radius 8, card bg, 16px text, tabular figures. Field basis 228px.
+- Date, From, Until on one row where they fit, wrapping where they do not (date basis 150, times 228); at 360px From and Until each take their own row, the pair and its note on one line. No sideways scroll at any width.
+- Both start at 00:00. A time is set once its hour is not 00; the minutes alone do not set it. Not set: 1px dashed `--muted` border, muted digits and chevron, and "Not set" (14px 500 muted) beside the pair, linked to both selects with `aria-describedby`. Set: 1px rule border, ink digits, no note.
+- Errors on Send, as for the other fields: 2px ink border on both selects, `aria-invalid="true"`, the message under the pair in 14px 600 ink: "Set when you got on the rock." / "Set when you came off the rock." / "This must be later than the start time." It clears as soon as the time is fixed. No red. Focus: 2px ink border + focus ring.
 - **Feel:** `fieldset` + `legend`. Five tiles, one per band: 52px min, card bg, 1px rule; 44px band chip with the range; name (17px 600) and description (14px muted); radio circle on the right. Selected: 2px ink border, filled dot.
 - **Problems:** checkbox chips, pill, 44px tall, 1px rule; checked = `--inv-bg` with tick.
 - Notes `textarea` 96px min.

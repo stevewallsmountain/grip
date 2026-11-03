@@ -477,5 +477,47 @@ class ViewAndPayload(unittest.TestCase):
         self.assertEqual(got[1]["now"], 5)
 
 
+@unittest.skipUnless(NODE, "needs Node to run the log page's JavaScript")
+class FromUntil(unittest.TestCase):
+    """From and Until are each an hour and a minutes dropdown starting at 00:00. A time is not set while its hour is 00,
+    whatever the minutes; the page still produces "HH:MM", so the body sent is as before."""
+    E = grip.FORM_ENTRIES
+    FROM = "Set when you got on the rock."
+    UNTIL = "Set when you came off the rock."
+    ORDER = "This must be later than the start time."
+
+    def errors(self, *pairs):
+        return run_js([f"G.validate({json.dumps(form(**{'from': a, 'until': b}))},'2026-10-05')" for a, b in pairs])
+
+    def test_not_set_while_the_hour_is_00(self):
+        got = self.errors(("00:00", "16:15"), ("00:15", "16:15"), ("00:45", "16:15"), ("13:00", "00:00"), ("13:00", "00:30"),
+                          ("00:00", "00:00"))
+        self.assertEqual(got, [[["from", self.FROM]], [["from", self.FROM]], [["from", self.FROM]], [["until", self.UNTIL]],
+                               [["until", self.UNTIL]], [["from", self.FROM], ["until", self.UNTIL]]])
+
+    def test_until_after_from(self):
+        got = self.errors(("13:00", "11:30"), ("13:00", "13:00"), ("13:15", "13:00"), ("13:00", "13:15"), ("13:00", "16:15"))
+        self.assertEqual(got, [[["until", self.ORDER]], [["until", self.ORDER]], [["until", self.ORDER]], [], []])
+
+    def test_is_set(self):
+        got = run_js([f"G.isSet({json.dumps(t)})" for t in ("00:00", "00:15", "01:00", "13:00", "23:45", "", None)])
+        self.assertEqual(got, [False, False, True, True, True, False, False])
+
+    def test_ready_waits_for_both_hours(self):
+        cases = [("00:00", "00:00", False), ("00:00", "16:15", False), ("00:30", "16:15", False), ("13:00", "00:00", False),
+                 ("13:00", "00:45", False), ("13:00", "16:15", True)]
+        got = run_js([f"G.ready({json.dumps(form(**{'from': a, 'until': b}))},'2026-10-05')" for a, b, _w in cases])
+        self.assertEqual(got, [w for _a, _b, w in cases])
+
+    def test_payload_hours_and_minutes(self):
+        """13:00 to 16:15 goes to the Google Form as the same hour and minute parameters as before."""
+        f = form(**{"from": "13:00", "until": "16:15"})
+        body, = run_js([f"[...G.payload({json.dumps(f)},null).entries()]"])
+        keys = [self.E["from"] + "_hour", self.E["from"] + "_minute", self.E["until"] + "_hour", self.E["until"] + "_minute"]
+        self.assertEqual([[k, v] for k, v in body if k in keys], [[keys[0], "13"], [keys[1], "00"], [keys[2], "16"], [keys[3], "15"]])
+        s, = run_js([f"G.summary({json.dumps(f)},{{state:'unscored'}}).rows[1]"])
+        self.assertEqual(s, ["When", "Sun 4 Oct, 13:00 to 16:15"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
