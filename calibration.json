@@ -424,6 +424,31 @@
   "wall": "",
   "wet": 0.0
  },
+ "3.8|Logie Head|2026-11-01|10|13|Usable": {
+  "base": 7.600644122383254,
+  "base_models": {
+   "ECMWF": 7.246376811594203,
+   "ICON": 8.115942028985506,
+   "Met Office": 7.536231884057972
+  },
+  "crag": "Logie Head",
+  "date": "2026-11-01",
+  "era": 6.858100534854077,
+  "era_base": 8.115942028985506,
+  "feel": "Usable",
+  "from": 10,
+  "grip": 5.8284348548128335,
+  "models": {
+   "ECMWF": 6.299703939946859,
+   "ICON": 3.594919573377561,
+   "Met Office": 6.533333333333334
+  },
+  "problems": "Greasy or sweating",
+  "to": 13,
+  "tries": 1,
+  "wall": "Embankment One",
+  "wet": 0.3333333333333333
+ },
  "3.8|Meikle Partans|2026-10-11|15|18|Usable": {
   "base": 6.602254428341385,
   "base_models": {
