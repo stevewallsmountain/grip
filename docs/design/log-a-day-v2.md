@@ -18,6 +18,13 @@ Change to the flow of `log.html`. Look, tokens and field parts are unchanged (se
 
 ## New and changed components
 
+### From and Until
+Replaces the two time inputs. Mock-ups: `Grip Log Times Review.dc.html`.
+- Each is a `fieldset` (`legend` From / Until) holding two native `select`s side by side: hour 00 to 23, minutes 00, 15, 30, 45. Each select sits in a `label` with visually hidden text "From, hour", "From, minutes" etc. Colon between them is `aria-hidden`.
+- Selects 76 × 48px, radius 8, card bg, 16px tabular figures. Field basis 228px (was 90): one row with Date at 1280; own row each at 360.
+- Both start at 00:00. A time is set once its hour is not 00; the minutes alone do not set it. Not set: 1px dashed `--muted` border, muted digits, and "Not set" (14px 500 muted) beside the pair, linked with `aria-describedby`. Set: 1px rule border, ink digits, no note.
+- Errors on Send: 2px ink border on the pair, `aria-invalid`, 14px 600 ink message under it: "Set when you got on the rock." / "Set when you came off the rock." / "This must be later than the start time." No red.
+
 ### What did you see?
 - `section` with `h2` "What did you see?" (16px 600, same as field labels) and a live counter on the right, 14px muted: "5 of 7". Hint, 14px muted: "One tap each, across your session. Not sure is fine."
 - Seven rows, each `role="radiogroup"` with `aria-label`. Row: flex-wrap, gap 4/12. Label (15px 600) basis 190px; chip row basis 330px. On a phone the label sits above its chips; at 1280 they sit side by side.
