@@ -224,56 +224,6 @@
   "wall": "",
   "wet": 0.3333333333333333
  },
- "3.8|Floors Craig|2026-11-01|11|16|Crisp": {
-  "base": 7.120772946859903,
-  "base_models": {
-   "ECMWF": 7.217391304347826,
-   "ICON": 6.782608695652174,
-   "Met Office": 7.217391304347826
-  },
-  "crag": "Floors Craig",
-  "date": "2026-11-01",
-  "era": 6.597297092306114,
-  "era_base": 7.130434782608697,
-  "feel": "Crisp",
-  "from": 11,
-  "grip": 6.558818879122796,
-  "models": {
-   "ECMWF": 6.554463407936258,
-   "ICON": 6.211035113032921,
-   "Met Office": 6.699674574033361
-  },
-  "problems": "",
-  "to": 16,
-  "tries": 1,
-  "wall": "North Descent Climbs",
-  "wet": 0.0
- },
- "3.8|Floors Craig|2026-11-02|13|22|Usable": {
-  "base": 5.780998389694042,
-  "base_models": {
-   "ECMWF": 6.231884057971015,
-   "ICON": 5.652173913043479,
-   "Met Office": 5.652173913043479
-  },
-  "crag": "Floors Craig",
-  "date": "2026-11-02",
-  "era": 4.437571421682294,
-  "era_base": 6.2318840579710155,
-  "feel": "Usable",
-  "from": 13,
-  "grip": 2.6116800604351336,
-  "models": {
-   "ECMWF": 3.079323470886853,
-   "ICON": 3.050956267314561,
-   "Met Office": 2.2489122135026745
-  },
-  "problems": "Wet from rain",
-  "to": 22,
-  "tries": 1,
-  "wall": "North Descent Climbs",
-  "wet": 0.0
- },
  "3.8|Green Slough|2026-09-19|12|17|Crisp": {
   "base": 7.565217391304347,
   "base_models": {
