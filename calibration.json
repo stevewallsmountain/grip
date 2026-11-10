@@ -24,6 +24,31 @@
   "wall": "Boltsheugh Upper",
   "wet": 1.0
  },
+ "3.8|Boltsheugh|2026-11-09|11|13|Usable": {
+  "base": 5.966183574879228,
+  "base_models": {
+   "ECMWF": 5.6521739130434785,
+   "ICON": 6.521739130434783,
+   "Met Office": 5.869565217391305
+  },
+  "crag": "Boltsheugh",
+  "date": "2026-11-09",
+  "era": 1.2987499553758992,
+  "era_base": 5.6521739130434785,
+  "feel": "Usable",
+  "from": 11,
+  "grip": 2.3428944070933158,
+  "models": {
+   "ECMWF": 1.3083396062390344,
+   "ICON": 3.141295003283438,
+   "Met Office": 2.437356088958979
+  },
+  "problems": "Wet from rain",
+  "to": 13,
+  "tries": 1,
+  "wall": "Boltsheugh Upper",
+  "wet": 1.0
+ },
  "3.8|Brown Band Crag|2026-09-13|9|11|Crisp": {
   "base": 4.879227053140097,
   "base_models": {
